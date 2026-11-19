@@ -39,6 +39,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -60,6 +61,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
@@ -159,9 +161,24 @@ fun ChoresScreen(vm: HomeLifeViewModel, viewer: Viewer, cityKey: String, onBack:
                     }
                     if (recent.isNotEmpty()) {
                         item { SectionTitle(stringResource(R.string.chores_balance)) }
-                        val counts = recent.filter { it.approved }.groupingBy { it.doneBy }.eachCount().entries.sortedByDescending { it.value }
-                        items(counts.toList(), key = { "bal-" + it.key }) { (who, n) ->
-                            Text(stringResource(R.string.chores_balance_line, names[who] ?: "?", n), style = MaterialTheme.typography.bodyMedium)
+                        // CHR-2 fair share counts minutes, not just tasks; CHR-7 streaks keep kids going
+                        val minutesOf = chores.associate { it.id to it.estimatedMinutes }
+                        val byWho = recent.filter { it.approved }.groupBy { it.doneBy }
+                        val total = byWho.values.sumOf { l -> l.sumOf { minutesOf[it.choreId] ?: 15 } }.coerceAtLeast(1)
+                        items(byWho.entries.sortedByDescending { e -> e.value.sumOf { minutesOf[it.choreId] ?: 15 } }.toList(), key = { "bal-" + it.key }) { (who, list) ->
+                            val mins = list.sumOf { minutesOf[it.choreId] ?: 15 }
+                            val days = list.map { com.rimon.smartfamily.smart.JewishDays.toLocal(it.doneAt) }.toSet()
+                            var streak = 0
+                            var d = java.time.LocalDate.now(com.rimon.smartfamily.smart.JewishDays.ZONE)
+                            if (d !in days) d = d.minusDays(1)
+                            while (d in days) { streak++; d = d.minusDays(1) }
+                            Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                Row {
+                                    Text(stringResource(R.string.chores_balance_line, names[who] ?: "?", list.size), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                    Text(stringResource(R.string.chores_minutes, mins) + if (streak >= 2) "  🔥$streak" else "", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                }
+                                LinearProgressIndicator(progress = { mins / total.toFloat() }, modifier = Modifier.fillMaxWidth())
+                            }
                         }
                     }
                     if (chores.isNotEmpty() && !viewer.isChild) {

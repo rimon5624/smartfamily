@@ -1181,4 +1181,14 @@
     <string name="cv_result">≈ %1$s גרם · %2$s כפות · %3$s כפיות</string>
     <string name="cv_oven_c">תנור °C</string>
     <string name="cv_oven_result">= %1$s°F · דרגת גז %2$d</string>
+    <string name="budget_forecast">בקצב הזה החודש ייגמר בערך ב-%1$s</string>
+    <string name="receipt_scan">קבלה</string>
+    <string name="receipt_failed">לא הצלחתי לקרוא את הקבלה. כדאי לנסות תמונה ברורה יותר.</string>
+    <string name="receipt_note">קבלה</string>
+    <string name="receipt_saved">הקבלה נשמרה: ₪%1$s, והמוצרים נכנסו להיסטוריית הקניות</string>
+    <string name="trip_check_passports">לבדוק תוקף דרכונים ל: %1$s</string>
+    <string name="trip_learn_skip">לא משתמשים בזה – להפסיק להציע</string>
+    <string name="trip_learn_always">שכחנו – להוסיף תמיד</string>
+    <string name="trip_learn_always_done">מעכשיו זה יופיע בכל רשימת אריזה</string>
+    <string name="trip_learn_skip_done">זה לא יוצע שוב</string>
 </resources>

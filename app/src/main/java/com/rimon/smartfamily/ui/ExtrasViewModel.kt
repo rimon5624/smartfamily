@@ -59,6 +59,14 @@ class ExtrasViewModel(app: Application) : AndroidViewModel(app) {
         )
         repo.saveTrip(t)
         generate(t)
+        // TRV-4: abroad → a reminder to check passports (no ID numbers are stored)
+        if ("ABROAD" in kinds) runCatching {
+            val start = java.time.LocalDate.parse(start)
+            val remind = start.minusDays(60).let { if (it.isBefore(java.time.LocalDate.now())) java.time.LocalDate.now() else it }
+            val at = com.rimon.smartfamily.smart.JewishDays.startMs(remind) + 19 * 3_600_000L
+            c.homeLife.saveEvent(com.rimon.smartfamily.data.db.EventEntity(id = repo.newId(), familyId = familyId,
+                title = getApplication<Application>().getString(R.string.trip_check_passports, t.title), startAt = at, endAt = at + 1_800_000L, ownerId = uid(), source = "trip:" + t.id))
+        }
         onCreated(t.id)
     }
 
@@ -73,7 +81,11 @@ class ExtrasViewModel(app: Application) : AndroidViewModel(app) {
         val updated = if (summary.isNotEmpty()) t.copy(weather = summary) else t
         if (summary.isNotEmpty()) repo.saveTrip(updated)
         val n = t.travelers.split(',').count { it.isNotBlank() }
-        repo.addItems(updated, PackingLists.build(t.kinds.split(',').filter { it.isNotBlank() }.toSet(), weather, n, days, hebrew))
+        // TRV-5: what we forgot last time is always added; what we never used is left out
+        val kits = c.db.kitItems().observeForFamily(t.familyId).first()
+        val always = kits.filter { it.kit == "TRIP_ALWAYS" }.map { Triple(it.title, "general", it.qty) }
+        val skip = kits.filter { it.kit == "TRIP_SKIP" }.map { it.title.lowercase() }.toSet()
+        repo.addItems(updated, (PackingLists.build(t.kinds.split(',').filter { it.isNotBlank() }.toSet(), weather, n, days, hebrew) + always).filter { it.first.lowercase() !in skip })
         _messages.tryEmit(UiMessage.Res(if (weather == null) R.string.trip_generated_no_weather else R.string.trip_generated))
     }
 
@@ -84,6 +96,12 @@ class ExtrasViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteItem(i: TripItemEntity) = launchSafe { repo.deleteItem(i) }
     fun resetPacked(t: TripEntity) = launchSafe { repo.resetPacked(t.id) }
     fun deleteTrip(t: TripEntity) = launchSafe { repo.deleteTrip(t) }
+    /** TRV-5 learning: "we forgot it" → always pack; "never used" → stop suggesting. */
+    fun learn(i: TripItemEntity, always: Boolean) = launchSafe {
+        c.db.kitItems().upsert(com.rimon.smartfamily.data.db.KitItemEntity(id = repo.newId(), familyId = i.familyId, kit = if (always) "TRIP_ALWAYS" else "TRIP_SKIP", title = i.title, qty = i.qty))
+        if (!always) repo.deleteItem(i)
+        _messages.tryEmit(UiMessage.Res(if (always) R.string.trip_learn_always_done else R.string.trip_learn_skip_done))
+    }
 
     // ---------- budget ----------
     fun month(familyId: String, year: Int, month: Int) = repo.month(familyId, year, month)
@@ -100,6 +118,24 @@ class ExtrasViewModel(app: Application) : AndroidViewModel(app) {
         val pct = (spent / limit * 100).toInt()
         if (pct >= 100) _messages.tryEmit(UiMessage.Res(R.string.budget_over, "$pct"))
         else if (pct >= 80) _messages.tryEmit(UiMessage.Res(R.string.budget_near, "$pct"))
+    }
+
+    fun allBudget(familyId: String) = c.db.budgetEntrys().observeForFamily(familyId)
+
+    /** SHP-15 / BUD-1: a receipt photo becomes a budget expense and purchase history (Gemini free tier). */
+    fun receipt(familyId: String, uri: android.net.Uri) = launchSafe {
+        val t = c.gemini.askWithImage(getApplication(), uri,
+            "This is a shop receipt (often Hebrew). Answer only JSON: {\"store\":string,\"date\":\"yyyy-MM-dd\" or \"\",\"total\":number,\"items\":[{\"name\":string,\"price\":number,\"qty\":number}]}")
+        val o = runCatching { kotlinx.serialization.json.Json { ignoreUnknownKeys = true; isLenient = true }.parseToJsonElement(t.substringAfter("```json").substringAfter("```").substringBefore("```").trim().ifBlank { t }) as kotlinx.serialization.json.JsonObject }.getOrNull()
+            ?: return@launchSafe _messages.tryEmit(UiMessage.Res(R.string.receipt_failed)).let { }
+        fun str(k: String) = (o[k] as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+        val total = str("total").toDoubleOrNull() ?: 0.0
+        val date = runCatching { java.time.LocalDate.parse(str("date")) }.getOrNull()?.let { com.rimon.smartfamily.smart.JewishDays.startMs(it) + 12 * 3_600_000L } ?: System.currentTimeMillis()
+        val uid = c.settings.current().userId
+        if (total > 0) repo.saveEntry(BudgetEntryEntity(id = repo.newId(), familyId = familyId, amount = total, category = "food", note = str("store").ifBlank { getApplication<Application>().getString(R.string.receipt_note) }, date = date, payer = uid, createdBy = uid))
+        val items = (o["items"] as? kotlinx.serialization.json.JsonArray).orEmpty().mapNotNull { (it as? kotlinx.serialization.json.JsonObject)?.let { j -> (j["name"] as? kotlinx.serialization.json.JsonPrimitive)?.content } }
+        c.shopping.recordPurchases(familyId, items, uid, date)
+        _messages.tryEmit(UiMessage.Res(R.string.receipt_saved, String.format("%.0f", total)))
     }
 
     /** BUD-3: export a month to CSV (opens in Excel / Google Sheets). */

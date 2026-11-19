@@ -3,7 +3,10 @@ package com.rimon.smartfamily.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -221,7 +224,7 @@ private val ITEM_CATS = mapOf(
 )
 
 @Composable
-fun TripScreen(vm: ExtrasViewModel, viewer: Viewer, tripId: String, onBack: () -> Unit) {
+fun TripScreen(vm: ExtrasViewModel, viewer: Viewer, tripId: String, onBack: () -> Unit, onLeaveHome: () -> Unit = {}) {
     val trip by remember(tripId) { vm.trip(tripId) }.collectAsState(initial = null)
     val items by remember(tripId) { vm.tripItems(tripId) }.collectAsState(initial = emptyList())
     val members by remember(viewer.familyId) { vm.members(viewer.familyId) }.collectAsState(initial = emptyList())
@@ -244,6 +247,7 @@ fun TripScreen(vm: ExtrasViewModel, viewer: Viewer, tripId: String, onBack: () -
                 Spacer(Modifier.height(8.dp))
                 Text(stringResource(R.string.trip_progress, packed, shown.size), style = MaterialTheme.typography.titleMedium)
                 LinearProgressIndicator(progress = { if (shown.isEmpty()) 0f else packed / shown.size.toFloat() }, modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp))
+                TextButton(onClick = onLeaveHome) { Text("🏠 " + stringResource(R.string.kit_leave_home)) }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     FilterChip(mineOnly, { mineOnly = !mineOnly }, { Text(stringResource(R.string.trip_mine)) })
                     Spacer(Modifier.weight(1f))
@@ -268,7 +272,15 @@ fun TripScreen(vm: ExtrasViewModel, viewer: Viewer, tripId: String, onBack: () -
                             val who = listOfNotNull(names[i.ownerId]?.let { "👤 $it" }, names[i.packedBy]?.takeIf { i.packed }?.let { "✓ $it" })
                             if (who.isNotEmpty()) Text(who.joinToString(" · "), style = MaterialTheme.typography.labelSmall)
                         }
-                        IconButton(onClick = { vm.deleteItem(i) }) { Icon(Icons.Outlined.Delete, stringResource(R.string.delete), tint = MaterialTheme.colorScheme.outline) }
+                        var learnMenu by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { learnMenu = true }) { Icon(Icons.Outlined.Delete, stringResource(R.string.delete), tint = MaterialTheme.colorScheme.outline) }
+                            androidx.compose.material3.DropdownMenu(learnMenu, { learnMenu = false }) {
+                                androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.delete)) }, onClick = { learnMenu = false; vm.deleteItem(i) })
+                                androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.trip_learn_skip)) }, onClick = { learnMenu = false; vm.learn(i, always = false) })
+                                androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.trip_learn_always)) }, onClick = { learnMenu = false; vm.learn(i, always = true) })
+                            }
+                        }
                     }
                 }
             }
@@ -303,6 +315,9 @@ fun BudgetScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit, onMone
     var limitFor by remember { mutableStateOf<String?>(null) }
     val exporter = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         if (uri != null) vm.exportCsv(uri, entries)
+    }
+    val receiptPick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) vm.receipt(viewer.familyId, uri)
     }
     val income = entries.filter { it.kind == "INCOME" }.sumOf { it.amount }
     val expense = entries.filter { it.kind == "EXPENSE" }.sumOf { it.amount }
@@ -339,6 +354,33 @@ fun BudgetScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit, onMone
                         }
                     }
                 }
+                // BUD-3 forecast and 6-month comparison
+                val isThisMonth = year == now.get(Calendar.YEAR) && month == now.get(Calendar.MONTH)
+                if (isThisMonth && expense > 0) {
+                    val day = now.get(Calendar.DAY_OF_MONTH); val dim = now.getActualMaximum(Calendar.DAY_OF_MONTH)
+                    val fixed = entries.filter { it.kind == "EXPENSE" && it.monthly }.sumOf { it.amount }
+                    val forecast = fixed + (expense - fixed) / day * dim
+                    Text(stringResource(R.string.budget_forecast, money(forecast)), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 6.dp))
+                }
+                val all by remember(viewer.familyId) { vm.allBudget(viewer.familyId) }.collectAsState(initial = emptyList())
+                val months = (5 downTo 0).map { back -> Calendar.getInstance().apply { clear(); set(year, month, 1); add(Calendar.MONTH, -back) } }
+                val sums = months.map { m ->
+                    val from = m.timeInMillis; val to = (m.clone() as Calendar).apply { add(Calendar.MONTH, 1) }.timeInMillis
+                    all.filter { it.kind == "EXPENSE" && it.deletedAt == null && (it.monthly || it.date in from until to) }.sumOf { it.amount }
+                }
+                if (sums.count { it > 0 } >= 2) {
+                    val barColor = MaterialTheme.colorScheme.primary
+                    val maxV = sums.max().coerceAtLeast(1.0)
+                    Row(Modifier.fillMaxWidth().height(110.dp).padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Bottom) {
+                        sums.forEachIndexed { i, v ->
+                            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height((80 * v / maxV).dp.coerceAtLeast(2.dp)).clip(androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                                    .background(if (i == 5) barColor else barColor.copy(alpha = 0.4f)))
+                                Text(SimpleDateFormat("MMM", Locale.getDefault()).format(months[i].time), style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
                 SectionTitle(stringResource(R.string.budget_by_category))
             }
             items(BUDGET_CATS.filter { (k, _) -> k != "salary" && ((byCat[k] ?: 0.0) > 0 || limits.any { it.category == k && it.monthly > 0 }) }, key = { "c" + it.first }) { (k, label) ->
@@ -354,6 +396,7 @@ fun BudgetScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit, onMone
             }
             item {
                 Row {
+                    TextButton(enabled = !viewer.isChild, onClick = { receiptPick.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) }) { Text("🧾 " + stringResource(R.string.receipt_scan)) }
                     TextButton(enabled = !viewer.isChild, onClick = { limitFor = "food" }) { Text(stringResource(R.string.budget_set_limit)) }
                     TextButton(enabled = entries.isNotEmpty(), onClick = { exporter.launch("budget-%04d-%02d.csv".format(year, month + 1)) }) { Text(stringResource(R.string.budget_export)) }
                 }

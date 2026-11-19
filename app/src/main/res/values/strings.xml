@@ -1185,4 +1185,14 @@
     <string name="cv_result">≈ %1$s g · %2$s tablespoons · %3$s teaspoons</string>
     <string name="cv_oven_c">Oven °C</string>
     <string name="cv_oven_result">= %1$s°F · gas mark %2$d</string>
+    <string name="budget_forecast">At this pace the month ends at about %1$s</string>
+    <string name="receipt_scan">Receipt</string>
+    <string name="receipt_failed">Could not read the receipt. Try a clearer photo.</string>
+    <string name="receipt_note">Receipt</string>
+    <string name="receipt_saved">Receipt saved: ₪%1$s, and the items went into the purchase history</string>
+    <string name="trip_check_passports">Check passports are valid for: %1$s</string>
+    <string name="trip_learn_skip">We never use it – stop suggesting</string>
+    <string name="trip_learn_always">We forgot it – always add</string>
+    <string name="trip_learn_always_done">It will be on every packing list from now on</string>
+    <string name="trip_learn_skip_done">It will not be suggested again</string>
 </resources>

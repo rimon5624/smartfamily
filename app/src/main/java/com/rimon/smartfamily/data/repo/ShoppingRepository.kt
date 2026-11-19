@@ -91,6 +91,14 @@ class ShoppingRepository(
         return added
     }
 
+    /** Purchase history from a scanned receipt (feeds autocomplete, staples and insights). */
+    suspend fun recordPurchases(familyId: String, names: List<String>, userId: String, at: Long) {
+        names.filter { it.isNotBlank() }.forEach { n ->
+            db.purchases().upsertAll(listOf(PurchaseEntity(id = uuid(), familyId = familyId, name = n.trim(), category = com.rimon.smartfamily.model.ShopCategory.guess(n).key, boughtAt = at, boughtBy = userId)))
+        }
+        onLocalChange()
+    }
+
     suspend fun updateItem(item: ListItemEntity) {
         db.listItems().upsert(item.copy(updatedAt = now(), dirty = true))
         onLocalChange()
