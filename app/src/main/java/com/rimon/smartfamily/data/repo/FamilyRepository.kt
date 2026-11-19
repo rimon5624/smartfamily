@@ -211,6 +211,9 @@ class FamilyRepository(
             db.families().reassignOwner(old, newId)
             db.members().reassign(old, newId)
             db.invites().reassign(old, newId)
+            db.listItems().reassign(old, newId)
+            db.purchases().reassign(old, newId)
+            db.inventory().reassign(old, newId)
         }
         settings.setUserId(newId)
         onLocalChange()

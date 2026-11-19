@@ -18,7 +18,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Palette
@@ -75,6 +77,7 @@ fun SettingsScreen(
     onCloud: () -> Unit,
     onBackup: () -> Unit,
     onModules: (String) -> Unit,
+    onAi: () -> Unit,
 ) {
     val s by vm.settings.collectAsStateWithLifecycle()
     val name by vm.displayName.collectAsStateWithLifecycle()
@@ -150,6 +153,18 @@ fun SettingsScreen(
                 onCloud,
             )
             ClickRow(Icons.Outlined.Backup, stringResource(R.string.settings_backup), stringResource(R.string.settings_backup_sub), onBackup)
+            ClickRow(
+                Icons.Outlined.AutoAwesome,
+                stringResource(R.string.ai_title),
+                stringResource(if (vm.aiConfigured) R.string.ai_sub_on else R.string.ai_sub_off),
+                onAi,
+            )
+            InfoRow(
+                title = stringResource(R.string.inv_alerts),
+                subtitle = stringResource(R.string.inv_alerts_sub),
+                leading = { Icon(Icons.Outlined.NotificationsActive, null) },
+                trailing = { Switch(checked = settings.expiryAlerts, onCheckedChange = { vm.setExpiryAlerts(it) }) },
+            )
 
             SectionTitle(stringResource(R.string.settings_about))
             Text(

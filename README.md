@@ -2,9 +2,20 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 0.1.0 — Phase 0 (foundation)**
+**Current version: 0.2.0 — Phase 1 (shopping and home inventory)**
 
-## What is in 0.1.0
+## What is new in 0.2.0
+
+- Smart shopping lists per family: several lists, templates (e.g. "Shabbat basics"), items grouped by store aisle
+- Add items by typing (with suggestions from purchase history), by voice in Hebrew or English, by barcode (Open Food Facts, free) or by photo (Gemini, your own free key)
+- Quantities, units, preferred brand, notes, recurring items; same-name items merge
+- Children's items wait for a parent's approval
+- "I'm at the store" shows the family who is shopping; open lists refresh every few seconds
+- "Finish shopping" records the purchase history and can move items into the home inventory
+- Home inventory: fridge, freezer, pantry, cleaning cupboard, bathroom; expiry dates with a daily reminder; minimum stock that suggests items for the list
+- Home screen: modules can be reordered (Settings → Modules), and available modules open from their card
+
+## Foundation (0.1.0)
 
 - First-launch wizard: language, your name, first family, starting modules
 - Several families per user, with a family switcher
@@ -21,7 +32,7 @@ The other modules show on the home screen with the version they arrive in (see t
 ## Connecting Supabase (free plan)
 
 1. Create a project at supabase.com.
-2. SQL Editor → New query → paste `supabase/migrations/0001_init.sql` → Run.
+2. SQL Editor → New query → paste `supabase/migrations/0001_init.sql` → Run. Then do the same with `0002_shopping_inventory.sql` (and every later file, in number order).
 3. Project Settings → API: copy the **Project URL** and the **anon public** key.
 4. In the app: Settings → Cloud sync → paste both → Save → create an account or sign in.
 

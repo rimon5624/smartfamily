@@ -7,10 +7,14 @@ import androidx.room.withTransaction
 import com.rimon.smartfamily.BuildConfig
 import com.rimon.smartfamily.data.db.AppDatabase
 import com.rimon.smartfamily.data.db.FamilyEntity
+import com.rimon.smartfamily.data.db.InventoryItemEntity
 import com.rimon.smartfamily.data.db.InviteEntity
+import com.rimon.smartfamily.data.db.ListItemEntity
 import com.rimon.smartfamily.data.db.MemberEntity
 import com.rimon.smartfamily.data.db.ModuleSettingEntity
 import com.rimon.smartfamily.data.db.ProfileEntity
+import com.rimon.smartfamily.data.db.PurchaseEntity
+import com.rimon.smartfamily.data.db.ShoppingListEntity
 import com.rimon.smartfamily.model.SchemaInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -32,6 +36,11 @@ data class BackupPayload(
     val members: List<MemberEntity> = emptyList(),
     val invites: List<InviteEntity> = emptyList(),
     val moduleSettings: List<ModuleSettingEntity> = emptyList(),
+    // Added in schema 2 (app 0.2.0); older backups simply have none.
+    val lists: List<ShoppingListEntity> = emptyList(),
+    val listItems: List<ListItemEntity> = emptyList(),
+    val purchases: List<PurchaseEntity> = emptyList(),
+    val inventory: List<InventoryItemEntity> = emptyList(),
 )
 
 /** Unencrypted header: everything needed to derive the key, nothing about the content. */
@@ -71,6 +80,10 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             members = db.members().all(),
             invites = db.invites().all(),
             moduleSettings = db.moduleSettings().all(),
+            lists = db.lists().all(),
+            listItems = db.listItems().all(),
+            purchases = db.purchases().all(),
+            inventory = db.inventory().all(),
         )
         val plain = json.encodeToString(BackupPayload.serializer(), payload).toByteArray(Charsets.UTF_8)
         val rnd = SecureRandom()
@@ -116,6 +129,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
     /** Replaces the local data with the backup; rows are marked dirty so they sync back up. */
     suspend fun restore(payload: BackupPayload) = withContext(Dispatchers.IO) {
         db.withTransaction {
+            db.inventory().clear(); db.purchases().clear(); db.listItems().clear(); db.lists().clear()
             db.moduleSettings().clear(); db.invites().clear(); db.members().clear()
             db.families().clear(); db.profiles().clear()
             db.profiles().upsertAll(payload.profiles.map { it.copy(dirty = true) })
@@ -123,6 +137,10 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             db.members().upsertAll(payload.members.map { it.copy(dirty = true) })
             db.invites().upsertAll(payload.invites.map { it.copy(dirty = true) })
             db.moduleSettings().upsertAll(payload.moduleSettings.map { it.copy(dirty = true) })
+            db.lists().upsertAll(payload.lists.map { it.copy(dirty = true) })
+            db.listItems().upsertAll(payload.listItems.map { it.copy(dirty = true) })
+            db.purchases().upsertAll(payload.purchases.map { it.copy(dirty = true) })
+            db.inventory().upsertAll(payload.inventory.map { it.copy(dirty = true) })
         }
     }
 

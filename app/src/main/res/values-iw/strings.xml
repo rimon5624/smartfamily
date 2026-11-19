@@ -195,4 +195,129 @@
     <string name="help_families">כאן מנהלים את כל המשפחות שלך: חברים, תפקידים, הזמנות ומודולים. בעלים ומנהלים יכולים להזמין ולאשר בקשות.</string>
     <string name="help_modules">אפשר לכבות כל מודול. המנהלים קובעים מה המשפחה משתמשת, וכל אחד יכול גם להסתיר מודול רק לעצמו.</string>
     <string name="help_settings">שפה, ערכת נושא, פרטיות, סנכרון ענן וגיבויים. מצב פרטיות מכבה בבת אחת כל שירות חיצוני.</string>
+
+    <!-- Shopping (0.2) -->
+    <string name="shop_title">קניות</string>
+    <string name="shop_lists">רשימות</string>
+    <string name="shop_templates">תבניות</string>
+    <string name="shop_templates_hint">שמרו רשימה כתבנית (למשל \"בסיס לשבת\") והוסיפו אותה בלחיצה אחת.</string>
+    <string name="shop_new_list">רשימה חדשה</string>
+    <string name="shop_list_name">שם הרשימה</string>
+    <string name="shop_default_list">סופר</string>
+    <string name="shop_open_count">%1$d לקנות · %2$d בעגלה</string>
+    <string name="shop_add_hint">הוספה: \"חלב, 2 חבילות ביצים\"</string>
+    <string name="shop_add">הוספה</string>
+    <string name="shop_voice">הוספה בקול</string>
+    <string name="shop_scan">סריקת ברקוד</string>
+    <string name="shop_photo">צילום מוצר או רשימה</string>
+    <string name="shop_take_photo">צילום</string>
+    <string name="shop_pick_photo">בחירה מהגלריה</string>
+    <string name="shop_added">נוספו %1$d פריטים</string>
+    <string name="shop_nothing_found">לא זוהה כלום</string>
+    <string name="shop_barcode_unknown">לא נמצא מוצר לברקוד %1$s. הקלידו את השם.</string>
+    <string name="shop_recognising">מזהה…</string>
+    <string name="shop_in_cart">בעגלה (%1$d)</string>
+    <string name="shop_empty">הרשימה ריקה. הוסיפו את הפריט הראשון למעלה.</string>
+    <string name="shop_requests">בקשות מהילדים</string>
+    <string name="shop_approve">אישור</string>
+    <string name="shop_request_sent">נשלח לאישור של הורה</string>
+    <string name="shop_at_store">אני בסופר</string>
+    <string name="shop_leave_store">סיימתי להסתובב</string>
+    <string name="shop_someone_shopping">%1$s בקניות עכשיו</string>
+    <string name="shop_finish">סיום קניות</string>
+    <string name="shop_finish_title">לסיים את הקניות?</string>
+    <string name="shop_finish_body">%1$d פריטים בעגלה יעברו להיסטוריית הקניות. פריטים קבועים יחזרו לרשימה בלי סימון.</string>
+    <string name="shop_finish_inventory">להוסיף אותם גם למלאי הבית</string>
+    <string name="shop_finished">סיימנו: נקנו %1$d פריטים</string>
+    <string name="shop_low_stock">נגמר בבית: %1$d פריטים</string>
+    <string name="shop_add_low">הוספה לרשימה</string>
+    <string name="shop_rename">שינוי שם הרשימה</string>
+    <string name="shop_delete_list">מחיקת הרשימה</string>
+    <string name="shop_save_template">שמירה כתבנית</string>
+    <string name="shop_apply_template">הוספת תבנית</string>
+    <string name="shop_template_name">שם התבנית</string>
+    <string name="shop_ticked_by">על ידי %1$s</string>
+    <string name="shop_frequent">נקנה הרבה</string>
+
+    <string name="item_edit">עריכת פריט</string>
+    <string name="item_name">שם</string>
+    <string name="item_quantity">כמות</string>
+    <string name="item_unit">יחידה</string>
+    <string name="item_category">קטגוריה</string>
+    <string name="item_brand">מותג מועדף</string>
+    <string name="item_any_brand">כל מותג מתאים</string>
+    <string name="item_note">הערה</string>
+    <string name="item_recurring">קבוע (נשאר ברשימה)</string>
+    <string name="item_delete">הסרה מהרשימה</string>
+
+    <string name="cat_produce">פירות וירקות</string>
+    <string name="cat_bakery">מאפייה</string>
+    <string name="cat_dairy">מוצרי חלב וביצים</string>
+    <string name="cat_meat">בשר ודגים</string>
+    <string name="cat_dry">מזווה</string>
+    <string name="cat_frozen">קפואים</string>
+    <string name="cat_drinks">משקאות</string>
+    <string name="cat_cleaning">ניקיון</string>
+    <string name="cat_personal">טיפוח והיגיינה</string>
+    <string name="cat_baby">תינוקות</string>
+    <string name="cat_other">אחר</string>
+
+    <string name="unit_none">—</string>
+    <string name="unit_pcs">יח\'</string>
+    <string name="unit_pack">חבילות</string>
+    <string name="unit_kg">ק\"ג</string>
+    <string name="unit_g">גרם</string>
+    <string name="unit_l">ליטר</string>
+    <string name="unit_ml">מ\"ל</string>
+
+    <!-- Inventory (0.2) -->
+    <string name="inv_title">מלאי הבית</string>
+    <string name="inv_all">הכול</string>
+    <string name="loc_fridge">מקרר</string>
+    <string name="loc_freezer">מקפיא</string>
+    <string name="loc_pantry">מזווה</string>
+    <string name="loc_cleaning">ארון ניקיון</string>
+    <string name="loc_bathroom">אמבטיה</string>
+    <string name="inv_add_hint">הוספה למלאי</string>
+    <string name="inv_shelf_photo">צילום מדף או קניות</string>
+    <string name="inv_empty">עדיין אין כאן כלום. הוסיפו פריטים, סרקו ברקוד, או סיימו קניות עם \"הוספה למלאי\".</string>
+    <string name="inv_expired">פג תוקף</string>
+    <string name="inv_expires_today">פג היום</string>
+    <string name="inv_expires_in">נשארו %1$d ימים</string>
+    <string name="inv_expiry">תאריך תפוגה</string>
+    <string name="inv_no_expiry">ללא תאריך תפוגה</string>
+    <string name="inv_location">מקום אחסון</string>
+    <string name="inv_min">כמות מינימום (0 = ללא)</string>
+    <string name="inv_used">השתמשתי באחד</string>
+    <string name="inv_delete">הסרה</string>
+    <string name="inv_edit">עריכת פריט</string>
+    <string name="inv_low">מתחת למינימום</string>
+    <string name="notif_channel_expiry">תזכורות תפוגה</string>
+    <string name="notif_expiry_title">%1$d פריטים עומדים לפוג</string>
+    <string name="inv_alerts">תזכורות תפוגה</string>
+    <string name="inv_alerts_sub">התראה יומית על מזון שפג תוקפו בתוך 3 ימים</string>
+
+    <!-- AI services (0.2) -->
+    <string name="ai_title">שירותי AI</string>
+    <string name="ai_sub_on">Gemini מחובר</string>
+    <string name="ai_sub_off">לא מוגדר</string>
+    <string name="ai_intro">זיהוי מוצרים, רשימות ומדפים מתמונה נעשה עם Google Gemini ועם מפתח API שלכם. מפתח חינמי מקבלים ב-aistudio.google.com (API keys).</string>
+    <string name="ai_free_note">חינם: בשכבה החינמית של Gemini יש מגבלה יומית, ו-Google רשאית להשתמש במה שנשלח כדי לשפר את המוצרים שלה.</string>
+    <string name="ai_paid_note">אפשרות [בתשלום]: מפתח Gemini עם חיוב נותן מגבלות גבוהות יותר, ו-Google לא משתמשת בנתונים לאימון.</string>
+    <string name="ai_key">מפתח Gemini API</string>
+    <string name="ai_model">מודל</string>
+    <string name="ai_save">שמירה</string>
+    <string name="ai_saved">נשמר</string>
+    <string name="ai_remove">הסרת המפתח</string>
+    <string name="ai_needed">כדי לזהות תמונות, הוסיפו מפתח Gemini בהגדרות ← שירותי AI.</string>
+    <string name="ai_privacy_on">מצב פרטיות פעיל, ולכן זיהוי תמונות כבוי.</string>
+
+    <!-- Module order (0.2) -->
+    <string name="modules_order">הסדר במסך הבית</string>
+    <string name="modules_order_hint">בעזרת החיצים משנים את סדר המודולים במסך הבית (בטלפון הזה בלבד).</string>
+    <string name="move_up">הזזה למעלה</string>
+    <string name="move_down">הזזה למטה</string>
+    <string name="home_open">פתיחה</string>
+    <string name="help_shopping">מקלידים, אומרים, סורקים או מצלמים פריטים. לחיצה על פריט פותחת עריכה, וסימון מעביר אותו לעגלה. \"אני בסופר\" מראה למשפחה שאתם בקניות, ו\"סיום קניות\" שומר מה נקנה.</string>
+    <string name="help_inventory">מה יש בבית, איפה זה ומתי פג התוקף. מגדירים מינימום, ורשימת הקניות מציעה את הפריט כשהוא נגמר.</string>
 </resources>

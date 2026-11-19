@@ -38,7 +38,18 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rimon.smartfamily.model.AppModule
+import com.rimon.smartfamily.model.Role
 import com.rimon.smartfamily.ui.AppViewModel
+import com.rimon.smartfamily.ui.ShoppingViewModel
+import com.rimon.smartfamily.ui.screens.AiSettingsScreen
+import com.rimon.smartfamily.ui.screens.InventoryScreen
+import com.rimon.smartfamily.ui.screens.ShoppingListScreen
+import com.rimon.smartfamily.ui.screens.ShoppingListsScreen
+import com.rimon.smartfamily.ui.screens.Viewer
+import kotlinx.coroutines.flow.merge
 import com.rimon.smartfamily.ui.UiMessage
 import com.rimon.smartfamily.ui.screens.BackupScreen
 import com.rimon.smartfamily.ui.screens.CloudScreen
@@ -83,7 +94,22 @@ private enum class Tab(val route: String, val label: Int, val on: ImageVector, v
 
 @Composable
 private fun MainNav(vm: AppViewModel) {
+    val shopVm: ShoppingViewModel = viewModel()
     val nav = rememberNavController()
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    val family by vm.activeFamily.collectAsStateWithLifecycle()
+    val uid = settings?.userId.orEmpty()
+    val famId = family?.id.orEmpty()
+    val me by remember(famId, uid) { vm.myMembership(famId, uid) }.collectAsState(initial = null)
+    val modules by remember(famId, uid) { vm.modules(famId, uid) }.collectAsState(initial = emptyList())
+    val role = me?.let { Role.parse(it.role) }
+    val viewer = Viewer(
+        familyId = famId,
+        userId = uid,
+        isChild = role == Role.CHILD || role == Role.GUEST,
+        canManage = role?.canManage == true,
+        inventoryOn = modules.any { it.module == AppModule.INVENTORY && it.effective },
+    )
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     val entry by nav.currentBackStackEntryAsState()
@@ -91,7 +117,7 @@ private fun MainNav(vm: AppViewModel) {
     val showBar = Tab.entries.any { it.route == route }
 
     LaunchedEffect(Unit) {
-        vm.messages.collect { msg ->
+        merge(vm.messages, shopVm.messages).collect { msg ->
             val text = when (msg) {
                 is UiMessage.Res -> if (msg.arg != null) context.getString(msg.id, msg.arg) else context.getString(msg.id)
                 is UiMessage.Text -> context.getString(R.string.error_generic, msg.text)
@@ -132,6 +158,13 @@ private fun MainNav(vm: AppViewModel) {
                     onCreateFamily = { go(Tab.FAMILIES) },
                     onOpenModules = { nav.navigate("modules/$it") },
                     onOpenCloud = { nav.navigate("cloud") },
+                    onOpenModule = { m ->
+                        when (m) {
+                            AppModule.SHOPPING -> nav.navigate("shopping")
+                            AppModule.INVENTORY -> nav.navigate("inventory")
+                            else -> Unit
+                        }
+                    },
                 )
             }
             composable(Tab.FAMILIES.route) {
@@ -143,6 +176,7 @@ private fun MainNav(vm: AppViewModel) {
                     onCloud = { nav.navigate("cloud") },
                     onBackup = { nav.navigate("backup") },
                     onModules = { nav.navigate("modules/$it") },
+                    onAi = { nav.navigate("ai") },
                 )
             }
             composable("family/{id}") { back ->
@@ -157,6 +191,25 @@ private fun MainNav(vm: AppViewModel) {
             }
             composable("cloud") { CloudScreen(vm, onBack = { nav.popBackStack() }) }
             composable("backup") { BackupScreen(vm, onBack = { nav.popBackStack() }) }
+            composable("ai") {
+                AiSettingsScreen(
+                    shopVm,
+                    currentModel = settings?.geminiModel.orEmpty(),
+                    privacyMode = settings?.privacyMode == true,
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable("shopping") {
+                if (famId.isNotEmpty()) {
+                    ShoppingListsScreen(shopVm, viewer, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("shopping/list/$it") })
+                }
+            }
+            composable("shopping/list/{id}") { back ->
+                ShoppingListScreen(shopVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
+            }
+            composable("inventory") {
+                if (famId.isNotEmpty()) InventoryScreen(shopVm, viewer, onBack = { nav.popBackStack() })
+            }
         }
     }
 }

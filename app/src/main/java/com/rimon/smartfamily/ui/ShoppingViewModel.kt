@@ -1,0 +1,167 @@
+package com.rimon.smartfamily.ui
+
+import android.app.Application
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+import com.rimon.smartfamily.R
+import com.rimon.smartfamily.SmartFamilyApp
+import com.rimon.smartfamily.data.db.InventoryItemEntity
+import com.rimon.smartfamily.data.db.ListItemEntity
+import com.rimon.smartfamily.data.repo.LowStock
+import com.rimon.smartfamily.model.ItemDraft
+import com.rimon.smartfamily.smart.AiNotConfiguredException
+import com.rimon.smartfamily.smart.GeminiClient
+import com.rimon.smartfamily.smart.OpenFoodFacts
+import com.rimon.smartfamily.smart.SpeechParser
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+
+class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
+
+    private val c = (app as SmartFamilyApp).container
+    private val repo = c.shopping
+
+    private val _messages = MutableSharedFlow<UiMessage>(extraBufferCapacity = 4)
+    val messages = _messages.asSharedFlow()
+
+    private val _busy = MutableStateFlow(false)
+    val busy = _busy.asStateFlow()
+
+    val aiConfigured: Boolean get() = c.gemini.isConfigured
+
+    private fun say(id: Int, arg: String? = null) { _messages.tryEmit(UiMessage.Res(id, arg)) }
+
+    private fun launchSafe(block: suspend () -> Unit) = viewModelScope.launch {
+        _busy.value = true
+        try {
+            block()
+        } catch (e: AiNotConfiguredException) {
+            say(R.string.ai_needed)
+        } catch (e: Exception) {
+            _messages.tryEmit(UiMessage.Text(e.message ?: e.javaClass.simpleName))
+        } finally {
+            _busy.value = false
+        }
+    }
+
+    private suspend fun uid() = c.settings.current().userId
+
+    // ---- observation ----
+    fun lists(familyId: String) = repo.observeLists(familyId, false)
+    fun templates(familyId: String) = repo.observeLists(familyId, true)
+    fun counts(familyId: String) = repo.observeCounts(familyId)
+    fun list(id: String) = repo.observeList(id)
+    fun items(listId: String) = repo.observeItems(listId)
+    fun frequent(familyId: String) = repo.observeFrequent(familyId)
+    fun lowStock(familyId: String) = repo.observeLowStock(familyId)
+    fun inventory(familyId: String) = repo.observeInventory(familyId)
+    fun members(familyId: String) = c.families.observeMembers(familyId)
+
+    /** Keeps an open list close to real time (SHP-9): a quick two-table sync every 8 seconds. */
+    suspend fun liveSync() {
+        while (true) {
+            c.sync.syncTables(setOf("shopping_lists", "list_items"))
+            delay(8_000)
+        }
+    }
+
+    // ---- lists ----
+    fun ensureDefaultList(familyId: String, name: String) = viewModelScope.launch {
+        repo.ensureDefaultList(familyId, name, uid())
+    }
+    fun createList(familyId: String, name: String) = launchSafe { repo.createList(familyId, name, uid()) }
+    fun renameList(id: String, name: String) = launchSafe { repo.renameList(id, name) }
+    fun deleteList(id: String) = launchSafe { repo.deleteList(id) }
+    fun setShopping(id: String, on: Boolean) = launchSafe { repo.setShopping(id, if (on) uid() else null) }
+    fun saveAsTemplate(id: String, name: String) = launchSafe { repo.saveAsTemplate(id, name, uid()) }
+    fun applyTemplate(templateId: String, listId: String) = launchSafe {
+        say(R.string.shop_added, repo.applyTemplate(templateId, listId, uid()).toString())
+    }
+
+    // ---- items ----
+    fun addText(listId: String, text: String, asRequest: Boolean) = launchSafe {
+        addDrafts(listId, SpeechParser.parse(text), asRequest)
+    }
+
+    private suspend fun addDrafts(listId: String, drafts: List<ItemDraft>, asRequest: Boolean) {
+        if (drafts.isEmpty()) { say(R.string.shop_nothing_found); return }
+        val n = repo.addItems(listId, drafts, uid(), asRequest)
+        if (asRequest) say(R.string.shop_request_sent) else say(R.string.shop_added, n.toString())
+    }
+
+    fun scanToList(listId: String, asRequest: Boolean) = launchSafe {
+        val draft = scanBarcode() ?: return@launchSafe
+        addDrafts(listId, listOf(draft), asRequest)
+    }
+
+    fun photoToList(listId: String, uri: Uri, asRequest: Boolean) = launchSafe {
+        val items = c.gemini.itemsFromPhoto(getApplication(), uri, GeminiClient.PhotoMode.PRODUCTS)
+        addDrafts(listId, items, asRequest)
+    }
+
+    fun toggle(itemId: String) = launchSafe { repo.toggle(itemId, uid()) }
+    fun approve(itemId: String) = launchSafe { repo.approve(itemId) }
+    fun update(item: ListItemEntity) = launchSafe { repo.updateItem(item) }
+    fun deleteItem(itemId: String) = launchSafe { repo.deleteItem(itemId) }
+
+    fun finish(listId: String, toInventory: Boolean) = launchSafe {
+        say(R.string.shop_finished, repo.finishShopping(listId, uid(), toInventory).toString())
+    }
+
+    fun addLowStock(listId: String, low: List<LowStock>) = launchSafe {
+        say(R.string.shop_added, repo.addLowStockToList(listId, low, uid()).toString())
+    }
+
+    // ---- inventory ----
+    fun addInventoryText(familyId: String, text: String, location: String?) = launchSafe {
+        val drafts = SpeechParser.parse(text)
+        if (drafts.isEmpty()) say(R.string.shop_nothing_found)
+        else say(R.string.shop_added, repo.addInventory(familyId, drafts, location, uid()).toString())
+    }
+
+    fun scanToInventory(familyId: String, location: String?) = launchSafe {
+        val d = scanBarcode() ?: return@launchSafe
+        say(R.string.shop_added, repo.addInventory(familyId, listOf(d), location, uid()).toString())
+    }
+
+    fun photoToInventory(familyId: String, uri: Uri, location: String?) = launchSafe {
+        val items = c.gemini.itemsFromPhoto(getApplication(), uri, GeminiClient.PhotoMode.SHELF)
+        if (items.isEmpty()) say(R.string.shop_nothing_found)
+        else say(R.string.shop_added, repo.addInventory(familyId, items, location, uid()).toString())
+    }
+
+    fun updateInventory(item: InventoryItemEntity) = launchSafe { repo.updateInventory(item) }
+    fun useInventory(id: String) = launchSafe { repo.useInventory(id) }
+    fun deleteInventory(id: String) = launchSafe { repo.deleteInventory(id) }
+
+    /** Google's code scanner UI; then the free Open Food Facts database (skipped in privacy mode). */
+    private suspend fun scanBarcode(): ItemDraft? {
+        val code = runCatching { GmsBarcodeScanning.getClient(getApplication()).startScan().await() }
+            .getOrNull()?.rawValue ?: return null
+        val found = if (c.settings.current().privacyMode) null else OpenFoodFacts.lookup(code)
+        if (found == null) {
+            say(R.string.shop_barcode_unknown, code)
+            return null
+        }
+        return found
+    }
+
+    // ---- AI settings ----
+    fun saveAi(key: String, model: String) {
+        c.gemini.setApiKey(key) // synchronous, so the screen can show the masked key at once
+        launchSafe {
+            c.settings.setGeminiModel(model)
+            say(R.string.ai_saved)
+        }
+    }
+    fun removeAiKey() = c.gemini.setApiKey(null)
+    fun currentKeyOrEmpty(): String = c.gemini.apiKey().orEmpty()
+    fun maskedKey(): String = c.gemini.apiKey()?.let { if (it.length > 8) it.take(4) + "…" + it.takeLast(4) else "…" } ?: ""
+}

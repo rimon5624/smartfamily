@@ -145,6 +145,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setTheme(mode: ThemeMode) = launchSafe { c.settings.setThemeMode(mode) }
     fun setDynamicColor(v: Boolean) = launchSafe { c.settings.setDynamicColor(v) }
     fun setPrivacy(v: Boolean) = launchSafe { c.settings.setPrivacyMode(v) }
+    fun setExpiryAlerts(v: Boolean) = launchSafe { c.settings.setExpiryAlerts(v) }
+
+    /** Moves a module one place up (-1) or down (+1) in the home-screen order. */
+    fun moveModule(module: AppModule, delta: Int) = launchSafe {
+        val order = AppModule.ordered(c.settings.current().moduleOrder).toMutableList()
+        val i = order.indexOf(module)
+        val j = i + delta
+        if (i < 0 || j !in order.indices) return@launchSafe
+        order[i] = order[j].also { order[j] = order[i] }
+        c.settings.setModuleOrder(order.joinToString(",") { it.key })
+    }
+
+    val aiConfigured: Boolean get() = c.gemini.isConfigured
 
     // ---- cloud ----
 

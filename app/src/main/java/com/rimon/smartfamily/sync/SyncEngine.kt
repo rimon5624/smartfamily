@@ -13,10 +13,14 @@ import androidx.work.WorkerParameters
 import com.rimon.smartfamily.SmartFamilyApp
 import com.rimon.smartfamily.data.db.AppDatabase
 import com.rimon.smartfamily.data.db.FamilyEntity
+import com.rimon.smartfamily.data.db.InventoryItemEntity
 import com.rimon.smartfamily.data.db.InviteEntity
+import com.rimon.smartfamily.data.db.ListItemEntity
 import com.rimon.smartfamily.data.db.MemberEntity
 import com.rimon.smartfamily.data.db.ModuleSettingEntity
 import com.rimon.smartfamily.data.db.ProfileEntity
+import com.rimon.smartfamily.data.db.PurchaseEntity
+import com.rimon.smartfamily.data.db.ShoppingListEntity
 import com.rimon.smartfamily.data.prefs.SettingsStore
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -117,9 +121,42 @@ class SyncEngine(
             { db.moduleSettings().dirty() }, { it.id }, { db.moduleSettings().markClean(it) },
             { rows -> db.moduleSettings().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
         ),
+        TableSync(
+            "shopping_lists", "id", ShoppingListEntity.serializer(),
+            { db.lists().dirty() }, { it.id }, { db.lists().markClean(it) },
+            { rows -> db.lists().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "list_items", "id", ListItemEntity.serializer(),
+            { db.listItems().dirty() }, { it.id }, { db.listItems().markClean(it) },
+            { rows -> db.listItems().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "purchase_history", "id", PurchaseEntity.serializer(),
+            { db.purchases().dirty() }, { it.id }, { db.purchases().markClean(it) },
+            { rows -> db.purchases().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "inventory_items", "id", InventoryItemEntity.serializer(),
+            { db.inventory().dirty() }, { it.id }, { db.inventory().markClean(it) },
+            { rows -> db.inventory().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
     )
 
     val tableNames: List<String> get() = tables.map { it.table }
+
+    /**
+     * Quick sync of a few tables only, used every few seconds while a shared list is open
+     * (SHP-9), so both phones see ticks almost at once without syncing everything.
+     */
+    suspend fun syncTables(names: Set<String>): Result<Unit> = mutex.withLock {
+        val s = settings.current()
+        if (!s.supabaseConfigured || !api.isSignedIn) return Result.success(Unit)
+        runCatching {
+            tables.filter { it.table in names }.forEach { it.push(api) }
+            tables.filter { it.table in names }.forEach { it.pull(api, settings) }
+        }
+    }
 
     suspend fun syncNow(): Result<Unit> = mutex.withLock {
         val s = settings.current()

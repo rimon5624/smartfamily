@@ -26,8 +26,17 @@ enum class AppModule(
     KNOWLEDGE("knowledge", R.string.mod_knowledge, R.string.mod_knowledge_sub, 6, false),
     POLLS("polls", R.string.mod_polls, R.string.mod_polls_sub, 6, false);
 
+    /** Modules that already have screens in this version. */
+    val available: Boolean get() = this == SHOPPING || this == INVENTORY
+
     companion object {
         fun fromKey(key: String): AppModule? = entries.firstOrNull { it.key == key }
+
+        /** The user's home-screen order (UX-4); modules missing from [csv] keep their default place at the end. */
+        fun ordered(csv: String): List<AppModule> {
+            val saved = csv.split(',').mapNotNull { fromKey(it.trim()) }.distinct()
+            return saved + entries.filter { it !in saved }
+        }
     }
 }
 
@@ -50,7 +59,7 @@ enum class MemberStatus { ACTIVE, PENDING }
 
 /** The current version of the backup file format and database schema. */
 object SchemaInfo {
-    const val DB_VERSION = 1
+    const val DB_VERSION = 2
     const val BACKUP_FORMAT = "smartfamily-backup"
     const val BACKUP_FORMAT_VERSION = 1
 }

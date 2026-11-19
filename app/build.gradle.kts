@@ -101,6 +101,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
+    // Barcode scanning through Google Play services (no camera permission needed)
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+
     // Argon2id for backup passwords
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
 }

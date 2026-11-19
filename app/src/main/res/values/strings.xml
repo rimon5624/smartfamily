@@ -199,4 +199,129 @@
     <string name="help_families">Here you manage every family you belong to: members, roles, invites and modules. Owners and admins can invite people and approve requests.</string>
     <string name="help_modules">Every module can be turned off. Admins set what the family uses; each person can also hide a module just for themselves.</string>
     <string name="help_settings">Language, theme, privacy, cloud sync and backups. Privacy mode turns off every outside service at once.</string>
+
+    <!-- Shopping (0.2) -->
+    <string name="shop_title">Shopping</string>
+    <string name="shop_lists">Lists</string>
+    <string name="shop_templates">Templates</string>
+    <string name="shop_templates_hint">Save a list as a template (for example \"Shabbat basics\") and add it in one tap.</string>
+    <string name="shop_new_list">New list</string>
+    <string name="shop_list_name">List name</string>
+    <string name="shop_default_list">Supermarket</string>
+    <string name="shop_open_count">%1$d to buy · %2$d in cart</string>
+    <string name="shop_add_hint">Add items: \"milk, 2 packs eggs\"</string>
+    <string name="shop_add">Add</string>
+    <string name="shop_voice">Say items</string>
+    <string name="shop_scan">Scan barcode</string>
+    <string name="shop_photo">Photo of product or list</string>
+    <string name="shop_take_photo">Take a photo</string>
+    <string name="shop_pick_photo">Choose from gallery</string>
+    <string name="shop_added">Added %1$d items</string>
+    <string name="shop_nothing_found">Nothing recognised</string>
+    <string name="shop_barcode_unknown">Product not found for barcode %1$s. Type its name.</string>
+    <string name="shop_recognising">Recognising…</string>
+    <string name="shop_in_cart">In the cart (%1$d)</string>
+    <string name="shop_empty">The list is empty. Add the first item above.</string>
+    <string name="shop_requests">Requests from kids</string>
+    <string name="shop_approve">Approve</string>
+    <string name="shop_request_sent">Sent to a parent for approval</string>
+    <string name="shop_at_store">I\'m at the store</string>
+    <string name="shop_leave_store">Stop shopping</string>
+    <string name="shop_someone_shopping">%1$s is shopping now</string>
+    <string name="shop_finish">Finish shopping</string>
+    <string name="shop_finish_title">Finish shopping?</string>
+    <string name="shop_finish_body">%1$d items in the cart go to the purchase history. Recurring items come back unticked.</string>
+    <string name="shop_finish_inventory">Also add them to the home inventory</string>
+    <string name="shop_finished">Done: %1$d items bought</string>
+    <string name="shop_low_stock">Running low at home: %1$d items</string>
+    <string name="shop_add_low">Add to list</string>
+    <string name="shop_rename">Rename list</string>
+    <string name="shop_delete_list">Delete list</string>
+    <string name="shop_save_template">Save as template</string>
+    <string name="shop_apply_template">Add a template</string>
+    <string name="shop_template_name">Template name</string>
+    <string name="shop_ticked_by">by %1$s</string>
+    <string name="shop_frequent">Often bought</string>
+
+    <string name="item_edit">Edit item</string>
+    <string name="item_name">Name</string>
+    <string name="item_quantity">Quantity</string>
+    <string name="item_unit">Unit</string>
+    <string name="item_category">Category</string>
+    <string name="item_brand">Preferred brand</string>
+    <string name="item_any_brand">Any brand is fine</string>
+    <string name="item_note">Note</string>
+    <string name="item_recurring">Recurring (stays on the list)</string>
+    <string name="item_delete">Remove from list</string>
+
+    <string name="cat_produce">Fruit and vegetables</string>
+    <string name="cat_bakery">Bakery</string>
+    <string name="cat_dairy">Dairy and eggs</string>
+    <string name="cat_meat">Meat and fish</string>
+    <string name="cat_dry">Pantry</string>
+    <string name="cat_frozen">Frozen</string>
+    <string name="cat_drinks">Drinks</string>
+    <string name="cat_cleaning">Cleaning</string>
+    <string name="cat_personal">Personal care</string>
+    <string name="cat_baby">Baby</string>
+    <string name="cat_other">Other</string>
+
+    <string name="unit_none">—</string>
+    <string name="unit_pcs">units</string>
+    <string name="unit_pack">packs</string>
+    <string name="unit_kg">kg</string>
+    <string name="unit_g">g</string>
+    <string name="unit_l">L</string>
+    <string name="unit_ml">ml</string>
+
+    <!-- Inventory (0.2) -->
+    <string name="inv_title">Home inventory</string>
+    <string name="inv_all">All</string>
+    <string name="loc_fridge">Fridge</string>
+    <string name="loc_freezer">Freezer</string>
+    <string name="loc_pantry">Pantry</string>
+    <string name="loc_cleaning">Cleaning cupboard</string>
+    <string name="loc_bathroom">Bathroom</string>
+    <string name="inv_add_hint">Add to inventory</string>
+    <string name="inv_shelf_photo">Photo of a shelf or groceries</string>
+    <string name="inv_empty">Nothing here yet. Add items, scan a barcode, or finish a shopping trip with \"add to inventory\".</string>
+    <string name="inv_expired">Expired</string>
+    <string name="inv_expires_today">Expires today</string>
+    <string name="inv_expires_in">%1$d days left</string>
+    <string name="inv_expiry">Expiry date</string>
+    <string name="inv_no_expiry">No expiry date</string>
+    <string name="inv_location">Storage place</string>
+    <string name="inv_min">Keep at least (0 = no minimum)</string>
+    <string name="inv_used">Used one</string>
+    <string name="inv_delete">Remove</string>
+    <string name="inv_edit">Edit item</string>
+    <string name="inv_low">Below minimum</string>
+    <string name="notif_channel_expiry">Expiry reminders</string>
+    <string name="notif_expiry_title">%1$d items expire soon</string>
+    <string name="inv_alerts">Expiry reminders</string>
+    <string name="inv_alerts_sub">A daily notification for food that expires within 3 days</string>
+
+    <!-- AI services (0.2) -->
+    <string name="ai_title">AI services</string>
+    <string name="ai_sub_on">Gemini connected</string>
+    <string name="ai_sub_off">Not set up</string>
+    <string name="ai_intro">Photo recognition of products, lists and shelves uses Google Gemini with your own API key. Get a free key at aistudio.google.com (API keys).</string>
+    <string name="ai_free_note">FREE: Gemini\'s free tier has daily limits, and Google may use what you send on the free tier to improve its products.</string>
+    <string name="ai_paid_note">[PAID] option: a billed Gemini key has higher limits and Google does not use the data for training.</string>
+    <string name="ai_key">Gemini API key</string>
+    <string name="ai_model">Model</string>
+    <string name="ai_save">Save</string>
+    <string name="ai_saved">Saved</string>
+    <string name="ai_remove">Remove key</string>
+    <string name="ai_needed">Add a Gemini key in Settings → AI services to recognise photos.</string>
+    <string name="ai_privacy_on">Privacy mode is on, so photo recognition is off.</string>
+
+    <!-- Module order (0.2) -->
+    <string name="modules_order">Home screen order</string>
+    <string name="modules_order_hint">Use the arrows to change the order of modules on the home screen (this phone only).</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="home_open">Open</string>
+    <string name="help_shopping">Type, say, scan or photograph items. Tap an item to edit it, tick it when it is in the cart. \"I\'m at the store\" shows the family that you are shopping; \"Finish shopping\" records what was bought.</string>
+    <string name="help_inventory">What is at home, where it is and when it expires. Set a minimum and the shopping list suggests the item when it runs low.</string>
 </resources>

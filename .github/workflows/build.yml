@@ -49,6 +49,15 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: gradle --no-daemon :app:assembleRelease
 
+      - name: Verify database migrations match the Room schema
+        run: python3 scripts/verify_migrations.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: room-schemas
+          path: app/schemas
+          retention-days: 7
+
       - name: Name APK with version
         run: |
           mkdir -p out

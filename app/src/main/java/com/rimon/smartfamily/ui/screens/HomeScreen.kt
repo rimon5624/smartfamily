@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.rimon.smartfamily.R
 import com.rimon.smartfamily.data.repo.ModuleState
+import com.rimon.smartfamily.model.AppModule
 import com.rimon.smartfamily.ui.AppViewModel
 import com.rimon.smartfamily.ui.components.HelpButton
 import com.rimon.smartfamily.ui.components.ModuleBadge
@@ -66,6 +67,7 @@ fun HomeScreen(
     onCreateFamily: () -> Unit,
     onOpenModules: (String) -> Unit,
     onOpenCloud: () -> Unit,
+    onOpenModule: (AppModule) -> Unit,
 ) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val family by vm.activeFamily.collectAsStateWithLifecycle()
@@ -122,7 +124,8 @@ fun HomeScreen(
                     }
                 }
             } else {
-                val on = modules.filter { it.effective }
+                val order = AppModule.ordered(settings?.moduleOrder.orEmpty())
+                val on = modules.filter { it.effective }.sortedBy { order.indexOf(it.module) }
                 item(span = { GridItemSpan(2) }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -142,7 +145,7 @@ fun HomeScreen(
                         Text(stringResource(R.string.home_no_modules), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                items(on, key = { it.module.key }) { ModuleCard(it) }
+                items(on, key = { it.module.key }) { ModuleCard(it) { onOpenModule(it.module) } }
             }
         }
     }
@@ -228,9 +231,15 @@ private fun SyncCard(configured: Boolean, lastSync: Long, error: String, onClick
 }
 
 @Composable
-private fun ModuleCard(state: ModuleState) {
+private fun ModuleCard(state: ModuleState, onClick: () -> Unit) {
+    val ready = state.module.available
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        onClick = onClick,
+        enabled = ready,
+        colors = CardDefaults.cardColors(
+            containerColor = if (ready) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
         modifier = Modifier.fillMaxWidth().height(150.dp),
     ) {
         Column(Modifier.padding(14.dp).fillMaxWidth()) {
@@ -239,9 +248,9 @@ private fun ModuleCard(state: ModuleState) {
             Text(stringResource(state.module.title), style = MaterialTheme.typography.titleSmall, maxLines = 2)
             Spacer(Modifier.weight(1f))
             Text(
-                stringResource(R.string.home_coming, state.module.phase + 1),
+                if (ready) stringResource(R.string.home_open) else stringResource(R.string.home_coming, state.module.phase + 1),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (ready) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

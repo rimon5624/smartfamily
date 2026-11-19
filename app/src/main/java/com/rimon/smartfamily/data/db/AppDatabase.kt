@@ -14,6 +14,10 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         MemberEntity::class,
         InviteEntity::class,
         ModuleSettingEntity::class,
+        ShoppingListEntity::class,
+        ListItemEntity::class,
+        PurchaseEntity::class,
+        InventoryItemEntity::class,
     ],
     version = SchemaInfo.DB_VERSION,
     exportSchema = true,
@@ -24,6 +28,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun members(): MemberDao
     abstract fun invites(): InviteDao
     abstract fun moduleSettings(): ModuleSettingDao
+    abstract fun lists(): ShoppingListDao
+    abstract fun listItems(): ListItemDao
+    abstract fun purchases(): PurchaseDao
+    abstract fun inventory(): InventoryDao
 
     companion object {
         /**
@@ -34,6 +42,7 @@ abstract class AppDatabase : RoomDatabase() {
             System.loadLibrary("sqlcipher")
             return Room.databaseBuilder(context, AppDatabase::class.java, "smartfamily.db")
                 .openHelperFactory(SupportOpenHelperFactory(passphrase))
+                .addMigrations(*Migrations.ALL)
                 .build()
         }
     }

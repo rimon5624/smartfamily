@@ -28,6 +28,10 @@ data class AppSettings(
     val accountEmail: String = "",
     val lastSyncAt: Long = 0,
     val lastSyncError: String = "",
+    val geminiModel: String = "",
+    /** Home screen module order chosen by the user (comma-separated keys); empty = default. */
+    val moduleOrder: String = "",
+    val expiryAlerts: Boolean = true,
 ) {
     val supabaseConfigured: Boolean get() = supabaseUrl.isNotBlank() && supabaseAnonKey.isNotBlank()
 }
@@ -47,6 +51,9 @@ class SettingsStore(private val context: Context) {
         val accountEmail = stringPreferencesKey("account_email")
         val lastSyncAt = longPreferencesKey("last_sync_at")
         val lastSyncError = stringPreferencesKey("last_sync_error")
+        val geminiModel = stringPreferencesKey("gemini_model")
+        val moduleOrder = stringPreferencesKey("module_order")
+        val expiryAlerts = booleanPreferencesKey("expiry_alerts")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p -> p.toSettings() }
@@ -66,6 +73,9 @@ class SettingsStore(private val context: Context) {
         accountEmail = this[K.accountEmail] ?: "",
         lastSyncAt = this[K.lastSyncAt] ?: 0,
         lastSyncError = this[K.lastSyncError] ?: "",
+        geminiModel = this[K.geminiModel] ?: "",
+        moduleOrder = this[K.moduleOrder] ?: "",
+        expiryAlerts = this[K.expiryAlerts] ?: true,
     )
 
     suspend fun setLanguage(v: String) = context.dataStore.edit { it[K.language] = v }
@@ -75,6 +85,9 @@ class SettingsStore(private val context: Context) {
     suspend fun setThemeMode(v: ThemeMode) = context.dataStore.edit { it[K.themeMode] = v.name }
     suspend fun setDynamicColor(v: Boolean) = context.dataStore.edit { it[K.dynamicColor] = v }
     suspend fun setPrivacyMode(v: Boolean) = context.dataStore.edit { it[K.privacyMode] = v }
+    suspend fun setGeminiModel(v: String) = context.dataStore.edit { it[K.geminiModel] = v.trim() }
+    suspend fun setModuleOrder(v: String) = context.dataStore.edit { it[K.moduleOrder] = v }
+    suspend fun setExpiryAlerts(v: Boolean) = context.dataStore.edit { it[K.expiryAlerts] = v }
     suspend fun setAccountEmail(v: String) = context.dataStore.edit { it[K.accountEmail] = v }
 
     suspend fun setSupabase(url: String, anonKey: String) = context.dataStore.edit {
