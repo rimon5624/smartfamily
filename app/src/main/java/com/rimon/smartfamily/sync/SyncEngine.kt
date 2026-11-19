@@ -70,7 +70,7 @@ private class TableSync<T>(
             val rows = api.json.decodeFromString(listSer, api.changedSince(table, since))
             if (rows.isEmpty()) break
             applyServer(rows)
-            all += rows
+            all.addAll(rows)
             since = rows.maxOf { serverUpdatedAt(it) }
             settings.setLastPull(table, since)
             if (rows.size < 500) break
