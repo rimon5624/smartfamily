@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -186,8 +188,31 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
     val requests = items.filter { it.status == "REQUESTED" }
     val open = active.filter { !it.checked }
     val inCart = active.filter { it.checked }
-    val grouped = ShopCategory.entries.mapNotNull { cat ->
+    // SHP-11: categories follow the order this family usually ticks them in this list (learned per phone).
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val aisle = remember(listId) { AisleOrder(context, listId) }
+    var aisleTick by remember { mutableStateOf(0) }
+    val rank = remember(aisleTick) { aisle.rank() }
+    val grouped = ShopCategory.entries.sortedBy { rank[it.key] ?: (100 + it.ordinal) }.mapNotNull { cat ->
         open.filter { ShopCategory.fromKey(it.category) == cat }.takeIf { it.isNotEmpty() }?.let { cat to it }
+    }
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    var undo by remember { mutableStateOf<ListItemEntity?>(null) }
+    LaunchedEffect(undo) { if (undo != null) { kotlinx.coroutines.delay(5000); undo = null } }
+    fun tick(item: ListItemEntity) {
+        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+        if (!item.checked && iAmShopping) { aisle.record(item.category); aisleTick++ }
+        vm.toggle(item.id)
+    }
+    fun remove(item: ListItemEntity) { undo = item; vm.deleteItem(item.id) }
+    // "I'm at the store": the screen stays on while shopping (SHP-10).
+    val view = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.DisposableEffect(iAmShopping) { view.keepScreenOn = iAmShopping; onDispose { view.keepScreenOn = false } }
+    // SHP-13: staples that are due again, from how often the family buys them.
+    val onList = remember(items) { items.filter { it.deletedAt == null }.map { it.name.trim().lowercase() }.toSet() }
+    val dueStaples = remember(frequent, onList) {
+        val now = System.currentTimeMillis()
+        frequent.filter { it.everyDays in 2..60 && it.name.trim().lowercase() !in onList && now - it.last >= it.everyDays * 86_400_000L * 0.9 }.take(8)
     }
 
     Scaffold(
@@ -259,6 +284,27 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
                 )
                 if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 6.dp))
             }
+            if (!isTemplate && dueStaples.isNotEmpty()) item {
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer), modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text(stringResource(R.string.shop_staples_due), style = MaterialTheme.typography.titleSmall)
+                        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            dueStaples.forEach { f ->
+                                androidx.compose.material3.AssistChip(onClick = { vm.addText(listId, f.name, viewer.isChild) },
+                                    label = { Text(f.name + " · " + stringResource(R.string.shop_every_days, f.everyDays)) })
+                            }
+                        }
+                    }
+                }
+            }
+            undo?.let { u ->
+                item(key = "undo") {
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.shop_deleted_x, u.name), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = { vm.update(u.copy(deletedAt = null)); undo = null }) { Text(stringResource(R.string.undo)) }
+                    }
+                }
+            }
             val shopper = l?.shopperId
             if (shopper != null && shopper != viewer.userId) {
                 item {
@@ -318,7 +364,9 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
             grouped.forEach { (cat, rows) ->
                 item(key = "cat-" + cat.key) { SectionTitle(stringResource(cat.title)) }
                 items(rows, key = { it.id }) { item ->
-                    ItemRow(item, names, isTemplate, onToggle = { vm.toggle(item.id) }, onEdit = { editing = item })
+                    SwipeRow(item, enabled = !isTemplate && !viewer.isChild, onTick = { tick(item) }, onDelete = { remove(item) }) {
+                        ItemRow(item, names, isTemplate, onToggle = { tick(item) }, onEdit = { editing = item }, big = iAmShopping)
+                    }
                 }
             }
             if (inCart.isNotEmpty()) {
@@ -338,7 +386,9 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
                 }
                 if (showCart) {
                     items(inCart, key = { it.id }) { item ->
-                        ItemRow(item, names, isTemplate, onToggle = { vm.toggle(item.id) }, onEdit = { editing = item })
+                        SwipeRow(item, enabled = !isTemplate && !viewer.isChild, onTick = { tick(item) }, onDelete = { remove(item) }) {
+                            ItemRow(item, names, isTemplate, onToggle = { tick(item) }, onEdit = { editing = item }, big = iAmShopping)
+                        }
                     }
                 }
             }
@@ -408,21 +458,21 @@ private fun quantityText(i: ListItemEntity): String {
 }
 
 @Composable
-private fun ItemRow(item: ListItemEntity, names: Map<String, String>, isTemplate: Boolean, onToggle: () -> Unit, onEdit: () -> Unit) {
+private fun ItemRow(item: ListItemEntity, names: Map<String, String>, isTemplate: Boolean, onToggle: () -> Unit, onEdit: () -> Unit, big: Boolean = false) {
     Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onEdit)
             .animateContentSize()
-            .padding(vertical = 2.dp),
+            .padding(vertical = if (big) 8.dp else 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (!isTemplate) Checkbox(checked = item.checked, onCheckedChange = { onToggle() }) else Spacer(Modifier.size(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 item.name + quantityText(item),
-                style = MaterialTheme.typography.bodyLarge,
+                style = if (big) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
                 textDecoration = if (item.checked) TextDecoration.LineThrough else null,
                 color = if (item.checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             )
@@ -515,4 +565,46 @@ fun SwitchLine(text: String, checked: Boolean, onChange: (Boolean) -> Unit) {
         Text(text, modifier = Modifier.weight(1f))
         Switch(checked = checked, onCheckedChange = onChange)
     }
+}
+
+
+/** Swipe right to tick, swipe left to delete (with undo). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeRow(item: ListItemEntity, enabled: Boolean, onTick: () -> Unit, onDelete: () -> Unit, content: @Composable () -> Unit) {
+    if (!enabled) { content(); return }
+    val state = androidx.compose.material3.rememberSwipeToDismissBoxState(confirmValueChange = { v ->
+        when (v) {
+            androidx.compose.material3.SwipeToDismissBoxValue.StartToEnd -> { onTick(); false }
+            androidx.compose.material3.SwipeToDismissBoxValue.EndToStart -> { onDelete(); true }
+            else -> false
+        }
+    })
+    androidx.compose.material3.SwipeToDismissBox(state, backgroundContent = {
+        val dir = state.dismissDirection
+        Row(
+            Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).background(
+                if (dir == androidx.compose.material3.SwipeToDismissBoxValue.EndToStart) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer
+            ).padding(horizontal = 16.dp),
+            horizontalArrangement = if (dir == androidx.compose.material3.SwipeToDismissBoxValue.EndToStart) Arrangement.End else Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(if (dir == androidx.compose.material3.SwipeToDismissBoxValue.EndToStart) Icons.Outlined.Delete else Icons.Outlined.CheckCircle, null)
+        }
+    }) { Box(Modifier.background(MaterialTheme.colorScheme.surface)) { content() } }
+}
+
+/** Learns the order categories are ticked in, per list, on this phone (SHP-11). */
+class AisleOrder(context: android.content.Context, private val listId: String) {
+    private val prefs = context.getSharedPreferences("sf_aisles", android.content.Context.MODE_PRIVATE)
+    private val session = mutableListOf<String>()
+    fun record(category: String) {
+        if (category in session) return
+        session += category
+        // moving average of the position each category was reached at
+        val pos = session.size.toFloat()
+        val old = prefs.getFloat("$listId|$category", pos)
+        prefs.edit().putFloat("$listId|$category", old * 0.7f + pos * 0.3f).apply()
+    }
+    fun rank(): Map<String, Float> = prefs.all.filterKeys { it.startsWith("$listId|") }.mapNotNull { (k, v) -> (v as? Float)?.let { k.substringAfter('|') to it } }.toMap()
 }

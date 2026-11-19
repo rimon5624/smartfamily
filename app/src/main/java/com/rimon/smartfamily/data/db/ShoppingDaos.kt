@@ -58,12 +58,15 @@ interface ListItemDao {
 }
 
 /** Frequently bought product names, for autocomplete and quick add. */
-data class FrequentItem(val name: String, val category: String, val unit: String, val times: Int, val last: Long)
+data class FrequentItem(val name: String, val category: String, val unit: String, val times: Int, val last: Long, val first: Long = 0L) {
+    /** Average days between purchases, or 0 when not enough history. */
+    val everyDays: Int get() = if (times >= 3 && last > first) (((last - first) / 86_400_000L) / (times - 1)).toInt() else 0
+}
 
 @Dao
 interface PurchaseDao {
     @Query(
-        """SELECT name, MAX(category) AS category, MAX(unit) AS unit, COUNT(*) AS times, MAX(boughtAt) AS last
+        """SELECT name, MAX(category) AS category, MAX(unit) AS unit, COUNT(*) AS times, MAX(boughtAt) AS last, MIN(boughtAt) AS first
            FROM purchase_history WHERE familyId = :familyId AND deletedAt IS NULL
            GROUP BY name ORDER BY times DESC, last DESC LIMIT :limit"""
     )

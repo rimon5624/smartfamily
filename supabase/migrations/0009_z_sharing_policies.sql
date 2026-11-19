@@ -30,7 +30,18 @@ begin
     ('budget_limits', '''budget''', 'null', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'')', ''),
     ('home_entries', 'case when section = ''KNOWLEDGE'' then ''knowledge'' else ''home_book'' end', 'id', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'')', ''),
     ('polls', '''polls''', 'id', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'',''CHILD'')', ''),
-    ('poll_votes', '''polls''', 'poll_id', '', '', 'user_id')
+    ('poll_votes', '''polls''', 'poll_id', '', '', 'user_id'),
+    ('recurring_payments', '''budget''', 'null', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'')', ''),
+    ('pocket_entries', '''budget''', 'null', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'')', ''),
+    ('goals', '''budget''', 'id', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'')', ''),
+    ('split_expenses', '''budget''', 'id', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'',''CHILD'')', ''),
+    ('growth_entries', '''chores''', 'null', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'')', ''),
+    ('repairs', '''home_book''', 'id', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'')', ''),
+    ('meter_readings', '''home_book''', 'null', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'')', ''),
+    ('kit_items', '''travel''', 'null', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'',''CHILD'')', ''),
+    ('routine_steps', '''chores''', 'null', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'')', ''),
+    ('routine_checks', '''chores''', 'null', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'',''CHILD'')', ''),
+    ('tree_people', '''calendar''', 'null', '', 'public.sf_my_role(family_id) in (''OWNER'',''ADMIN'',''MEMBER'')', '')
   ) as v(tn, modx, item, guard, w, owner) loop
     rd := format('public.sf_shared(family_id, %s, %s, false)', r.modx, r.item);
     wr := format('public.sf_shared(family_id, %s, %s, true)', r.modx, r.item);

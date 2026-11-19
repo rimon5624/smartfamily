@@ -169,6 +169,7 @@ private fun MainNav(vm: AppViewModel) {
     val priceVm: com.rimon.smartfamily.ui.PriceViewModel = viewModel()
     val shareVm: com.rimon.smartfamily.ui.screens.ShareViewModel = viewModel()
     val assistantVm: com.rimon.smartfamily.ui.screens.AssistantViewModel = viewModel()
+    val recordsVm: com.rimon.smartfamily.ui.RecordsViewModel = viewModel()
     var quickAdd by remember { mutableStateOf(false) }
     val nav = rememberNavController()
     val settings by vm.settings.collectAsStateWithLifecycle()
@@ -195,7 +196,7 @@ private fun MainNav(vm: AppViewModel) {
     val showBar = Tab.entries.any { it.route == route }
 
     LaunchedEffect(Unit) {
-        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages, extrasVm.messages, priceVm.messages, shareVm.messages, assistantVm.messages).collect { msg ->
+        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages, extrasVm.messages, priceVm.messages, shareVm.messages, assistantVm.messages, recordsVm.messages).collect { msg ->
             val text = when (msg) {
                 // Numbers are passed as numbers so both %1$s and %1$d work; a bad format never crashes the app.
                 is UiMessage.Res -> runCatching {
@@ -271,6 +272,9 @@ private fun MainNav(vm: AppViewModel) {
                             AppModule.KNOWLEDGE -> nav.navigate("homebook/1")
                             AppModule.POLLS -> nav.navigate("polls")
                             AppModule.PRICES -> nav.navigate("prices")
+                            AppModule.KIDS -> nav.navigate("kids")
+                            AppModule.FAMILY -> nav.navigate("family")
+                            AppModule.SHABBAT -> nav.navigate("shabbat")
                             else -> Unit
                         }
                     },
@@ -378,10 +382,27 @@ private fun MainNav(vm: AppViewModel) {
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.TripScreen(extrasVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
             }
             composable("budget") {
-                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.BudgetScreen(extrasVm, viewer, onBack = { nav.popBackStack() })
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.BudgetScreen(extrasVm, viewer, onBack = { nav.popBackStack() }, onMoney = { nav.navigate("money/$it") })
             }
             composable("homebook/{tab}") { back ->
-                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.HomeBookScreen(extrasVm, viewer, back.arguments?.getString("tab")?.toIntOrNull() ?: 0, onBack = { nav.popBackStack() })
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.HomeBookScreen(extrasVm, viewer, back.arguments?.getString("tab")?.toIntOrNull() ?: 0, onBack = { nav.popBackStack() }, onExtras = { nav.navigate("homex/$it") })
+            }
+            composable("money/{tab}") { back ->
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.MoneyScreen(recordsVm, viewer, back.arguments?.getString("tab")?.toIntOrNull() ?: 0, onBack = { nav.popBackStack() })
+            }
+            composable("kids") {
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.KidsScreen(recordsVm, viewer, hebrew = isHebrew(), onBack = { nav.popBackStack() }, onPocket = { nav.navigate("money/1") })
+            }
+            composable("homex/{tab}") { back ->
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.HomeExtrasScreen(recordsVm, extrasVm, viewer, isHebrew(), back.arguments?.getString("tab")?.toIntOrNull() ?: 0, onBack = { nav.popBackStack() })
+            }
+            composable("family") {
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.FamilyHubScreen(recordsVm, chatVm, extrasVm, viewer, onBack = { nav.popBackStack() },
+                    onOpenAlbum = { nav.navigate("chat/$it") }, onGifts = { nav.navigate("money/3") })
+            }
+            composable("shabbat") {
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ShabbatScreen(recordsVm, lifeVm, kitchenVm, extrasVm, viewer, settings?.zmanimCity ?: "jerusalem", isHebrew(),
+                    onBack = { nav.popBackStack() }, onKitchen = { nav.navigate("kitchen/1") }, onPolls = { nav.navigate("polls") })
             }
             composable("search") {
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.SearchScreen(assistantVm, viewer, onBack = { nav.popBackStack() }) { h ->
@@ -407,3 +428,7 @@ private fun MainNav(vm: AppViewModel) {
     }
 }
 
+
+
+@Composable
+private fun isHebrew(): Boolean = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language.let { it == "iw" || it == "he" }

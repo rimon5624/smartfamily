@@ -108,6 +108,8 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // FTP for the chains published on url.retail.publishedprices.co.il (price comparison)
     implementation("commons-net:commons-net:3.11.1")
+    // QR codes (Wi-Fi for guests, family invites) — Apache 2.0, generated on the phone
+    implementation("com.google.zxing:core:3.5.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 

@@ -284,6 +284,103 @@ TABLES = [
         ("createdBy", "String", None),
         ("decidedBy", "String", '""'),
     ], indices=["targetFamilyId"]),
+
+    # ---------- 2.0: money, kids, home, family ----------
+    dict(name="recurring_payments", entity="RecurringPaymentEntity", version=10, policy="adults", fields=[
+        ("kind", "String", '"BILL"'),            # BILL (arnona, electricity, kindergarten…) or SUBSCRIPTION (Netflix, gym…)
+        ("title", "String", None),
+        ("amount", "Double", "0.0"),
+        ("period", "String", '"MONTH"'),         # MONTH, BIMONTH, YEAR
+        ("dayOfMonth", "Int", "1"),
+        ("nextDate", "String", '""'),            # yyyy-MM-dd of the next charge / renewal
+        ("category", "String", '"bills"'),
+        ("note", "String", '""'),
+        ("active", "Boolean", "true"),
+        ("createdBy", "String", None),
+    ], indices=[]),
+    dict(name="pocket_entries", entity="PocketEntryEntity", version=10, policy="adults", fields=[
+        ("userId", "String", None),              # the child
+        ("amount", "Double", None),              # + deposit, - spending
+        ("note", "String", '""'),
+        ("date", "Long", None),
+        ("kind", "String", '"MANUAL"'),          # MANUAL, ALLOWANCE, GOAL
+    ], indices=["userId"]),
+    dict(name="goals", entity="GoalEntity", version=10, policy="adults", fields=[
+        ("title", "String", None),
+        ("ownerId", "String", '""'),             # "" = family goal, else a child's goal
+        ("kind", "String", '"MONEY"'),           # MONEY (savings) or POINTS (family chore goal)
+        ("target", "Double", "0.0"),
+        ("saved", "Double", "0.0"),
+        ("reward", "String", '""'),
+        ("done", "Boolean", "false"),
+    ], indices=[]),
+    dict(name="split_expenses", entity="SplitExpenseEntity", version=10, policy="members", fields=[
+        ("title", "String", None),
+        ("amount", "Double", None),
+        ("paidBy", "String", None),
+        ("participants", "String", '""'),        # comma-separated userIds sharing the cost
+        ("date", "Long", None),
+        ("settled", "Boolean", "false"),
+        ("kind", "String", '"EXPENSE"'),         # EXPENSE or GIFT (a shared gift)
+        ("note", "String", '""'),
+    ], indices=[]),
+    dict(name="growth_entries", entity="GrowthEntryEntity", version=10, policy="adults", fields=[
+        ("personId", "String", None),            # a member's userId
+        ("date", "String", None),                # yyyy-MM-dd
+        ("heightCm", "Double", "0.0"),
+        ("weightKg", "Double", "0.0"),
+        ("shoeSize", "String", '""'),
+        ("clothesSize", "String", '""'),
+        ("note", "String", '""'),
+    ], indices=["personId"]),
+    dict(name="repairs", entity="RepairEntity", version=10, policy="adults", fields=[
+        ("title", "String", None),               # what broke
+        ("item", "String", '""'),                # the appliance / room
+        ("fixedBy", "String", '""'),
+        ("phone", "String", '""'),
+        ("cost", "Double", "0.0"),
+        ("date", "String", '""'),
+        ("warrantyUntil", "String", '""'),
+        ("rating", "Int", "0"),                  # HBK-3 rating of the provider
+        ("note", "String", '""'),
+    ], indices=[]),
+    dict(name="meter_readings", entity="MeterReadingEntity", version=10, policy="adults", fields=[
+        ("meter", "String", '"WATER"'),          # WATER, ELECTRIC, GAS
+        ("value", "Double", None),
+        ("date", "String", None),
+        ("note", "String", '""'),
+    ], indices=[]),
+    dict(name="kit_items", entity="KitItemEntity", version=10, policy="members", fields=[
+        ("kit", "String", None),                 # EMERGENCY, LEAVE_HOME, BEACH, PARK, CAMPING, SHABBAT_AWAY, custom
+        ("title", "String", None),
+        ("qty", "Int", "1"),
+        ("expiresAt", "String", '""'),
+        ("checked", "Boolean", "false"),
+        ("sort", "Int", "0"),
+    ], indices=[]),
+    dict(name="routine_steps", entity="RoutineStepEntity", version=10, policy="adults", fields=[
+        ("userId", "String", None),              # the child
+        ("title", "String", None),
+        ("emoji", "String", '"⭐"'),
+        ("part", "String", '"MORNING"'),         # MORNING or EVENING
+        ("sort", "Int", "0"),
+        ("days", "Int", "127"),                  # bit 0 = Sunday … bit 6 = Saturday
+    ], indices=["userId"]),
+    dict(name="routine_checks", entity="RoutineCheckEntity", version=10, policy="members", fields=[
+        ("stepId", "String", None),
+        ("userId", "String", None),
+        ("date", "String", None),                # yyyy-MM-dd
+        ("done", "Boolean", "true"),
+    ], indices=["stepId"]),
+    dict(name="tree_people", entity="TreePersonEntity", version=10, policy="adults", fields=[
+        ("name", "String", None),
+        ("parents", "String", '""'),             # comma-separated tree person ids
+        ("spouse", "String", '""'),
+        ("memberId", "String", '""'),            # linked app member, if any
+        ("birth", "String", '""'),               # yyyy-MM-dd
+        ("death", "String", '""'),
+        ("note", "String", '""'),
+    ], indices=[]),
 ]
 
 # What another family can be given access to (0.9). table -> (module key or SQL expression, item column or None).
@@ -301,5 +398,8 @@ SHARE = {
     "budget_entries": ("'budget'", None), "budget_limits": ("'budget'", None),
     "home_entries": ("case when section = 'KNOWLEDGE' then 'knowledge' else 'home_book' end", "id"),
     "polls": ("'polls'", "id"), "poll_votes": ("'polls'", "poll_id"),
+    "recurring_payments": ("'budget'", None), "pocket_entries": ("'budget'", None), "goals": ("'budget'", "id"), "split_expenses": ("'budget'", "id"),
+    "growth_entries": ("'chores'", None), "repairs": ("'home_book'", "id"), "meter_readings": ("'home_book'", None),
+    "kit_items": ("'travel'", None), "routine_steps": ("'chores'", None), "routine_checks": ("'chores'", None), "tree_people": ("'calendar'", None),
 }
 

@@ -128,6 +128,14 @@ class ExtrasViewModel(app: Application) : AndroidViewModel(app) {
     fun saveHomeEntry(e: HomeEntryEntity) = launchSafe { repo.saveHomeEntry(e) }
     fun deleteHomeEntry(e: HomeEntryEntity) = launchSafe { repo.deleteHomeEntry(e) }
 
+    /** Saves a secret note (Wi-Fi password, door code) encrypted for the family (KNW-2). */
+    fun saveSecret(e: HomeEntryEntity, secret: String) = launchSafe {
+        val enc = c.chat.encryptForFamily(e.familyId, secret)
+        if (enc == null) _messages.tryEmit(UiMessage.Res(R.string.secret_needs_chat))
+        repo.saveHomeEntry(e.copy(body = enc ?: secret))
+    }
+    suspend fun openSecret(body: String): String? = runCatching { c.chat.decryptNote(body) }.getOrNull()
+
     /** Knowledge box: ask Gemini to write a short family how-to from a rough note (optional, free tier). */
     fun polish(e: HomeEntryEntity, onDone: (String) -> Unit) = launchSafe {
         val lang = if (hebrew) "Hebrew" else "English"

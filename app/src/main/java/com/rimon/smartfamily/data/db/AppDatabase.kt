@@ -52,6 +52,21 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         PriceStoreEntity::class,
         PriceItemEntity::class,
         FamilyShareEntity::class,
+        RecurringPaymentEntity::class,
+        PocketEntryEntity::class,
+        GoalEntity::class,
+        SplitExpenseEntity::class,
+        GrowthEntryEntity::class,
+        RepairEntity::class,
+        MeterReadingEntity::class,
+        KitItemEntity::class,
+        RoutineStepEntity::class,
+        RoutineCheckEntity::class,
+        TreePersonEntity::class,
+        PriceHistoryEntity::class,
+        PriceWatchEntity::class,
+        PromoEntity::class,
+        ScheduledMessageEntity::class,
     ],
     version = SchemaInfo.DB_VERSION,
     exportSchema = true,
@@ -64,6 +79,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         AutoMigration(from = 6, to = 7),
         AutoMigration(from = 7, to = 8),
         AutoMigration(from = 8, to = 9),
+        AutoMigration(from = 9, to = 10),
     ],
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -106,6 +122,19 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun familyShares(): FamilyShareDao
     abstract fun people(): PeopleDao
     abstract fun search(): SearchDao
+    abstract fun recurringPayments(): RecurringPaymentDao
+    abstract fun pocketEntrys(): PocketEntryDao
+    abstract fun goals(): GoalDao
+    abstract fun splitExpenses(): SplitExpenseDao
+    abstract fun growthEntrys(): GrowthEntryDao
+    abstract fun repairs(): RepairDao
+    abstract fun meterReadings(): MeterReadingDao
+    abstract fun kitItems(): KitItemDao
+    abstract fun routineSteps(): RoutineStepDao
+    abstract fun routineChecks(): RoutineCheckDao
+    abstract fun treePersons(): TreePersonDao
+    abstract fun scheduledMessages(): ScheduledMessageDao
+    abstract fun priceExtras(): PriceExtrasDao
 
     companion object {
         /**

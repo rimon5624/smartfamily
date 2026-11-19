@@ -116,6 +116,12 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         repo.createChat(familyId, uid(), if (direct) "DIRECT" else "GROUP", title, members)
     }
 
+    /** A shared photo album is an encrypted chat of photos (2.0). */
+    fun createAlbum(familyId: String, title: String, members: List<String>) = launchSafe {
+        repo.ensureMyKey(familyId, uid())
+        repo.createChat(familyId, uid(), "ALBUM", title, members)
+    }
+
     fun updateMembers(chat: ChatEntity, members: List<String>) = launchSafe { repo.updateMembers(chat, members) }
     fun setDisappearing(chat: ChatEntity, days: Int) = launchSafe { repo.setDisappearing(chat, days) }
 

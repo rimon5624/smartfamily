@@ -200,6 +200,26 @@ class ChatRepository(
     suspend fun downloadMedia(path: String, keyB64: String): ByteArray? =
         crypto.decryptFile(crypto.unb64(keyB64), api.downloadObject(BUCKET, path))
 
+    /**
+     * KNW-2: sensitive notes (door codes, Wi-Fi) are encrypted end-to-end with the family chat's
+     * key, so every family phone can read them and the server only sees ciphertext.
+     */
+    suspend fun encryptForFamily(familyId: String, plain: String): String? {
+        val chat = db.chats().familyChat(familyId) ?: return null
+        val key = keyFor(chat.id, chat.epoch) ?: return null
+        val (n, ct) = crypto.encrypt(key, plain.toByteArray(), "note|${chat.id}|${chat.epoch}")
+        return "enc1:${chat.id}:${chat.epoch}:$n:$ct"
+    }
+
+    suspend fun decryptNote(s: String): String? {
+        if (!s.startsWith("enc1:")) return s
+        val p = s.split(':')
+        if (p.size < 5) return null
+        val chatId = p[1]; val epoch = p[2].toIntOrNull() ?: return null
+        val key = keyFor(chatId, epoch) ?: return null
+        return crypto.decrypt(key, p[3], p.subList(4, p.size).joinToString(":"), "note|$chatId|$epoch")?.toString(Charsets.UTF_8)
+    }
+
     suspend fun incomingSince(since: Long, me: String) = db.chatMessages().incomingSince(since, me)
     suspend fun chat(id: String) = db.chats().get(id)
 

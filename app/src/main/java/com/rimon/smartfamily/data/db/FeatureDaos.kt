@@ -263,3 +263,48 @@ interface SearchDao {
     """)
     suspend fun search(f: String, q: String): List<SearchHit>
 }
+
+// ---------- 2.0 ----------
+
+@Dao
+interface RecurringPaymentDao : RecurringPaymentDaoBase
+
+@Dao
+interface PocketEntryDao : PocketEntryDaoBase
+
+@Dao
+interface GoalDao : GoalDaoBase
+
+@Dao
+interface SplitExpenseDao : SplitExpenseDaoBase
+
+@Dao
+interface GrowthEntryDao : GrowthEntryDaoBase
+
+@Dao
+interface RepairDao : RepairDaoBase
+
+@Dao
+interface MeterReadingDao : MeterReadingDaoBase
+
+@Dao
+interface KitItemDao : KitItemDaoBase
+
+@Dao
+interface RoutineStepDao : RoutineStepDaoBase
+
+@Dao
+interface RoutineCheckDao : RoutineCheckDaoBase
+
+@Dao
+interface TreePersonDao : TreePersonDaoBase
+
+@Dao
+interface ScheduledMessageDao {
+    @Query("SELECT * FROM scheduled_messages WHERE sendAt <= :now")
+    suspend fun due(now: Long): List<ScheduledMessageEntity>
+    @Query("SELECT * FROM scheduled_messages WHERE chatId = :chatId ORDER BY sendAt")
+    fun observeChat(chatId: String): Flow<List<ScheduledMessageEntity>>
+    @Upsert suspend fun upsert(m: ScheduledMessageEntity)
+    @Query("DELETE FROM scheduled_messages WHERE id = :id") suspend fun delete(id: String)
+}

@@ -24,10 +24,13 @@ enum class AppModule(
     BUDGET("budget", R.string.mod_budget, R.string.mod_budget_sub, 6, false),
     HOME_BOOK("home_book", R.string.mod_homebook, R.string.mod_homebook_sub, 6, false),
     KNOWLEDGE("knowledge", R.string.mod_knowledge, R.string.mod_knowledge_sub, 6, false),
-    POLLS("polls", R.string.mod_polls, R.string.mod_polls_sub, 6, false);
+    POLLS("polls", R.string.mod_polls, R.string.mod_polls_sub, 6, false),
+    KIDS("kids", R.string.mod_kids, R.string.mod_kids_sub, 7, false),
+    FAMILY("family", R.string.mod_family, R.string.mod_family_sub, 7, false),
+    SHABBAT("shabbat", R.string.mod_shabbat, R.string.mod_shabbat_sub, 7, true);
 
     /** Modules that already have screens in this version. */
-    val available: Boolean get() = this in setOf(SHOPPING, INVENTORY, CHORES, CALENDAR, RECIPES, PACKED_MEALS, APPLIANCES, CHAT, TRAVEL, BUDGET, HOME_BOOK, KNOWLEDGE, POLLS, PRICES)
+    val available: Boolean get() = this in setOf(SHOPPING, INVENTORY, CHORES, CALENDAR, RECIPES, PACKED_MEALS, APPLIANCES, CHAT, TRAVEL, BUDGET, HOME_BOOK, KNOWLEDGE, POLLS, PRICES, KIDS, FAMILY, SHABBAT)
 
     companion object {
         fun fromKey(key: String): AppModule? = entries.firstOrNull { it.key == key }
@@ -59,7 +62,7 @@ enum class MemberStatus { ACTIVE, PENDING }
 
 /** The current version of the backup file format and database schema. */
 object SchemaInfo {
-    const val DB_VERSION = 9
+    const val DB_VERSION = 10
     const val BACKUP_FORMAT = "smartfamily-backup"
     const val BACKUP_FORMAT_VERSION = 1
 }

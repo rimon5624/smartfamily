@@ -162,7 +162,7 @@ fun ChatListScreen(vm: ChatViewModel, viewer: Viewer, onBack: () -> Unit, onOpen
                 Spacer(Modifier.size(6.dp))
                 Text(stringResource(R.string.chat_e2e), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            val mine = chats
+            val mine = chats.filter { it.kind != "ALBUM" }
             if (mine.isEmpty()) Text(stringResource(R.string.chat_none), Modifier.padding(24.dp))
             LazyColumn(contentPadding = PaddingValues(bottom = 96.dp)) {
                 items(mine, key = { it.id }) { chat ->

@@ -292,7 +292,7 @@ val BUDGET_CATS = listOf(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun BudgetScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit) {
+fun BudgetScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit, onMoney: (Int) -> Unit = {}) {
     val now = remember { Calendar.getInstance() }
     var year by rememberSaveable { mutableIntStateOf(now.get(Calendar.YEAR)) }
     var month by rememberSaveable { mutableIntStateOf(now.get(Calendar.MONTH)) }
@@ -318,6 +318,12 @@ fun BudgetScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit) {
         fab = { if (!viewer.isChild) ExtendedFloatingActionButton(onClick = { editing = vm.newEntry(viewer.familyId, viewer.userId, dayInMonth) }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text(stringResource(R.string.budget_add)) }) }) { pad ->
         LazyColumn(contentPadding = pad, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
+                androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    item { androidx.compose.material3.AssistChip(onClick = { onMoney(0) }, label = { Text("🧾 " + stringResource(R.string.money_bills)) }) }
+                    item { androidx.compose.material3.AssistChip(onClick = { onMoney(1) }, label = { Text("🐷 " + stringResource(R.string.money_pocket)) }) }
+                    item { androidx.compose.material3.AssistChip(onClick = { onMoney(2) }, label = { Text("🎯 " + stringResource(R.string.money_goals)) }) }
+                    item { androidx.compose.material3.AssistChip(onClick = { onMoney(3) }, label = { Text("🤝 " + stringResource(R.string.money_splits)) }) }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { shift(-1) }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null) }
                     Text(monthLabel, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
@@ -444,7 +450,7 @@ private val HOME_KINDS = listOf("CONTACT" to R.string.hk_contact, "SERVICE" to R
 private val KNOW_KINDS = listOf("HOWTO" to R.string.hk_howto, "NOTE" to R.string.hk_note, "CONTACT" to R.string.hk_contact)
 
 @Composable
-fun HomeBookScreen(vm: ExtrasViewModel, viewer: Viewer, startTab: Int, onBack: () -> Unit) {
+fun HomeBookScreen(vm: ExtrasViewModel, viewer: Viewer, startTab: Int, onBack: () -> Unit, onExtras: (Int) -> Unit = {}) {
     var tab by rememberSaveable { mutableIntStateOf(startTab) }
     val section = if (tab == 0) "HOME" else "KNOWLEDGE"
     val entries by remember(viewer.familyId, section) { vm.section(viewer.familyId, section) }.collectAsState(initial = emptyList())
@@ -461,6 +467,14 @@ fun HomeBookScreen(vm: ExtrasViewModel, viewer: Viewer, startTab: Int, onBack: (
             Tab(tab == 1, { tab = 1 }, text = { Text(stringResource(R.string.mod_knowledge)) })
         }
         LazyColumn(contentPadding = pad, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+                androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    item { androidx.compose.material3.AssistChip(onClick = { onExtras(0) }, label = { Text("🔧 " + stringResource(R.string.hx_repairs)) }) }
+                    item { androidx.compose.material3.AssistChip(onClick = { onExtras(1) }, label = { Text("📈 " + stringResource(R.string.hx_meters)) }) }
+                    item { androidx.compose.material3.AssistChip(onClick = { onExtras(2) }, label = { Text("🧰 " + stringResource(R.string.hx_kits)) }) }
+                    item { androidx.compose.material3.AssistChip(onClick = { onExtras(3) }, label = { Text("🔒 " + stringResource(R.string.hx_secrets)) }) }
+                }
+            }
             item { OutlinedTextField(query, { query = it }, leadingIcon = { Icon(Icons.Outlined.Search, null) }, placeholder = { Text(stringResource(R.string.hb_search)) }, singleLine = true, modifier = Modifier.fillMaxWidth()) }
             if (shown.isEmpty()) item { Text(stringResource(if (tab == 0) R.string.hb_empty_home else R.string.hb_empty_knowledge)) }
             items(shown, key = { it.id }) { e ->

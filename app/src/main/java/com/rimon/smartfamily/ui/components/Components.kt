@@ -23,6 +23,9 @@ import androidx.compose.material.icons.outlined.Luggage
 import androidx.compose.material.icons.outlined.LunchDining
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Poll
+import androidx.compose.material.icons.outlined.WbTwilight
+import androidx.compose.material.icons.outlined.Diversity3
+import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material.icons.outlined.PriceCheck
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.outlined.TipsAndUpdates
@@ -65,6 +68,9 @@ fun AppModule.icon(): ImageVector = when (this) {
     AppModule.HOME_BOOK -> Icons.Outlined.Inventory2
     AppModule.KNOWLEDGE -> Icons.Outlined.TipsAndUpdates
     AppModule.POLLS -> Icons.Outlined.Poll
+    AppModule.KIDS -> Icons.Outlined.ChildCare
+    AppModule.FAMILY -> Icons.Outlined.Diversity3
+    AppModule.SHABBAT -> Icons.Outlined.WbTwilight
 }
 
 fun AppModule.tint(): Color = ModuleTints.forIndex(ordinal)

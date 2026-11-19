@@ -29,6 +29,17 @@ import com.rimon.smartfamily.data.db.HomeEntryEntity
 import com.rimon.smartfamily.data.db.PollEntity
 import com.rimon.smartfamily.data.db.PollVoteEntity
 import com.rimon.smartfamily.data.db.FamilyShareEntity
+import com.rimon.smartfamily.data.db.RecurringPaymentEntity
+import com.rimon.smartfamily.data.db.PocketEntryEntity
+import com.rimon.smartfamily.data.db.GoalEntity
+import com.rimon.smartfamily.data.db.SplitExpenseEntity
+import com.rimon.smartfamily.data.db.GrowthEntryEntity
+import com.rimon.smartfamily.data.db.RepairEntity
+import com.rimon.smartfamily.data.db.MeterReadingEntity
+import com.rimon.smartfamily.data.db.KitItemEntity
+import com.rimon.smartfamily.data.db.RoutineStepEntity
+import com.rimon.smartfamily.data.db.RoutineCheckEntity
+import com.rimon.smartfamily.data.db.TreePersonEntity
 import kotlinx.serialization.Serializable
 
 internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
@@ -167,6 +178,61 @@ internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
             { db.familyShares().dirty() }, { it.id }, { db.familyShares().markClean(it) },
             { rows -> db.familyShares().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
         ),
+        TableSync(
+            "recurring_payments", "id", RecurringPaymentEntity.serializer(),
+            { db.recurringPayments().dirty() }, { it.id }, { db.recurringPayments().markClean(it) },
+            { rows -> db.recurringPayments().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "pocket_entries", "id", PocketEntryEntity.serializer(),
+            { db.pocketEntrys().dirty() }, { it.id }, { db.pocketEntrys().markClean(it) },
+            { rows -> db.pocketEntrys().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "goals", "id", GoalEntity.serializer(),
+            { db.goals().dirty() }, { it.id }, { db.goals().markClean(it) },
+            { rows -> db.goals().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "split_expenses", "id", SplitExpenseEntity.serializer(),
+            { db.splitExpenses().dirty() }, { it.id }, { db.splitExpenses().markClean(it) },
+            { rows -> db.splitExpenses().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "growth_entries", "id", GrowthEntryEntity.serializer(),
+            { db.growthEntrys().dirty() }, { it.id }, { db.growthEntrys().markClean(it) },
+            { rows -> db.growthEntrys().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "repairs", "id", RepairEntity.serializer(),
+            { db.repairs().dirty() }, { it.id }, { db.repairs().markClean(it) },
+            { rows -> db.repairs().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "meter_readings", "id", MeterReadingEntity.serializer(),
+            { db.meterReadings().dirty() }, { it.id }, { db.meterReadings().markClean(it) },
+            { rows -> db.meterReadings().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "kit_items", "id", KitItemEntity.serializer(),
+            { db.kitItems().dirty() }, { it.id }, { db.kitItems().markClean(it) },
+            { rows -> db.kitItems().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "routine_steps", "id", RoutineStepEntity.serializer(),
+            { db.routineSteps().dirty() }, { it.id }, { db.routineSteps().markClean(it) },
+            { rows -> db.routineSteps().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "routine_checks", "id", RoutineCheckEntity.serializer(),
+            { db.routineChecks().dirty() }, { it.id }, { db.routineChecks().markClean(it) },
+            { rows -> db.routineChecks().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "tree_people", "id", TreePersonEntity.serializer(),
+            { db.treePersons().dirty() }, { it.id }, { db.treePersons().markClean(it) },
+            { rows -> db.treePersons().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
 )
 
 /** Backup content of the generated tables (BAK-2); missing lists in older backups default to empty. */
@@ -199,6 +265,17 @@ data class GeneratedBackup(
     val polls: List<PollEntity> = emptyList(),
     val pollVotes: List<PollVoteEntity> = emptyList(),
     val familyShares: List<FamilyShareEntity> = emptyList(),
+    val recurringPayments: List<RecurringPaymentEntity> = emptyList(),
+    val pocketEntrys: List<PocketEntryEntity> = emptyList(),
+    val goals: List<GoalEntity> = emptyList(),
+    val splitExpenses: List<SplitExpenseEntity> = emptyList(),
+    val growthEntrys: List<GrowthEntryEntity> = emptyList(),
+    val repairs: List<RepairEntity> = emptyList(),
+    val meterReadings: List<MeterReadingEntity> = emptyList(),
+    val kitItems: List<KitItemEntity> = emptyList(),
+    val routineSteps: List<RoutineStepEntity> = emptyList(),
+    val routineChecks: List<RoutineCheckEntity> = emptyList(),
+    val treePersons: List<TreePersonEntity> = emptyList(),
 )
 
 suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
@@ -229,6 +306,17 @@ suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
         polls = db.polls().all(),
         pollVotes = db.pollVotes().all(),
         familyShares = db.familyShares().all(),
+        recurringPayments = db.recurringPayments().all(),
+        pocketEntrys = db.pocketEntrys().all(),
+        goals = db.goals().all(),
+        splitExpenses = db.splitExpenses().all(),
+        growthEntrys = db.growthEntrys().all(),
+        repairs = db.repairs().all(),
+        meterReadings = db.meterReadings().all(),
+        kitItems = db.kitItems().all(),
+        routineSteps = db.routineSteps().all(),
+        routineChecks = db.routineChecks().all(),
+        treePersons = db.treePersons().all(),
 )
 
 suspend fun clearGenerated(db: AppDatabase) {
@@ -259,6 +347,17 @@ suspend fun clearGenerated(db: AppDatabase) {
     db.polls().clear()
     db.pollVotes().clear()
     db.familyShares().clear()
+    db.recurringPayments().clear()
+    db.pocketEntrys().clear()
+    db.goals().clear()
+    db.splitExpenses().clear()
+    db.growthEntrys().clear()
+    db.repairs().clear()
+    db.meterReadings().clear()
+    db.kitItems().clear()
+    db.routineSteps().clear()
+    db.routineChecks().clear()
+    db.treePersons().clear()
 }
 
 suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
@@ -289,4 +388,15 @@ suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
     db.polls().upsertAll(p.polls.map { it.copy(dirty = true) })
     db.pollVotes().upsertAll(p.pollVotes.map { it.copy(dirty = true) })
     db.familyShares().upsertAll(p.familyShares.map { it.copy(dirty = true) })
+    db.recurringPayments().upsertAll(p.recurringPayments.map { it.copy(dirty = true) })
+    db.pocketEntrys().upsertAll(p.pocketEntrys.map { it.copy(dirty = true) })
+    db.goals().upsertAll(p.goals.map { it.copy(dirty = true) })
+    db.splitExpenses().upsertAll(p.splitExpenses.map { it.copy(dirty = true) })
+    db.growthEntrys().upsertAll(p.growthEntrys.map { it.copy(dirty = true) })
+    db.repairs().upsertAll(p.repairs.map { it.copy(dirty = true) })
+    db.meterReadings().upsertAll(p.meterReadings.map { it.copy(dirty = true) })
+    db.kitItems().upsertAll(p.kitItems.map { it.copy(dirty = true) })
+    db.routineSteps().upsertAll(p.routineSteps.map { it.copy(dirty = true) })
+    db.routineChecks().upsertAll(p.routineChecks.map { it.copy(dirty = true) })
+    db.treePersons().upsertAll(p.treePersons.map { it.copy(dirty = true) })
 }
