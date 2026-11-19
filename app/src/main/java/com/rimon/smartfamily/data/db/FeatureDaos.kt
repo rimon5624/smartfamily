@@ -2,6 +2,7 @@ package com.rimon.smartfamily.data.db
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 /** Feature DAOs: the standard methods come from the generated *Base interfaces. */
