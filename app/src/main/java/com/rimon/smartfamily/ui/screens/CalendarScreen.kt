@@ -266,7 +266,6 @@ fun CalendarScreen(vm: HomeLifeViewModel, viewer: Viewer, settings: AppSettings?
     }
 
     val context = androidx.compose.ui.platform.LocalContext.current
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val icsPicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) vm.importIcs(uri, viewer.familyId, viewer.userId)
     }
