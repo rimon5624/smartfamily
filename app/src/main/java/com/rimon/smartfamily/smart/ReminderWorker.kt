@@ -77,6 +77,18 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
             }
         }
 
+        // PCK-4: the evening before, what to pack tomorrow.
+        if (hour >= 20) {
+            val tomorrow = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date(now + 86_400_000L))
+            c.kitchen.packedOn(tomorrow).filter { it.status == "PLANNED" && it.items.isNotBlank() }.forEach { p ->
+                val key = "packed:${p.id}:$tomorrow"
+                if (key !in seen) {
+                    val who = c.kitchen.profile(p.profileId)?.personName.orEmpty()
+                    fresh += key to applicationContext.getString(R.string.rem_packed, who, p.items.lines().joinToString(", "))
+                }
+            }
+        }
+
         if (fresh.isNotEmpty()) {
             show(applicationContext, fresh.map { it.second })
             seen += fresh.map { it.first }

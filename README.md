@@ -2,7 +2,18 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 0.3.0 — Phase 2 (home routine)**
+**Current version: 0.4.0 — Phase 3 (kitchen)**
+
+## What is new in 0.4.0
+
+- Recipe book: meal types, kashrut, servings, times, ingredients, steps, favourites, ratings, "cooked N times"
+- Import a recipe from a website using its schema.org data (free); AI reads the page or a photo of a handwritten recipe when needed
+- Scale servings; send missing ingredients (not in the home inventory) to the shopping list
+- AI: "what to cook" from meal, kashrut, time, pantry and what expires soon; substitutes that keep kashrut; dishes that complete a meal
+- Cooking mode: one big step at a time, screen kept on, timers found in each step (also set on the phone's clock)
+- Weekly menu with Friday-night, Shabbat lunch and seuda shlishit slots, Hebrew dates, copy last week, week's ingredients to the list
+- Packed meals per person and place: rules, likes and dislikes, weekly plan (offline, or with AI), packed/eaten/came back, evening reminder
+- The family's Supabase project is preset in the app; just create an account in Settings → Cloud sync
 
 ## What is new in 0.3.0
 

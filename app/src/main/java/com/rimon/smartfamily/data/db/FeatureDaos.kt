@@ -49,3 +49,44 @@ interface EventDao : EventDaoBase {
     @Query("SELECT * FROM events WHERE deletedAt IS NULL")
     suspend fun allActive(): List<EventEntity>
 }
+
+// ---------- 0.4 ----------
+
+@Dao
+interface RecipeDao : RecipeDaoBase {
+    @Query("SELECT * FROM recipes WHERE familyId = :familyId AND deletedAt IS NULL ORDER BY favorite DESC, timesCooked DESC, title")
+    fun observeSorted(familyId: String): Flow<List<RecipeEntity>>
+}
+
+@Dao
+interface RecipeRatingDao : RecipeRatingDaoBase {
+    @Query("SELECT * FROM recipe_ratings WHERE recipeId = :recipeId AND deletedAt IS NULL")
+    fun observeForRecipe(recipeId: String): Flow<List<RecipeRatingEntity>>
+
+    @Query("SELECT * FROM recipe_ratings WHERE recipeId = :recipeId AND userId = :userId AND deletedAt IS NULL LIMIT 1")
+    suspend fun find(recipeId: String, userId: String): RecipeRatingEntity?
+}
+
+@Dao
+interface MealPlanEntryDao : MealPlanEntryDaoBase {
+    @Query("SELECT * FROM meal_plan_entries WHERE familyId = :familyId AND deletedAt IS NULL AND date >= :from AND date <= :to ORDER BY date")
+    fun observeRange(familyId: String, from: String, to: String): Flow<List<MealPlanEntryEntity>>
+
+    @Query("SELECT * FROM meal_plan_entries WHERE familyId = :familyId AND deletedAt IS NULL AND date >= :from AND date <= :to")
+    suspend fun range(familyId: String, from: String, to: String): List<MealPlanEntryEntity>
+}
+
+@Dao
+interface MealProfileDao : MealProfileDaoBase
+
+@Dao
+interface PackedMealDao : PackedMealDaoBase {
+    @Query("SELECT * FROM packed_meals WHERE familyId = :familyId AND deletedAt IS NULL AND date >= :from AND date <= :to ORDER BY date")
+    fun observeRange(familyId: String, from: String, to: String): Flow<List<PackedMealEntity>>
+
+    @Query("SELECT * FROM packed_meals WHERE profileId = :profileId AND deletedAt IS NULL AND date >= :from AND date <= :to")
+    suspend fun forProfile(profileId: String, from: String, to: String): List<PackedMealEntity>
+
+    @Query("SELECT * FROM packed_meals WHERE deletedAt IS NULL AND date = :date")
+    suspend fun onDate(date: String): List<PackedMealEntity>
+}

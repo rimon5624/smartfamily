@@ -79,20 +79,39 @@ class GeminiClient(private val crypto: KeystoreCrypto, private val settings: sus
     val isConfigured: Boolean get() = !apiKey().isNullOrBlank()
 
     /** Returns items seen in the photo; [mode] selects the prompt. */
-    suspend fun itemsFromPhoto(context: Context, uri: Uri, mode: PhotoMode): List<ItemDraft> = withContext(Dispatchers.IO) {
+    suspend fun itemsFromPhoto(context: Context, uri: Uri, mode: PhotoMode): List<ItemDraft> {
+        val jpeg = withContext(Dispatchers.IO) { loadScaledJpeg(context, uri, 1280) }
+        return parseItems(ask(mode.prompt, listOf("image/jpeg" to jpeg)))
+    }
+
+    /** Sends a prompt with an image (JPEG) and returns the model's JSON text. */
+    suspend fun askWithImage(context: Context, uri: Uri, prompt: String): String {
+        val jpeg = withContext(Dispatchers.IO) { loadScaledJpeg(context, uri, 1600) }
+        return ask(prompt, listOf("image/jpeg" to jpeg))
+    }
+
+    /** Sends a prompt with a PDF document (e.g. an appliance manual, up to ~20 MB). */
+    suspend fun askWithPdf(pdf: ByteArray, prompt: String): String = ask(prompt, listOf("application/pdf" to pdf))
+
+    /**
+     * One Gemini call. The answer is requested as JSON; [attachments] are (mime type, bytes).
+     * Nothing is sent while privacy mode is on.
+     */
+    suspend fun ask(prompt: String, attachments: List<Pair<String, ByteArray>> = emptyList()): String = withContext(Dispatchers.IO) {
         val (model, privacy) = settings()
-        if (privacy) throw IOException("Privacy mode is on: photo recognition is off")
+        if (privacy) throw IOException("Privacy mode is on: AI features are off")
         val key = apiKey() ?: throw AiNotConfiguredException()
-        val jpeg = loadScaledJpeg(context, uri, 1280)
         val body = buildJsonObject {
             putJsonArray("contents") {
                 addJsonObject {
                     putJsonArray("parts") {
-                        addJsonObject { put("text", mode.prompt) }
-                        addJsonObject {
-                            putJsonObject("inline_data") {
-                                put("mime_type", "image/jpeg")
-                                put("data", Base64.encodeToString(jpeg, Base64.NO_WRAP))
+                        addJsonObject { put("text", prompt) }
+                        attachments.forEach { (mime, bytes) ->
+                            addJsonObject {
+                                putJsonObject("inline_data") {
+                                    put("mime_type", mime)
+                                    put("data", Base64.encodeToString(bytes, Base64.NO_WRAP))
+                                }
                             }
                         }
                     }
@@ -108,7 +127,7 @@ class GeminiClient(private val crypto: KeystoreCrypto, private val settings: sus
             .header("x-goog-api-key", key)
             .post(body.toString().toRequestBody("application/json".toMediaType()))
             .build()
-        val text = http.newCall(req).execute().use { resp ->
+        http.newCall(req).execute().use { resp ->
             val raw = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) {
                 val msg = runCatching {
@@ -120,7 +139,6 @@ class GeminiClient(private val crypto: KeystoreCrypto, private val settings: sus
                 ?.get("content")?.jsonObject?.get("parts")?.jsonArray?.firstOrNull()?.jsonObject
                 ?.get("text")?.jsonPrimitive?.contentOrNull.orEmpty()
         }
-        parseItems(text)
     }
 
     private fun parseItems(text: String): List<ItemDraft> {

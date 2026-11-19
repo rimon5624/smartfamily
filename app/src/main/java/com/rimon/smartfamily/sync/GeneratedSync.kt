@@ -8,6 +8,11 @@ import com.rimon.smartfamily.data.db.PointsEntryEntity
 import com.rimon.smartfamily.data.db.RewardEntity
 import com.rimon.smartfamily.data.db.FamilyDateEntity
 import com.rimon.smartfamily.data.db.EventEntity
+import com.rimon.smartfamily.data.db.RecipeEntity
+import com.rimon.smartfamily.data.db.RecipeRatingEntity
+import com.rimon.smartfamily.data.db.MealPlanEntryEntity
+import com.rimon.smartfamily.data.db.MealProfileEntity
+import com.rimon.smartfamily.data.db.PackedMealEntity
 import kotlinx.serialization.Serializable
 
 internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
@@ -41,6 +46,31 @@ internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
             { db.events().dirty() }, { it.id }, { db.events().markClean(it) },
             { rows -> db.events().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
         ),
+        TableSync(
+            "recipes", "id", RecipeEntity.serializer(),
+            { db.recipes().dirty() }, { it.id }, { db.recipes().markClean(it) },
+            { rows -> db.recipes().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "recipe_ratings", "id", RecipeRatingEntity.serializer(),
+            { db.recipeRatings().dirty() }, { it.id }, { db.recipeRatings().markClean(it) },
+            { rows -> db.recipeRatings().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "meal_plan_entries", "id", MealPlanEntryEntity.serializer(),
+            { db.mealPlanEntrys().dirty() }, { it.id }, { db.mealPlanEntrys().markClean(it) },
+            { rows -> db.mealPlanEntrys().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "meal_profiles", "id", MealProfileEntity.serializer(),
+            { db.mealProfiles().dirty() }, { it.id }, { db.mealProfiles().markClean(it) },
+            { rows -> db.mealProfiles().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "packed_meals", "id", PackedMealEntity.serializer(),
+            { db.packedMeals().dirty() }, { it.id }, { db.packedMeals().markClean(it) },
+            { rows -> db.packedMeals().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
 )
 
 /** Backup content of the generated tables (BAK-2); missing lists in older backups default to empty. */
@@ -52,6 +82,11 @@ data class GeneratedBackup(
     val rewards: List<RewardEntity> = emptyList(),
     val familyDates: List<FamilyDateEntity> = emptyList(),
     val events: List<EventEntity> = emptyList(),
+    val recipes: List<RecipeEntity> = emptyList(),
+    val recipeRatings: List<RecipeRatingEntity> = emptyList(),
+    val mealPlanEntrys: List<MealPlanEntryEntity> = emptyList(),
+    val mealProfiles: List<MealProfileEntity> = emptyList(),
+    val packedMeals: List<PackedMealEntity> = emptyList(),
 )
 
 suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
@@ -61,6 +96,11 @@ suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
         rewards = db.rewards().all(),
         familyDates = db.familyDates().all(),
         events = db.events().all(),
+        recipes = db.recipes().all(),
+        recipeRatings = db.recipeRatings().all(),
+        mealPlanEntrys = db.mealPlanEntrys().all(),
+        mealProfiles = db.mealProfiles().all(),
+        packedMeals = db.packedMeals().all(),
 )
 
 suspend fun clearGenerated(db: AppDatabase) {
@@ -70,6 +110,11 @@ suspend fun clearGenerated(db: AppDatabase) {
     db.rewards().clear()
     db.familyDates().clear()
     db.events().clear()
+    db.recipes().clear()
+    db.recipeRatings().clear()
+    db.mealPlanEntrys().clear()
+    db.mealProfiles().clear()
+    db.packedMeals().clear()
 }
 
 suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
@@ -79,4 +124,9 @@ suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
     db.rewards().upsertAll(p.rewards.map { it.copy(dirty = true) })
     db.familyDates().upsertAll(p.familyDates.map { it.copy(dirty = true) })
     db.events().upsertAll(p.events.map { it.copy(dirty = true) })
+    db.recipes().upsertAll(p.recipes.map { it.copy(dirty = true) })
+    db.recipeRatings().upsertAll(p.recipeRatings.map { it.copy(dirty = true) })
+    db.mealPlanEntrys().upsertAll(p.mealPlanEntrys.map { it.copy(dirty = true) })
+    db.mealProfiles().upsertAll(p.mealProfiles.map { it.copy(dirty = true) })
+    db.packedMeals().upsertAll(p.packedMeals.map { it.copy(dirty = true) })
 }

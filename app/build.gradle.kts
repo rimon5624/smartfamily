@@ -24,6 +24,13 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
         vectorDrawables { useSupportLibrary = true }
+        // The family's Supabase project. The anon key is public by design: row-level security
+        // on the server decides what each signed-in user can read or write.
+        buildConfigField("String", "DEFAULT_SUPABASE_URL", "\"https://giqafbtcyimbifyjvpgo.supabase.co\"")
+        buildConfigField(
+            "String", "DEFAULT_SUPABASE_ANON_KEY",
+            "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpcWFmYnRjeWltYmlmeWp2cGdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUxMDExMTMsImV4cCI6MjExMDY3NzExM30.k_U-_iC6Z5zP6ZQqC3WtczQpuVqxQsIgFjlEkdx5aeY\"",
+        )
     }
 
     signingConfigs {

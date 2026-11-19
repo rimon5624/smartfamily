@@ -26,12 +26,19 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         RewardEntity::class,
         FamilyDateEntity::class,
         EventEntity::class,
+        // 0.4.0
+        RecipeEntity::class,
+        RecipeRatingEntity::class,
+        MealPlanEntryEntity::class,
+        MealProfileEntity::class,
+        PackedMealEntity::class,
     ],
     version = SchemaInfo.DB_VERSION,
     exportSchema = true,
     // New tables only: Room writes these migrations itself from the exported schemas in app/schemas.
     autoMigrations = [
         AutoMigration(from = 2, to = 3),
+        AutoMigration(from = 3, to = 4),
     ],
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -50,6 +57,11 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun rewards(): RewardDao
     abstract fun familyDates(): FamilyDateDao
     abstract fun events(): EventDao
+    abstract fun recipes(): RecipeDao
+    abstract fun recipeRatings(): RecipeRatingDao
+    abstract fun mealPlanEntrys(): MealPlanEntryDao
+    abstract fun mealProfiles(): MealProfileDao
+    abstract fun packedMeals(): PackedMealDao
 
     companion object {
         /**

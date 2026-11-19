@@ -74,4 +74,57 @@ TABLES = [
         ("remindMinutes", "Int", "60"),
         ("source", "String", '""'),
     ], indices=["startAt"]),
+
+    # ---------- 0.4: recipes, meal plan, packed meals ----------
+    dict(name="recipes", entity="RecipeEntity", version=4, policy="adults", fields=[
+        ("title", "String", None),
+        ("mealTypes", "String", '""'),           # comma-separated: breakfast,lunch,dinner,shabbat,holiday,snack
+        ("kashrut", "String", '"parve"'),        # meat, dairy, parve
+        ("tags", "String", '""'),                # vegetarian, gluten_free, ...
+        ("servings", "Int", "4"),
+        ("prepMinutes", "Int", "0"),
+        ("cookMinutes", "Int", "0"),
+        ("difficulty", "String", '"easy"'),
+        ("ingredients", "String", '"[]"'),       # JSON list of {name, quantity, unit, note}
+        ("steps", "String", '"[]"'),             # JSON list of strings
+        ("equipment", "String", '""'),
+        ("notes", "String", '""'),
+        ("source", "String", '""'),
+        ("favorite", "Boolean", "false"),
+        ("timesCooked", "Int", "0"),
+        ("lastCooked", "Long?", "null"),
+        ("createdBy", "String", None),
+    ], indices=[]),
+    dict(name="recipe_ratings", entity="RecipeRatingEntity", version=4, policy="members", fields=[
+        ("recipeId", "String", None),
+        ("userId", "String", None),
+        ("stars", "Int", "5"),
+        ("comment", "String", '""'),
+    ], indices=["recipeId"]),
+    dict(name="meal_plan_entries", entity="MealPlanEntryEntity", version=4, policy="adults", fields=[
+        ("date", "String", None),                # yyyy-MM-dd
+        ("slot", "String", None),                # breakfast, lunch, dinner, shabbat_night, shabbat_lunch, seuda_shlishit, snack
+        ("recipeId", "String?", "null"),
+        ("title", "String", '""'),
+        ("servings", "Int", "4"),
+        ("note", "String", '""'),
+    ], indices=["date"]),
+    dict(name="meal_profiles", entity="MealProfileEntity", version=4, policy="adults", fields=[
+        ("personId", "String", '""'),
+        ("personName", "String", None),
+        ("place", "String", '"school"'),         # kindergarten, school, army, work, trip
+        ("rules", "String", '""'),
+        ("likes", "String", '""'),               # one food per line
+        ("dislikes", "String", '""'),
+        ("kashrut", "String", '"dairy"'),
+        ("weekdays", "Int", "31"),               # bit 0 = Sunday; default Sunday-Thursday
+        ("maxRepeat", "Int", "2"),
+    ], indices=[]),
+    dict(name="packed_meals", entity="PackedMealEntity", version=4, policy="members", fields=[
+        ("profileId", "String", None),
+        ("date", "String", None),
+        ("items", "String", '""'),               # one item per line
+        ("status", "String", '"PLANNED"'),       # PLANNED, PACKED, UNEATEN, EATEN
+        ("feedback", "String", '""'),
+    ], indices=["profileId", "date"]),
 ]

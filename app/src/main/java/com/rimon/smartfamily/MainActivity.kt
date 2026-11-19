@@ -45,6 +45,11 @@ import com.rimon.smartfamily.model.AppModule
 import com.rimon.smartfamily.model.Role
 import com.rimon.smartfamily.ui.AppViewModel
 import com.rimon.smartfamily.ui.HomeLifeViewModel
+import com.rimon.smartfamily.ui.KitchenViewModel
+import com.rimon.smartfamily.ui.screens.CookingScreen
+import com.rimon.smartfamily.ui.screens.KitchenScreen
+import com.rimon.smartfamily.ui.screens.RecipeDetailScreen
+import com.rimon.smartfamily.ui.screens.RecipeEditScreen
 import com.rimon.smartfamily.ui.ShoppingViewModel
 import com.rimon.smartfamily.ui.screens.CalendarScreen
 import com.rimon.smartfamily.ui.screens.ChoresScreen
@@ -100,6 +105,7 @@ private enum class Tab(val route: String, val label: Int, val on: ImageVector, v
 private fun MainNav(vm: AppViewModel) {
     val shopVm: ShoppingViewModel = viewModel()
     val lifeVm: HomeLifeViewModel = viewModel()
+    val kitchenVm: KitchenViewModel = viewModel()
     val nav = rememberNavController()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val family by vm.activeFamily.collectAsStateWithLifecycle()
@@ -122,7 +128,7 @@ private fun MainNav(vm: AppViewModel) {
     val showBar = Tab.entries.any { it.route == route }
 
     LaunchedEffect(Unit) {
-        merge(vm.messages, shopVm.messages, lifeVm.messages).collect { msg ->
+        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages).collect { msg ->
             val text = when (msg) {
                 is UiMessage.Res -> if (msg.arg != null) context.getString(msg.id, msg.arg) else context.getString(msg.id)
                 is UiMessage.Text -> context.getString(R.string.error_generic, msg.text)
@@ -176,6 +182,8 @@ private fun MainNav(vm: AppViewModel) {
                             AppModule.INVENTORY -> nav.navigate("inventory")
                             AppModule.CHORES -> nav.navigate("chores")
                             AppModule.CALENDAR -> nav.navigate("calendar")
+                            AppModule.RECIPES -> nav.navigate("kitchen/0")
+                            AppModule.PACKED_MEALS -> nav.navigate("kitchen/2")
                             else -> Unit
                         }
                     },
@@ -226,6 +234,29 @@ private fun MainNav(vm: AppViewModel) {
             }
             composable("calendar") {
                 if (famId.isNotEmpty()) CalendarScreen(lifeVm, viewer, onBack = { nav.popBackStack() })
+            }
+            composable("kitchen/{tab}") { back ->
+                if (famId.isNotEmpty()) KitchenScreen(
+                    kitchenVm, viewer, back.arguments?.getString("tab")?.toIntOrNull() ?: 0,
+                    onBack = { nav.popBackStack() },
+                    onOpenRecipe = { nav.navigate("recipe/$it") },
+                    onEditRecipe = { nav.navigate("recipe/edit/$it") },
+                )
+            }
+            composable("recipe/{id}") { back ->
+                val id = back.arguments?.getString("id").orEmpty()
+                RecipeDetailScreen(
+                    kitchenVm, viewer, id,
+                    onBack = { nav.popBackStack() },
+                    onEdit = { nav.navigate("recipe/edit/$id") },
+                    onCook = { nav.navigate("cook/$id") },
+                )
+            }
+            composable("recipe/edit/{id}") { back ->
+                RecipeEditScreen(kitchenVm, viewer, back.arguments?.getString("id").orEmpty(), onDone = { nav.popBackStack() })
+            }
+            composable("cook/{id}") { back ->
+                CookingScreen(kitchenVm, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
             }
             composable("inventory") {
                 if (famId.isNotEmpty()) InventoryScreen(shopVm, viewer, onBack = { nav.popBackStack() })

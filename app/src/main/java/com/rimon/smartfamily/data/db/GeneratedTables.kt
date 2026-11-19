@@ -123,6 +123,97 @@ data class EventEntity(
     @Transient val dirty: Boolean = true,
 )
 
+@Serializable
+@Entity(tableName = "recipes", indices = [Index("familyId")])
+data class RecipeEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    val title: String,
+    @SerialName("meal_types") val mealTypes: String = "",
+    val kashrut: String = "parve",
+    val tags: String = "",
+    val servings: Int = 4,
+    @SerialName("prep_minutes") val prepMinutes: Int = 0,
+    @SerialName("cook_minutes") val cookMinutes: Int = 0,
+    val difficulty: String = "easy",
+    val ingredients: String = "[]",
+    val steps: String = "[]",
+    val equipment: String = "",
+    val notes: String = "",
+    val source: String = "",
+    val favorite: Boolean = false,
+    @SerialName("times_cooked") val timesCooked: Int = 0,
+    @SerialName("last_cooked") val lastCooked: Long? = null,
+    @SerialName("created_by") val createdBy: String,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "recipe_ratings", indices = [Index("familyId"), Index("recipeId")])
+data class RecipeRatingEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("recipe_id") val recipeId: String,
+    @SerialName("user_id") val userId: String,
+    val stars: Int = 5,
+    val comment: String = "",
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "meal_plan_entries", indices = [Index("familyId"), Index("date")])
+data class MealPlanEntryEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    val date: String,
+    val slot: String,
+    @SerialName("recipe_id") val recipeId: String? = null,
+    val title: String = "",
+    val servings: Int = 4,
+    val note: String = "",
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "meal_profiles", indices = [Index("familyId")])
+data class MealProfileEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("person_id") val personId: String = "",
+    @SerialName("person_name") val personName: String,
+    val place: String = "school",
+    val rules: String = "",
+    val likes: String = "",
+    val dislikes: String = "",
+    val kashrut: String = "dairy",
+    val weekdays: Int = 31,
+    @SerialName("max_repeat") val maxRepeat: Int = 2,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "packed_meals", indices = [Index("familyId"), Index("profileId"), Index("date")])
+data class PackedMealEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("profile_id") val profileId: String,
+    val date: String,
+    val items: String = "",
+    val status: String = "PLANNED",
+    val feedback: String = "",
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
 // Base DAOs: the feature DAOs in FeatureDaos.kt extend these and add their own queries.
 
 interface ChoreDaoBase {
@@ -201,4 +292,69 @@ interface EventDaoBase {
     @Query("SELECT * FROM events WHERE dirty = 1") suspend fun dirty(): List<EventEntity>
     @Query("UPDATE events SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
     @Query("DELETE FROM events") suspend fun clear()
+}
+
+interface RecipeDaoBase {
+    @Query("SELECT * FROM recipes WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<RecipeEntity>>
+    @Query("SELECT * FROM recipes WHERE id = :id") suspend fun get(id: String): RecipeEntity?
+    @Query("SELECT * FROM recipes WHERE id = :id") fun observeOne(id: String): Flow<RecipeEntity?>
+    @Upsert suspend fun upsert(item: RecipeEntity)
+    @Upsert suspend fun upsertAll(items: List<RecipeEntity>)
+    @Query("SELECT * FROM recipes") suspend fun all(): List<RecipeEntity>
+    @Query("SELECT * FROM recipes WHERE dirty = 1") suspend fun dirty(): List<RecipeEntity>
+    @Query("UPDATE recipes SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM recipes") suspend fun clear()
+}
+
+interface RecipeRatingDaoBase {
+    @Query("SELECT * FROM recipe_ratings WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<RecipeRatingEntity>>
+    @Query("SELECT * FROM recipe_ratings WHERE id = :id") suspend fun get(id: String): RecipeRatingEntity?
+    @Query("SELECT * FROM recipe_ratings WHERE id = :id") fun observeOne(id: String): Flow<RecipeRatingEntity?>
+    @Upsert suspend fun upsert(item: RecipeRatingEntity)
+    @Upsert suspend fun upsertAll(items: List<RecipeRatingEntity>)
+    @Query("SELECT * FROM recipe_ratings") suspend fun all(): List<RecipeRatingEntity>
+    @Query("SELECT * FROM recipe_ratings WHERE dirty = 1") suspend fun dirty(): List<RecipeRatingEntity>
+    @Query("UPDATE recipe_ratings SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM recipe_ratings") suspend fun clear()
+}
+
+interface MealPlanEntryDaoBase {
+    @Query("SELECT * FROM meal_plan_entries WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<MealPlanEntryEntity>>
+    @Query("SELECT * FROM meal_plan_entries WHERE id = :id") suspend fun get(id: String): MealPlanEntryEntity?
+    @Query("SELECT * FROM meal_plan_entries WHERE id = :id") fun observeOne(id: String): Flow<MealPlanEntryEntity?>
+    @Upsert suspend fun upsert(item: MealPlanEntryEntity)
+    @Upsert suspend fun upsertAll(items: List<MealPlanEntryEntity>)
+    @Query("SELECT * FROM meal_plan_entries") suspend fun all(): List<MealPlanEntryEntity>
+    @Query("SELECT * FROM meal_plan_entries WHERE dirty = 1") suspend fun dirty(): List<MealPlanEntryEntity>
+    @Query("UPDATE meal_plan_entries SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM meal_plan_entries") suspend fun clear()
+}
+
+interface MealProfileDaoBase {
+    @Query("SELECT * FROM meal_profiles WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<MealProfileEntity>>
+    @Query("SELECT * FROM meal_profiles WHERE id = :id") suspend fun get(id: String): MealProfileEntity?
+    @Query("SELECT * FROM meal_profiles WHERE id = :id") fun observeOne(id: String): Flow<MealProfileEntity?>
+    @Upsert suspend fun upsert(item: MealProfileEntity)
+    @Upsert suspend fun upsertAll(items: List<MealProfileEntity>)
+    @Query("SELECT * FROM meal_profiles") suspend fun all(): List<MealProfileEntity>
+    @Query("SELECT * FROM meal_profiles WHERE dirty = 1") suspend fun dirty(): List<MealProfileEntity>
+    @Query("UPDATE meal_profiles SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM meal_profiles") suspend fun clear()
+}
+
+interface PackedMealDaoBase {
+    @Query("SELECT * FROM packed_meals WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<PackedMealEntity>>
+    @Query("SELECT * FROM packed_meals WHERE id = :id") suspend fun get(id: String): PackedMealEntity?
+    @Query("SELECT * FROM packed_meals WHERE id = :id") fun observeOne(id: String): Flow<PackedMealEntity?>
+    @Upsert suspend fun upsert(item: PackedMealEntity)
+    @Upsert suspend fun upsertAll(items: List<PackedMealEntity>)
+    @Query("SELECT * FROM packed_meals") suspend fun all(): List<PackedMealEntity>
+    @Query("SELECT * FROM packed_meals WHERE dirty = 1") suspend fun dirty(): List<PackedMealEntity>
+    @Query("UPDATE packed_meals SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM packed_meals") suspend fun clear()
 }
