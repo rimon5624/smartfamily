@@ -30,17 +30,39 @@ jobs:
         id: ver
         run: echo "name=$(grep '^APP_VERSION_NAME=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
-      - name: Restore signing key
+      - name: Restore and check signing key
         env:
           KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          STORE_PW: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
+          WANT_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         run: |
-          if [ -n "$KEYSTORE_B64" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
-            echo "SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
-            echo "Release key found"
-          else
+          if [ -z "$KEYSTORE_B64" ]; then
             echo "::warning::No SIGNING_KEYSTORE_BASE64 secret: APK is signed with a temporary debug key and cannot update a previously installed build."
+            exit 0
           fi
+          # Tolerate line breaks or spaces pasted into the secret.
+          echo "$KEYSTORE_B64" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/release.jks"
+          if ! keytool -list -keystore "$RUNNER_TEMP/release.jks" -storepass "$STORE_PW" > "$RUNNER_TEMP/ks.txt" 2>&1; then
+            echo "::error::Cannot open the keystore: SIGNING_KEYSTORE_PASSWORD is wrong or SIGNING_KEYSTORE_BASE64 is not a valid keystore."
+            exit 1
+          fi
+          # Key names in the keystore (not printed: this repository's logs are public).
+          grep -E 'PrivateKeyEntry' "$RUNNER_TEMP/ks.txt" | sed 's/,.*//' > "$RUNNER_TEMP/aliases.txt"
+          count=$(wc -l < "$RUNNER_TEMP/aliases.txt")
+          want=$(printf '%s' "$WANT_ALIAS" | tr -d '\r\n' | sed 's/^ *//; s/ *$//')
+          match=$(grep -ixF -- "$want" "$RUNNER_TEMP/aliases.txt" | head -1 || true)
+          if [ -z "$match" ] && [ "$count" = "1" ]; then
+            match=$(cat "$RUNNER_TEMP/aliases.txt")
+            echo "::warning::SIGNING_KEY_ALIAS does not match the key in the keystore; the keystore holds exactly one key, so that key is used. Update the secret to remove this warning."
+          fi
+          if [ -z "$match" ]; then
+            echo "::error::SIGNING_KEY_ALIAS matches none of the $count keys in the keystore. Set it to the alias used when the key was created."
+            exit 1
+          fi
+          echo "::add-mask::$match"
+          echo "SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          echo "SIGNING_KEY_ALIAS_RESOLVED=$match" >> "$GITHUB_ENV"
+          echo "Release key found ($count key(s) in keystore)"
 
       - name: Build release APK
         env:
