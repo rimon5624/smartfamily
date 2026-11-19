@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common -->
+    <string name="ok">אישור</string>
+    <string name="cancel">ביטול</string>
+    <string name="save">שמירה</string>
+    <string name="delete">מחיקה</string>
+    <string name="back">חזרה</string>
+    <string name="next">הבא</string>
+    <string name="close">סגירה</string>
+    <string name="help">עזרה</string>
+    <string name="share">שיתוף</string>
+    <string name="error_generic">משהו השתבש: %1$s</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">בית</string>
+    <string name="nav_families">משפחות</string>
+    <string name="nav_settings">הגדרות</string>
+
+    <!-- Onboarding -->
+    <string name="onb_welcome_title">ברוכים הבאים ל-SmartFamily</string>
+    <string name="onb_welcome_body">מקום אחד לכל הבית: קניות, מטלות, ארוחות, מכשירי חשמל, צ\'אט משפחתי ותאריכים.</string>
+    <string name="onb_choose_language">בחירת שפה</string>
+    <string name="onb_name_title">איך לקרוא לך?</string>
+    <string name="onb_name_hint">השם שלך</string>
+    <string name="onb_family_title">יצירת המשפחה הראשונה</string>
+    <string name="onb_family_body">בהמשך אפשר להשתייך לכמה משפחות: הבית שלכם, האחים, המשפחה המורחבת.</string>
+    <string name="onb_family_hint">שם המשפחה</string>
+    <string name="onb_family_default">המשפחה שלנו</string>
+    <string name="onb_modules_title">במה להתחיל?</string>
+    <string name="onb_modules_body">הדליקו את מה שצריך עכשיו. אפשר לשנות הכול בהמשך בהגדרות.</string>
+    <string name="onb_finish">יאללה</string>
+    <string name="onb_step">שלב %1$d מתוך %2$d</string>
+
+    <!-- Home -->
+    <string name="greeting_morning">בוקר טוב, %1$s</string>
+    <string name="greeting_afternoon">צהריים טובים, %1$s</string>
+    <string name="greeting_evening">ערב טוב, %1$s</string>
+    <string name="greeting_night">לילה טוב, %1$s</string>
+    <string name="home_no_family">עדיין אין משפחה. צרו אחת כדי להתחיל.</string>
+    <string name="home_create_family">יצירת משפחה</string>
+    <string name="home_your_modules">המודולים שלך</string>
+    <string name="home_coming">יגיע בגרסה 0.%1$d</string>
+    <string name="home_no_modules">אין מודולים פעילים עבורך במשפחה הזו.</string>
+    <string name="home_manage_modules">בחירת מודולים</string>
+    <string name="home_sync_local">נשמר בטלפון הזה בלבד. חברו סנכרון ענן כדי לשתף עם המשפחה.</string>
+    <string name="home_sync_ok">סונכרן %1$s</string>
+    <string name="home_sync_pending">עדיין לא סונכרן</string>
+    <string name="home_sync_error">בעיה בסנכרון: %1$s</string>
+    <string name="home_switch_family">החלפת משפחה</string>
+    <string name="home_members_count">%1$d חברים</string>
+
+    <!-- Families -->
+    <string name="families_title">משפחות</string>
+    <string name="families_new">משפחה חדשה</string>
+    <string name="families_join">הצטרפות עם קוד</string>
+    <string name="families_active">פעילה</string>
+    <string name="families_make_active">הפוך לפעילה</string>
+    <string name="family_members">חברים</string>
+    <string name="family_invites">הזמנות</string>
+    <string name="family_invite_new">יצירת הזמנה</string>
+    <string name="family_invite_code">בתוקף עד %1$s</string>
+    <string name="family_invite_share_text">הצטרפו למשפחה \"%1$s\" באפליקציית SmartFamily עם הקוד %2$s (בתוקף ל-48 שעות).</string>
+    <string name="family_invite_revoke">ביטול הזמנה</string>
+    <string name="family_no_invites">אין הזמנות פתוחות.</string>
+    <string name="family_add_child">הוספת פרופיל ילד</string>
+    <string name="family_child_name">שם הילד</string>
+    <string name="family_rename">שינוי שם</string>
+    <string name="family_delete">מחיקת המשפחה</string>
+    <string name="family_delete_confirm">למחוק את \"%1$s\" לכל החברים? אי אפשר לבטל את זה.</string>
+    <string name="family_pending">ממתין לאישור</string>
+    <string name="family_approve">אישור</string>
+    <string name="family_remove">הסרה</string>
+    <string name="family_change_role">שינוי תפקיד</string>
+    <string name="family_you">את/ה</string>
+    <string name="family_kashrut">כשרות</string>
+    <string name="kashrut_kosher">כשר</string>
+    <string name="kashrut_mehadrin">כשר למהדרין</string>
+    <string name="kashrut_none">לא כשר</string>
+    <string name="family_modules">מודולים במשפחה הזו</string>
+    <string name="family_needs_cloud">הזמנות והצטרפות עובדות אחרי חיבור סנכרון ענן (הגדרות ← סנכרון ענן).</string>
+    <string name="join_title">הצטרפות למשפחה</string>
+    <string name="join_code_hint">קוד הזמנה</string>
+    <string name="join_send">שליחת בקשה</string>
+    <string name="join_sent">הבקשה נשלחה. מנהל של המשפחה צריך לאשר אותך.</string>
+    <string name="family_name_hint">שם המשפחה</string>
+
+    <string name="role_owner">בעלים</string>
+    <string name="role_admin">מנהל</string>
+    <string name="role_member">חבר</string>
+    <string name="role_child">ילד</string>
+    <string name="role_guest">אורח</string>
+
+    <!-- Modules -->
+    <string name="modules_title">מודולים</string>
+    <string name="modules_family_level">משפחה</string>
+    <string name="modules_my_level">בשבילי</string>
+    <string name="modules_intro">את המתג המשפחתי קובעים המנהלים. המתג האישי שלך יכול רק להסתיר מודול עבורך.</string>
+    <string name="modules_admin_only">רק מנהלים משנים מודולים משפחתיים</string>
+
+    <string name="mod_shopping">רשימת קניות</string>
+    <string name="mod_shopping_sub">רשימות משותפות, קול, ברקוד ותמונה</string>
+    <string name="mod_prices">השוואת מחירים</string>
+    <string name="mod_prices_sub">כל הרשתות זו לצד זו</string>
+    <string name="mod_inventory">מלאי הבית</string>
+    <string name="mod_inventory_sub">מקרר, מקפיא, מזווה ותאריכי תפוגה</string>
+    <string name="mod_appliances">מכשירי חשמל</string>
+    <string name="mod_appliances_sub">כביסה, מייבש, מזגן, רכב: מדריכים וטיימרים</string>
+    <string name="mod_recipes">מתכונים וארוחות</string>
+    <string name="mod_recipes_sub">תכנון שבועי, כשרות וטיימרים לבישול</string>
+    <string name="mod_packed">אוכל לדרך</string>
+    <string name="mod_packed_sub">בית ספר, גן, צבא ועבודה</string>
+    <string name="mod_chores">מטלות ותזכורות</string>
+    <string name="mod_chores_sub">מטלות בית, הכנות לשבת ונקודות לילדים</string>
+    <string name="mod_travel">אריזה לנסיעות</string>
+    <string name="mod_travel_sub">רשימות לפי תיק, ימים ומזג אוויר</string>
+    <string name="mod_chat">צ\'אט משפחתי</string>
+    <string name="mod_chat_sub">מוצפן, עם תמלול הודעות קוליות</string>
+    <string name="mod_calendar">תאריכים ולוח שנה</string>
+    <string name="mod_calendar_sub">תאריכים עבריים ולועזיים, זמני היום</string>
+    <string name="mod_budget">תקציב הבית</string>
+    <string name="mod_budget_sub">הוצאות לפי קטגוריה</string>
+    <string name="mod_homebook">ספר הבית</string>
+    <string name="mod_homebook_sub">אחריות, חשבוניות ותיקונים</string>
+    <string name="mod_knowledge">תיבת ידע</string>
+    <string name="mod_knowledge_sub">WiFi, קודים ופתקים משפחתיים</string>
+    <string name="mod_polls">סקרים</string>
+    <string name="mod_polls_sub">החלטות משפחתיות מהירות</string>
+
+    <!-- Settings -->
+    <string name="settings_title">הגדרות</string>
+    <string name="settings_profile">פרופיל</string>
+    <string name="settings_profile_name">השם שלך</string>
+    <string name="settings_appearance">מראה</string>
+    <string name="settings_language">שפה</string>
+    <string name="settings_theme">ערכת נושא</string>
+    <string name="theme_system">לפי המערכת</string>
+    <string name="theme_light">בהיר</string>
+    <string name="theme_dark">כהה</string>
+    <string name="settings_dynamic_color">צבעי הטפט</string>
+    <string name="settings_dynamic_color_sub">שימוש בצבעי הטפט שלך (Android 12 ומעלה)</string>
+    <string name="settings_privacy">מצב פרטיות</string>
+    <string name="settings_privacy_sub">מכבה כל יכולת ששולחת מידע לשירות חיצוני</string>
+    <string name="settings_data">נתונים</string>
+    <string name="settings_cloud">סנכרון ענן</string>
+    <string name="settings_cloud_sub_off">לא מחובר</string>
+    <string name="settings_cloud_sub_on">מחובר בתור %1$s</string>
+    <string name="settings_backup">גיבוי ושחזור</string>
+    <string name="settings_backup_sub">קובץ גיבוי מוצפן</string>
+    <string name="settings_modules_sub">מה האפליקציה מציגה</string>
+    <string name="settings_about">אודות</string>
+    <string name="about_version">גרסה %1$s</string>
+
+    <!-- Cloud -->
+    <string name="cloud_title">סנכרון ענן</string>
+    <string name="cloud_intro">‏SmartFamily מסתנכרנת דרך פרויקט Supabase שלך (תוכנית חינמית). הריצו פעם אחת את הקובץ supabase/migrations/0001_init.sql בעורך ה-SQL של Supabase, ואז הדביקו כאן את כתובת הפרויקט ואת מפתח ה-anon הציבורי.</string>
+    <string name="cloud_url">כתובת הפרויקט</string>
+    <string name="cloud_key">מפתח anon ציבורי</string>
+    <string name="cloud_save">שמירת החיבור</string>
+    <string name="cloud_saved">החיבור נשמר</string>
+    <string name="cloud_account">חשבון</string>
+    <string name="cloud_email">אימייל</string>
+    <string name="cloud_password">סיסמה</string>
+    <string name="cloud_sign_in">התחברות</string>
+    <string name="cloud_sign_up">יצירת חשבון</string>
+    <string name="cloud_signed_in_as">מחובר בתור %1$s</string>
+    <string name="cloud_sign_out">התנתקות</string>
+    <string name="cloud_sync_now">סנכרון עכשיו</string>
+    <string name="cloud_last_sync">סנכרון אחרון: %1$s</string>
+    <string name="cloud_never">אף פעם</string>
+    <string name="cloud_check_email">החשבון נוצר. אשרו אותו מהמייל ש-Supabase שלחה, ואז התחברו.</string>
+    <string name="cloud_synced">הסנכרון הושלם</string>
+    <string name="cloud_connect_first">קודם שמרו את החיבור</string>
+
+    <!-- Backup -->
+    <string name="backup_title">גיבוי ושחזור</string>
+    <string name="backup_intro">קובץ הגיבוי מכיל את כל המשפחות וההגדרות, מוצפן בסיסמה שתבחרו (Argon2id + AES-256).</string>
+    <string name="backup_warning">שמרו את הסיסמה: בלעדיה אף אחד לא יכול לפתוח את הקובץ.</string>
+    <string name="backup_password">סיסמת גיבוי</string>
+    <string name="backup_password_confirm">אימות סיסמה</string>
+    <string name="backup_password_short">לפחות 8 תווים</string>
+    <string name="backup_password_mismatch">הסיסמאות לא תואמות</string>
+    <string name="backup_export">יצירת קובץ גיבוי</string>
+    <string name="backup_done">הגיבוי נשמר</string>
+    <string name="backup_restore">שחזור מקובץ</string>
+    <string name="backup_restore_password">סיסמת הגיבוי</string>
+    <string name="backup_restore_confirm_title">להחליף את הנתונים בטלפון?</string>
+    <string name="backup_restore_confirm_body">בגיבוי יש %1$d משפחות. הוא יחליף את כל מה שיש בטלפון עכשיו.</string>
+    <string name="backup_restore_done">שוחזר</string>
+    <string name="backup_wrong_password">סיסמה שגויה, או שהקובץ פגום</string>
+    <string name="backup_working">עובד…</string>
+
+    <!-- Help -->
+    <string name="help_home">במסך הבית מופיעים המודולים הפעילים עבורך במשפחה הנוכחית. לחיצה על שם המשפחה מחליפה בין משפחות.</string>
+    <string name="help_families">כאן מנהלים את כל המשפחות שלך: חברים, תפקידים, הזמנות ומודולים. בעלים ומנהלים יכולים להזמין ולאשר בקשות.</string>
+    <string name="help_modules">אפשר לכבות כל מודול. המנהלים קובעים מה המשפחה משתמשת, וכל אחד יכול גם להסתיר מודול רק לעצמו.</string>
+    <string name="help_settings">שפה, ערכת נושא, פרטיות, סנכרון ענן וגיבויים. מצב פרטיות מכבה בבת אחת כל שירות חיצוני.</string>
+</resources>

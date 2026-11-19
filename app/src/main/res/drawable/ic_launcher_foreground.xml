@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A stylised home with a heart, on the brand pomegranate red background -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30 L80,52 L74,52 L74,78 L34,78 L34,52 L28,52 Z" />
+    <path
+        android:fillColor="#9C2B3A"
+        android:pathData="M54,72 C54,72 42,64 42,56.5 C42,52.9 44.9,50 48.5,50 C50.9,50 53,51.3 54,53.2 C55,51.3 57.1,50 59.5,50 C63.1,50 66,52.9 66,56.5 C66,64 54,72 54,72 Z" />
+</vector>
