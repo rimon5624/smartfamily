@@ -1,5 +1,9 @@
 package com.rimon.smartfamily
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -101,9 +105,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun unlock() = com.rimon.smartfamily.security.AppLock.prompt(this, getString(R.string.lock_title)) { ok -> if (ok) locked.value = false }
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        intent.getStringExtra(EXTRA_ROUTE)?.let { pendingRoute.value = it }
+    }
+
+    companion object {
+        const val EXTRA_ROUTE = "route"
+        /** A route asked for by a shortcut, widget, tile or notification; MainNav consumes it. */
+        val pendingRoute = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) intent?.getStringExtra(EXTRA_ROUTE)?.let { pendingRoute.value = it }
         setContent {
             val settings by vm.settings.collectAsStateWithLifecycle()
             val s = settings
@@ -215,15 +231,38 @@ private fun MainNav(vm: AppViewModel) {
         restoreState = true
     }
 
-    // UX-8 kid mode: everything bigger (buttons, text, touch targets) for children.
-    val kid = when (settings?.kidMode) { "ON" -> true; "OFF" -> false; else -> role == Role.CHILD }
+    // Shortcuts, widgets and the quick-settings tile open a route here.
+    val asked by MainActivity.pendingRoute.collectAsState()
+    LaunchedEffect(asked, settings?.onboardingDone) {
+        val r = asked ?: return@LaunchedEffect
+        MainActivity.pendingRoute.value = null
+        if (r == "quickadd") quickAdd = true else runCatching { nav.navigate(r) { launchSingleTop = true } }
+    }
+
+    // UX-8 kid mode: everything bigger (buttons, text, touch targets) for children; SENIOR is bigger still.
+    val kid = when (settings?.kidMode) { "ON", "SENIOR" -> true; "OFF" -> false; else -> role == Role.CHILD }
+    val senior = settings?.kidMode == "SENIOR"
     val baseDensity = androidx.compose.ui.platform.LocalDensity.current
     androidx.compose.runtime.CompositionLocalProvider(
-        androidx.compose.ui.platform.LocalDensity provides if (kid) androidx.compose.ui.unit.Density(baseDensity.density * 1.15f, baseDensity.fontScale * 1.1f) else baseDensity,
+        androidx.compose.ui.platform.LocalDensity provides when {
+            senior -> androidx.compose.ui.unit.Density(baseDensity.density * 1.22f, baseDensity.fontScale * 1.25f)
+            kid -> androidx.compose.ui.unit.Density(baseDensity.density * 1.15f, baseDensity.fontScale * 1.1f)
+            else -> baseDensity
+        },
     ) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
+            if (!showBar && sharedView) {
+                // SHR: in a family's shared view, always show whose items these are and whether I can edit.
+                Surface(color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        stringResource(if (sharedIn.any { it.canWrite }) R.string.shared_from else R.string.shared_from_ro, family?.name.orEmpty()),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+            }
             if (showBar) {
                 NavigationBar {
                     Tab.entries.forEach { tab ->

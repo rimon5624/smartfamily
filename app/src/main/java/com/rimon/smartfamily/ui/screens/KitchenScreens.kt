@@ -301,6 +301,7 @@ fun RecipeDetailScreen(vm: KitchenViewModel, viewer: Viewer, recipeId: String, o
                     IconButton(onClick = { vm.toggleFavorite(recipe) }) {
                         Icon(if (recipe.favorite) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder, stringResource(R.string.rec_favorites))
                     }
+                    CopyToFamilyButton(recipe.familyId, viewer.userId) { fid, fname -> vm.copyRecipeTo(recipe, fid, fname) }
                     if (!viewer.isChild) {
                         IconButton(onClick = onEdit) { Icon(Icons.Outlined.Edit, stringResource(R.string.rec_edit)) }
                         IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Outlined.Delete, stringResource(R.string.rec_delete)) }

@@ -46,6 +46,36 @@ class HomeLifeViewModel(app: Application) : AndroidViewModel(app) {
     fun nextOccurrence(d: FamilyDateEntity) = repo.nextOccurrence(d)
     fun expand(events: List<EventEntity>, from: Long, to: Long) = repo.expand(events, from, to)
     fun dateOccurrences(d: FamilyDateEntity, from: java.time.LocalDate, to: java.time.LocalDate) = repo.occurrencesBetween(d, from, to)
+    /** Writes an .ics with this family's events and dates (3 years of Hebrew dates) and returns a share intent. */
+    suspend fun exportIcs(familyId: String, events: List<EventEntity>, dates: List<FamilyDateEntity>): android.content.Intent = withContext(Dispatchers.IO) {
+        val ctx = getApplication<Application>()
+        val today = java.time.LocalDate.now(); val until = today.plusYears(3)
+        val from = System.currentTimeMillis() - 30 * 86_400_000L; val to = from + 3 * 366 * 86_400_000L
+        val text = com.rimon.smartfamily.smart.Ics.export(
+            events.filter { it.familyId == familyId },
+            { e -> repo.expand(listOf(e), from, to).map { it.start.time to it.end.time } },
+            dates.filter { it.deletedAt == null }.map { d -> d to repo.occurrencesBetween(d, today, until).map { it.first } },
+        )
+        val dir = java.io.File(ctx.cacheDir, "ics").apply { mkdirs() }
+        val f = java.io.File(dir, "smartfamily.ics").apply { writeText(text) }
+        val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".files", f)
+        android.content.Intent.createChooser(
+            android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/calendar").putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION), null,
+        )
+    }
+
+    /** Imports events from an .ics file (from Google Calendar, an invitation, a school calendar). */
+    fun importIcs(uri: android.net.Uri, familyId: String, owner: String) = launchSafe {
+        val ctx = getApplication<Application>()
+        val text = withContext(Dispatchers.IO) { ctx.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }.orEmpty() }
+        val parsed = com.rimon.smartfamily.smart.Ics.parse(text)
+        val existing = repo.allEventsForReminders().filter { it.familyId == familyId }.map { it.title to it.startAt }.toSet()
+        var n = 0
+        parsed.filter { (it.title to it.start) !in existing }.forEach { repo.saveEvent(com.rimon.smartfamily.smart.Ics.toEntity(it, familyId, owner)); n++ }
+        _messages.tryEmit(UiMessage.Res(R.string.ics_imported, n.toString()))
+    }
+
     fun setCalendar(hebFirst: Boolean? = null, basis: String? = null, view: String? = null, shabbatRow: Boolean? = null) =
         viewModelScope.launch { c.settings.setCalendar(hebFirst, basis, view, shabbatRow) }
 

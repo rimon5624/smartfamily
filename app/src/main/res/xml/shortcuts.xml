@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="quickadd" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/sc_quickadd">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.rimon.smartfamily" android:targetClass="com.rimon.smartfamily.MainActivity">
+            <extra android:name="route" android:value="quickadd" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="shopping" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/sc_shopping">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.rimon.smartfamily" android:targetClass="com.rimon.smartfamily.MainActivity">
+            <extra android:name="route" android:value="shopping" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="calendar" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/sc_calendar">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.rimon.smartfamily" android:targetClass="com.rimon.smartfamily.MainActivity">
+            <extra android:name="route" android:value="calendar" />
+        </intent>
+    </shortcut>
+    <shortcut android:shortcutId="chat" android:enabled="true" android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/sc_chat">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.rimon.smartfamily" android:targetClass="com.rimon.smartfamily.MainActivity">
+            <extra android:name="route" android:value="chat" />
+        </intent>
+    </shortcut>
+</shortcuts>

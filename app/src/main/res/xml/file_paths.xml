@@ -6,4 +6,8 @@
     <files-path name="manuals" path="manuals/" />
     <!-- Decrypted chat media, opened in another app on request -->
     <cache-path name="chat" path="chat/" />
+    <!-- Calendar files shared with the phone calendar -->
+    <cache-path name="ics" path="ics/" />
+    <!-- Lists, cards and invites shared as images -->
+    <cache-path name="share" path="share/" />
 </paths>

@@ -133,6 +133,16 @@ class ShoppingRepository(
         return addItems(listId, drafts, userId)
     }
 
+    /** SHR-2: copies a list's open items into a new list in another of my families. */
+    suspend fun copyToFamily(listId: String, targetFamilyId: String, userId: String): Int {
+        val src = db.lists().get(listId) ?: return 0
+        val t = createList(targetFamilyId, src.name, userId)
+        val drafts = db.listItems().forList(listId).filter { it.deletedAt == null && !it.checked }.map {
+            ItemDraft(it.name, it.quantity, it.unit, it.brand, it.category, it.barcode)
+        }
+        return addItems(t.id, drafts, userId)
+    }
+
     suspend fun saveAsTemplate(listId: String, name: String, userId: String) {
         val src = db.lists().get(listId) ?: return
         val t = createList(src.familyId, name, userId, template = true)

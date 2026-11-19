@@ -1,5 +1,9 @@
 package com.rimon.smartfamily.ui.screens
 
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.launch
+import androidx.compose.material.icons.outlined.QrCodeScanner
+import androidx.compose.material.icons.outlined.QrCode2
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -118,6 +122,20 @@ fun FamiliesScreen(vm: AppViewModel, padding: PaddingValues, onOpen: (String) ->
                     Icon(Icons.Outlined.GroupAdd, null)
                     Spacer(Modifier.size(8.dp))
                     Text(stringResource(R.string.families_join))
+                }
+                // 2.0: join by scanning the QR shown on the other phone
+                val scanCtx = LocalContext.current
+                val scanScope = androidx.compose.runtime.rememberCoroutineScope()
+                OutlinedButton(onClick = {
+                    scanScope.launch {
+                        val raw = runCatching { com.google.mlkit.vision.codescanner.GmsBarcodeScanning.getClient(scanCtx).startScan().await().rawValue }.getOrNull()
+                        val code = raw?.removePrefix("smartfamily:join:")?.trim()
+                        if (!code.isNullOrBlank() && vm.isSignedIn) vm.join(code) {} else if (!code.isNullOrBlank()) joining = true
+                    }
+                }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                    Icon(Icons.Outlined.QrCodeScanner, null)
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(R.string.join_scan))
                 }
             }
         }
@@ -349,6 +367,20 @@ private fun InviteRow(inv: InviteEntity, onCopy: () -> Unit, onShare: () -> Unit
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
+            var qr by remember { mutableStateOf(false) }
+            IconButton(onClick = { qr = true }) { Icon(Icons.Outlined.QrCode2, stringResource(R.string.invite_qr)) }
+            if (qr) AlertDialog(
+                onDismissRequest = { qr = false },
+                confirmButton = { TextButton(onClick = { qr = false }) { Text(stringResource(R.string.close)) } },
+                title = { Text(stringResource(R.string.invite_qr)) },
+                text = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        QrImage("smartfamily:join:" + inv.code)
+                        Text(inv.code, style = MaterialTheme.typography.titleLarge, fontFamily = FontFamily.Monospace)
+                        Text(stringResource(R.string.invite_qr_sub), style = MaterialTheme.typography.bodySmall)
+                    }
+                },
+            )
             IconButton(onClick = onCopy) { Icon(Icons.Outlined.ContentCopy, null) }
             IconButton(onClick = onShare) { Icon(Icons.Outlined.Share, stringResource(R.string.share)) }
             IconButton(onClick = onRevoke) { Icon(Icons.Outlined.Delete, stringResource(R.string.family_invite_revoke)) }

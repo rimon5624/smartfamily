@@ -36,6 +36,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -145,4 +148,25 @@ fun QrImage(text: String, size: Dp = 220.dp) {
         }
     }
     Image(bmp.asImageBitmap(), null, Modifier.size(size))
+}
+
+/** SHR-2 copy mode: an icon that copies the current item into another family I belong to. */
+@Composable
+fun CopyToFamilyButton(currentFamilyId: String, userId: String, onPick: (familyId: String, name: String) -> Unit) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val c = remember { (ctx.applicationContext as com.rimon.smartfamily.SmartFamilyApp).container }
+    val fams by remember(userId) { c.db.families().observeForUser(userId) }.collectAsState(initial = emptyList())
+    val others = fams.filter { it.id != currentFamilyId && it.deletedAt == null }
+    if (others.isEmpty()) return
+    var open by remember { mutableStateOf(false) }
+    androidx.compose.foundation.layout.Box {
+        androidx.compose.material3.IconButton(onClick = { open = true }) {
+            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Outlined.ContentCopy, androidx.compose.ui.res.stringResource(com.rimon.smartfamily.R.string.copy_to_family))
+        }
+        androidx.compose.material3.DropdownMenu(open, { open = false }) {
+            androidx.compose.material3.Text(androidx.compose.ui.res.stringResource(com.rimon.smartfamily.R.string.copy_to_family),
+                style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+            others.forEach { f -> androidx.compose.material3.DropdownMenuItem(text = { Text(f.name) }, onClick = { open = false; onPick(f.id, f.name) }) }
+        }
+    }
 }

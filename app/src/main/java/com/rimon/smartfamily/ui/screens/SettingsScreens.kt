@@ -72,7 +72,7 @@ import com.rimon.smartfamily.ui.components.SectionTitle
 import java.text.DateFormat
 import java.util.Date
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     vm: AppViewModel,
@@ -169,8 +169,8 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.kid_setting_sub),
                 leading = { Spacer(Modifier.size(24.dp)) },
             )
-            Row(Modifier.padding(start = 40.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("AUTO" to R.string.kid_auto, "ON" to R.string.kid_on, "OFF" to R.string.kid_off).forEach { (k, l) ->
+            androidx.compose.foundation.layout.FlowRow(Modifier.padding(start = 40.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("AUTO" to R.string.kid_auto, "ON" to R.string.kid_on, "SENIOR" to R.string.kid_senior, "OFF" to R.string.kid_off).forEach { (k, l) ->
                     FilterChip(selected = settings.kidMode == k, onClick = { vm.setKidMode(k) }, label = { Text(stringResource(l)) })
                 }
             }
@@ -403,6 +403,29 @@ fun BackupScreen(vm: AppViewModel, onBack: () -> Unit) {
             Icon(Icons.Outlined.Backup, null)
             Spacer(Modifier.size(8.dp))
             Text(stringResource(R.string.backup_export))
+        }
+
+        // 2.0: weekly automatic backup to Downloads/SmartFamily, with the password above
+        val ctx = androidx.compose.ui.platform.LocalContext.current
+        var autoOn by remember { mutableStateOf(com.rimon.smartfamily.backup.AutoBackupWorker.isOn(ctx)) }
+        val last = remember(autoOn) { com.rimon.smartfamily.backup.AutoBackupWorker.last(ctx) }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+            androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.auto_backup), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    if (last > 0) stringResource(R.string.auto_backup_last, java.text.DateFormat.getDateInstance().format(java.util.Date(last)))
+                    else stringResource(R.string.auto_backup_sub),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            androidx.compose.material3.Switch(
+                checked = autoOn,
+                enabled = autoOn || (password.length >= 8 && password == confirm),
+                onCheckedChange = { on ->
+                    if (on) com.rimon.smartfamily.backup.AutoBackupWorker.enable(ctx, password) else com.rimon.smartfamily.backup.AutoBackupWorker.disable(ctx)
+                    autoOn = on
+                },
+            )
         }
 
         HorizontalDivider(Modifier.padding(vertical = 20.dp))

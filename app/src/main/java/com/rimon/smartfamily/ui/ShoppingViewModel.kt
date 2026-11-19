@@ -87,6 +87,10 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
         repo.ensureDefaultList(familyId, name, uid())
     }
     fun createList(familyId: String, name: String) = launchSafe { repo.createList(familyId, name, uid()) }
+    fun copyListTo(listId: String, familyId: String, familyName: String) = launchSafe {
+        repo.copyToFamily(listId, familyId, uid())
+        _messages.tryEmit(UiMessage.Res(R.string.copied_to_family, familyName))
+    }
     fun renameList(id: String, name: String) = launchSafe { repo.renameList(id, name) }
     fun deleteList(id: String) = launchSafe { repo.deleteList(id) }
     fun setShopping(id: String, on: Boolean) = launchSafe { repo.setShopping(id, if (on) uid() else null) }

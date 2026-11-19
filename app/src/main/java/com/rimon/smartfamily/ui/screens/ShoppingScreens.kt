@@ -224,6 +224,7 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = {
                     HelpButton(R.string.help_shopping)
+                    if (!isTemplate) CopyToFamilyButton(viewer.familyId, viewer.userId) { fid, fname -> vm.copyListTo(listId, fid, fname) }
                     if (!viewer.isChild) {
                         Box {
                             IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, null) }

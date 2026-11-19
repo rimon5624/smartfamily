@@ -51,6 +51,14 @@ class KitchenViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun say(id: Int, arg: String? = null) { _messages.tryEmit(UiMessage.Res(id, arg)) }
 
+    /** SHR-2: a copy of a recipe for another of my families (photos stay with the original). */
+    fun copyRecipeTo(recipe: com.rimon.smartfamily.data.db.RecipeEntity, familyId: String, familyName: String) = launchSafe {
+        val me = c.settings.current().userId
+        c.kitchen.saveRecipe(recipe.copy(id = java.util.UUID.randomUUID().toString(), familyId = familyId, createdBy = me, favorite = false,
+            updatedAt = System.currentTimeMillis(), deletedAt = null, dirty = true))
+        _messages.tryEmit(UiMessage.Res(R.string.copied_to_family, familyName))
+    }
+
     private fun launchSafe(block: suspend () -> Unit) = viewModelScope.launch {
         _busy.value = true
         try { block() }

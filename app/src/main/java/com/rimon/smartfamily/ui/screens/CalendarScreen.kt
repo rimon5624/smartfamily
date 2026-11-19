@@ -30,6 +30,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Cake
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -263,6 +265,11 @@ fun CalendarScreen(vm: HomeLifeViewModel, viewer: Viewer, settings: AppSettings?
         else -> monthTitles(if (heb) JewishDays.hebMonthStart(sel) else sel.withDayOfMonth(1), heb)
     }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val icsPicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) vm.importIcs(uri, viewer.familyId, viewer.userId)
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -286,6 +293,13 @@ fun CalendarScreen(vm: HomeLifeViewModel, viewer: Viewer, settings: AppSettings?
                             DropdownMenuItem(text = { Text(stringResource(if (showShabbat) R.string.cal_hide_shabbat else R.string.cal_show_shabbat)) },
                                 onClick = { menu = false; vm.setCalendar(shabbatRow = !showShabbat) })
                             DropdownMenuItem(text = { Text(stringResource(R.string.cal_converter)) }, onClick = { menu = false; converter = true })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.ics_export)) }, leadingIcon = { Icon(Icons.Outlined.Share, null) }, onClick = {
+                                menu = false
+                                scope.launch { runCatching { context.startActivity(vm.exportIcs(viewer.familyId, events, dates)) } }
+                            })
+                            if (!viewer.isChild) DropdownMenuItem(text = { Text(stringResource(R.string.ics_import)) }, leadingIcon = { Icon(Icons.Outlined.FileOpen, null) }, onClick = {
+                                menu = false; icsPicker.launch(arrayOf("text/calendar", "text/*", "application/octet-stream"))
+                            })
                         }
                     }
                     HelpButton(R.string.help_calendar)
