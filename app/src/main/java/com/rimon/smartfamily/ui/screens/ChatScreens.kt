@@ -55,6 +55,7 @@ import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -689,7 +690,7 @@ private fun mentions(text: String, myName: String): androidx.compose.ui.text.Ann
         Regex("@[\\p{L}\\p{N}_]+").findAll(text).forEach { m ->
             append(text.substring(last, m.range.first))
             val me = myName.isNotBlank() && m.value.drop(1).equals(myName.split(' ').first(), ignoreCase = true)
-            withStyle(androidx.compose.ui.text.SpanStyle(color = color, fontWeight = if (me) FontWeight.Bold else FontWeight.SemiBold)) { append(m.value) }
+            pushStyle(androidx.compose.ui.text.SpanStyle(color = color, fontWeight = if (me) FontWeight.Bold else FontWeight.SemiBold)); append(m.value); pop()
             last = m.range.last + 1
         }
         append(text.substring(last))
