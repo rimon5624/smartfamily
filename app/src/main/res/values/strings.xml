@@ -879,4 +879,8 @@
     <string name="share_chat_note">Chat link: people from both families can start group and private chats with each other. Messages stay end-to-end encrypted.</string>
     <string name="share_send">Send offer</string>
     <string name="share_sent">Offer sent. It starts once their admin accepts.</string>
+
+    <string name="crash_title">The app closed unexpectedly</string>
+    <string name="crash_body">The error was saved on this phone only. Copy it and paste it in the chat with whoever builds the app, so it can be fixed.</string>
+    <string name="crash_copy">Copy error</string>
 </resources>

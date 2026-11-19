@@ -52,6 +52,7 @@ class SmartFamilyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        CrashLog.install(this)
         container = AppContainer(this)
         SyncScheduler.schedulePeriodic(this)
         ExpiryWorker.schedule(this)

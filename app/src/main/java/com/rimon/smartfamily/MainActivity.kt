@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -88,6 +89,26 @@ class MainActivity : AppCompatActivity() {
                 dynamicColor = s?.dynamicColor == true,
             ) {
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    var crash by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(CrashLog.take(this@MainActivity)) }
+                    crash?.let { report ->
+                        val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+                        androidx.compose.material3.AlertDialog(
+                            onDismissRequest = { crash = null },
+                            title = { Text(androidx.compose.ui.res.stringResource(R.string.crash_title)) },
+                            text = {
+                                androidx.compose.foundation.layout.Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                                    Text(androidx.compose.ui.res.stringResource(R.string.crash_body))
+                                    Text(report.take(1500), style = MaterialTheme.typography.labelSmall)
+                                }
+                            },
+                            confirmButton = {
+                                androidx.compose.material3.TextButton(onClick = { clipboard.setText(androidx.compose.ui.text.AnnotatedString(report)); crash = null }) {
+                                    Text(androidx.compose.ui.res.stringResource(R.string.crash_copy))
+                                }
+                            },
+                            dismissButton = { androidx.compose.material3.TextButton(onClick = { crash = null }) { Text(androidx.compose.ui.res.stringResource(R.string.cancel)) } },
+                        )
+                    }
                     when {
                         s == null -> Box(Modifier.fillMaxSize()) // settings are loading (a few ms)
                         !s.onboardingDone -> OnboardingScreen(vm)
@@ -142,7 +163,11 @@ private fun MainNav(vm: AppViewModel) {
     LaunchedEffect(Unit) {
         merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages, extrasVm.messages, priceVm.messages, shareVm.messages).collect { msg ->
             val text = when (msg) {
-                is UiMessage.Res -> if (msg.arg != null) context.getString(msg.id, msg.arg) else context.getString(msg.id)
+                // Numbers are passed as numbers so both %1$s and %1$d work; a bad format never crashes the app.
+                is UiMessage.Res -> runCatching {
+                    val a = msg.arg
+                    if (a == null) context.getString(msg.id) else context.getString(msg.id, a.toLongOrNull() ?: a)
+                }.getOrElse { msg.arg.orEmpty() }
                 is UiMessage.Text -> context.getString(R.string.error_generic, msg.text)
             }
             snackbar.showSnackbar(text)

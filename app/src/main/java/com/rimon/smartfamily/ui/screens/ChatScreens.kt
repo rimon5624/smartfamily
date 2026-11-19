@@ -261,7 +261,8 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
     LaunchedEffect(c.id) { vm.live(c) }
     LaunchedEffect(messages.size) {
         vm.loadTranscripts(messages.filter { it.entity.kind == "voice" }.map { it.entity.id })
-        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
+        val n = listState.layoutInfo.totalItemsCount
+        if (n > 0) listState.animateScrollToItem(n - 1)
     }
 
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if (uri != null) vm.sendMedia(c, uri, "image") }

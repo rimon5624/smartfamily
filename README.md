@@ -2,9 +2,14 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 0.9.0 — Phase 8 (sharing between families)**
+**Current version: 0.9.1 — fixes**
 
-## What is new in 0.9.0
+## What is new in 0.9.1
+
+- Fix: the app crashed after adding an item to a shopping list (a number was formatted as text in the "added N items" message). Messages can no longer crash the app.
+- If the app ever crashes, the error is kept on the phone and shown on the next start with a "copy error" button.
+
+## What was new in 0.9.0
 
 - Sharing between families: a family admin offers a whole module or one item (recipe, trip, shopping list, event, chat, poll…), read-only or editable, using the other family's link code. Nothing is visible until the other family's admin accepts.
 - The receiving family sees the sharing family in its family list, with only the shared modules and items.
