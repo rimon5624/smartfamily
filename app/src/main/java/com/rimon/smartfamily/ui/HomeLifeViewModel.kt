@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui
 
+import kotlinx.coroutines.flow.map
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -82,6 +83,30 @@ class HomeLifeViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun shabbat(cityKey: String): ShabbatTimes = withContext(Dispatchers.Default) { Zmanim.nextShabbat(Cities.byKey(cityKey)) }
 
     fun newChoreDraft(familyId: String, userId: String) = ChoreEntity(id = UUID.randomUUID().toString(), familyId = familyId, title = "", createdBy = userId)
+
+    /** CHR-9: how many events today (a busy day suggests moving long chores to tomorrow). */
+    fun eventsToday(familyId: String) = repo.observeEvents(familyId).map { list ->
+        val z = java.time.ZoneId.of("Asia/Jerusalem"); val d = java.time.LocalDate.now(z)
+        repo.expand(list, d.atStartOfDay(z).toInstant().toEpochMilli(), d.plusDays(1).atStartOfDay(z).toInstant().toEpochMilli()).size
+    }
+
+    fun postponeToTomorrow(list: List<ChoreEntity>) = launchSafe {
+        list.forEach { repo.saveChore(it.copy(nextDue = it.nextDue + 86_400_000L), city()) }
+        _messages.tryEmit(UiMessage.Res(R.string.chores_postponed, list.size.toString()))
+    }
+
+    /** A family goal everyone earns points toward together (kind POINTS; saved = when it started). */
+    fun pointGoals(familyId: String) = c.db.goals().observeForFamily(familyId).map { l -> l.filter { it.kind == "POINTS" && it.deletedAt == null } }
+    fun completionsAll(familyId: String) = repo.observeCompletionsSince(familyId, 0L)
+    fun savePointGoal(familyId: String, title: String, target: Int, reward: String) = launchSafe {
+        c.db.goals().upsert(com.rimon.smartfamily.data.db.GoalEntity(id = UUID.randomUUID().toString(), familyId = familyId, title = title, kind = "POINTS",
+            target = target.toDouble(), saved = System.currentTimeMillis().toDouble(), reward = reward))
+        com.rimon.smartfamily.sync.SyncScheduler.requestSoon(getApplication())
+    }
+    fun finishPointGoal(g: com.rimon.smartfamily.data.db.GoalEntity) = launchSafe {
+        c.db.goals().upsert(g.copy(done = true, updatedAt = System.currentTimeMillis(), dirty = true))
+        com.rimon.smartfamily.sync.SyncScheduler.requestSoon(getApplication())
+    }
 
     fun saveChore(ch: ChoreEntity, scheduleChanged: Boolean) = launchSafe {
         repo.saveChore(if (scheduleChanged) ch.copy(nextDue = 0L) else ch, city())

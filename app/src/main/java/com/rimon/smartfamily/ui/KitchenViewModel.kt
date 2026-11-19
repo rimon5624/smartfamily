@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui
 
+import kotlinx.coroutines.flow.map
 import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
@@ -76,6 +77,14 @@ class KitchenViewModel(app: Application) : AndroidViewModel(app) {
     fun plan(familyId: String, from: String, to: String) = repo.observePlan(familyId, from, to)
     fun profiles(familyId: String) = repo.observeProfiles(familyId)
     fun packed(familyId: String, from: String, to: String) = repo.observePacked(familyId, from, to)
+    /** PCK-8: days that fall inside a family trip (yyyy-MM-dd → trip title). */
+    fun tripDays(familyId: String) = c.db.trips().observeForFamily(familyId).map { trips ->
+        trips.filter { it.deletedAt == null && it.startDate.isNotBlank() }.flatMap { t ->
+            val a = runCatching { java.time.LocalDate.parse(t.startDate) }.getOrNull() ?: return@flatMap emptyList()
+            val b = runCatching { java.time.LocalDate.parse(t.endDate.ifBlank { t.startDate }) }.getOrNull() ?: a
+            generateSequence(a) { it.plusDays(1) }.takeWhile { !it.isAfter(b) }.take(60).map { it.toString() to t.title }.toList()
+        }.toMap()
+    }
     fun members(familyId: String) = c.families.observeMembers(familyId)
     fun inventory(familyId: String) = c.shopping.observeInventory(familyId)
     val ymd get() = repo.ymd

@@ -1234,4 +1234,34 @@
     <string name="copied_to_family">הועתק אל %1$s</string>
     <string name="shared_from">שותף איתך על ידי %1$s</string>
     <string name="shared_from_ro">שותף איתך על ידי %1$s · צפייה בלבד</string>
+    <string name="poll_to_shopping">המנצח ← לקניות</string>
+    <string name="poll_to_meal">המנצח ← לתפריט</string>
+    <string name="poll_sent_shopping">%1$s נוסף לרשימת הקניות</string>
+    <string name="poll_sent_meal">%1$s נוסף לתפריט</string>
+    <string name="pck_choose">בחירה</string>
+    <string name="pck_choose_title">מה %1$s לוקח/ת?</string>
+    <string name="pck_choose_sub">הקישו להוספה או הסרה. הילדים יכולים לבחור בעצמם.</string>
+    <string name="pck_trip_day">יום טיול: %1$s — להוסיף מים וחטיפים</string>
+    <string-array name="pck_trip_extras">
+        <item>בקבוק מים</item>
+        <item>כובע</item>
+        <item>חטיף נוסף</item>
+        <item>פרי</item>
+        <item>מגבונים</item>
+    </string-array>
+    <string name="chores_busy">יום עמוס היום: %1$d אירועים</string>
+    <string name="chores_busy_move">להעביר %1$d מטלות ארוכות למחר</string>
+    <string name="chores_postponed">%1$d מטלות הועברו למחר</string>
+    <string name="goal_points_new">יעד משפחתי חדש</string>
+    <string name="goal_points_title">יעד (למשל טיול לספארי)</string>
+    <string name="goal_points_target">נקודות ביחד</string>
+    <string name="goal_points_reward">פרס (לא חובה)</string>
+    <string name="goal_points_progress">%1$d מתוך %2$d נקודות</string>
+    <string name="goal_reward">פרס: %1$s</string>
+    <string name="goal_celebrate">הצלחנו! לסגור את היעד</string>
+    <string name="audit_title">מי שינה מה</string>
+    <string name="audit_empty">אין עדיין. מנהלים רואים שינויים שנעשו מגרסה 2.0, כשהענן מחובר.</string>
+    <string name="audit_add">הוסיף/ה</string>
+    <string name="audit_edit">ערך/ה</string>
+    <string name="audit_delete">מחק/ה</string>
 </resources>

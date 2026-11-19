@@ -97,6 +97,7 @@ fun ChoresScreen(vm: HomeLifeViewModel, viewer: Viewer, cityKey: String, onBack:
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { delay(30_000); now = System.currentTimeMillis() } }
     val names = members.associate { it.userId to it.displayName }
+    val busyToday by remember(viewer.familyId) { vm.eventsToday(viewer.familyId) }.collectAsState(initial = 0)
 
     Scaffold(
         topBar = {
@@ -148,6 +149,17 @@ fun ChoresScreen(vm: HomeLifeViewModel, viewer: Viewer, cityKey: String, onBack:
                                         Icon(Icons.Outlined.AutoAwesome, null); Spacer(Modifier.size(8.dp)); Text(stringResource(R.string.chores_templates))
                                     }
                                 }
+                            }
+                        }
+                    }
+                    // CHR-9: on a busy day, offer to move the long chores to tomorrow
+                    val longOnes = due.filter { it.estimatedMinutes >= 20 }
+                    if (!viewer.isChild && busyToday >= 3 && longOnes.isNotEmpty()) item {
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+                            Column(Modifier.padding(14.dp)) {
+                                Text(stringResource(R.string.chores_busy, busyToday), style = MaterialTheme.typography.titleSmall)
+                                Text(longOnes.joinToString(", ") { it.title }, style = MaterialTheme.typography.bodySmall)
+                                TextButton(onClick = { vm.postponeToTomorrow(longOnes) }) { Text(stringResource(R.string.chores_busy_move, longOnes.size)) }
                             }
                         }
                     }
@@ -441,7 +453,25 @@ private fun PointsTab(vm: HomeLifeViewModel, viewer: Viewer, members: List<Membe
     val people = if (kids.isNotEmpty()) kids else members
     val pointsOf = { uid: String -> balances.firstOrNull { it.userId == uid }?.total ?: 0 }
 
+    val goals by remember(viewer.familyId) { vm.pointGoals(viewer.familyId) }.collectAsState(initial = emptyList())
+    val allDone by remember(viewer.familyId) { vm.completionsAll(viewer.familyId) }.collectAsState(initial = emptyList())
+    var newGoal by remember { mutableStateOf(false) }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // A shared family goal: everyone's points count toward it together
+        items(goals.filter { !it.done }, key = { "g-" + it.id }) { g ->
+            val earned = allDone.filter { it.approved && it.doneAt >= g.saved.toLong() }.sumOf { it.points }
+            val frac = (earned / g.target.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+                Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                    Text("🎯 " + g.title, style = MaterialTheme.typography.titleMedium)
+                    if (g.reward.isNotBlank()) Text(stringResource(R.string.goal_reward, g.reward), style = MaterialTheme.typography.bodySmall)
+                    androidx.compose.material3.LinearProgressIndicator(progress = { frac }, modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp))
+                    Text(stringResource(R.string.goal_points_progress, earned, g.target.toInt()), style = MaterialTheme.typography.labelLarge)
+                    if (frac >= 1f && !viewer.isChild) TextButton(onClick = { vm.finishPointGoal(g) }) { Text(stringResource(R.string.goal_celebrate)) }
+                }
+            }
+        }
+        if (!viewer.isChild) item { OutlinedButton(onClick = { newGoal = true }) { Text(stringResource(R.string.goal_points_new)) } }
         items(people, key = { it.id }) { m ->
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -467,6 +497,26 @@ private fun PointsTab(vm: HomeLifeViewModel, viewer: Viewer, members: List<Membe
         if (!viewer.isChild) {
             item { OutlinedButton(onClick = { adding = true }) { Text(stringResource(R.string.chores_new_reward)) } }
         }
+    }
+    if (newGoal) {
+        var title by remember { mutableStateOf("") }
+        var target by remember { mutableStateOf("200") }
+        var reward by remember { mutableStateOf("") }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { newGoal = false },
+            title = { Text(stringResource(R.string.goal_points_new)) },
+            text = {
+                Column {
+                    androidx.compose.material3.OutlinedTextField(title, { title = it }, label = { Text(stringResource(R.string.goal_points_title)) }, singleLine = true)
+                    androidx.compose.material3.OutlinedTextField(target, { target = it.filter(Char::isDigit) }, label = { Text(stringResource(R.string.goal_points_target)) }, singleLine = true)
+                    androidx.compose.material3.OutlinedTextField(reward, { reward = it }, label = { Text(stringResource(R.string.goal_points_reward)) }, singleLine = true)
+                }
+            },
+            confirmButton = { TextButton(enabled = title.isNotBlank() && (target.toIntOrNull() ?: 0) > 0, onClick = {
+                vm.savePointGoal(viewer.familyId, title.trim(), target.toInt(), reward.trim()); newGoal = false
+            }) { Text(stringResource(R.string.save)) } },
+            dismissButton = { TextButton(onClick = { newGoal = false }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
     if (adding) {
         var title by remember { mutableStateOf("") }

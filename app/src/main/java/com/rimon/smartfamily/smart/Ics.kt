@@ -14,8 +14,8 @@ import java.util.UUID
 object Ics {
     private fun utc() = SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
     private fun day() = SimpleDateFormat("yyyyMMdd", Locale.US).apply { timeZone = TimeZone.getTimeZone("Asia/Jerusalem") }
-    private fun esc(s: String) = s.replace("\\", "\\\\").replace("\;", "\;").replace(",", "\\,").replace("\n", "\\n")
-    private fun unesc(s: String) = s.replace("\\n", "\n").replace("\\N", "\n").replace("\\,", ",").replace("\;", "\;").replace("\\\\", "\\")
+    private fun esc(s: String) = s.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+    private fun unesc(s: String) = s.replace("\\n", "\n").replace("\\N", "\n").replace("\\,", ",").replace("\\;", ";").replace("\\\\", "\\")
 
     fun export(events: List<EventEntity>, expandHebrew: (EventEntity) -> List<Pair<Long, Long>>, dates: List<Pair<FamilyDateEntity, List<java.time.LocalDate>>>): String {
         val sb = StringBuilder("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//SmartFamily//HE\r\nCALSCALE:GREGORIAN\r\n")

@@ -190,5 +190,23 @@ class ExtrasViewModel(app: Application) : AndroidViewModel(app) {
         repo.vote(p, uid(), choice)
     }
     fun closePoll(p: PollEntity) = launchSafe { repo.savePoll(p.copy(closed = true)) }
+
+    /** POL-2: the winning option goes onto the family's main shopping list. */
+    fun pollToShopping(p: PollEntity, text: String) = launchSafe {
+        val me = c.settings.current().userId
+        val list = c.db.lists().observe(p.familyId, false).first().firstOrNull { it.deletedAt == null }
+            ?: c.shopping.createList(p.familyId, getApplication<android.app.Application>().getString(R.string.shop_default_list), me)
+        c.shopping.addItems(list.id, listOf(com.rimon.smartfamily.model.ItemDraft(text)), me)
+        _messages.tryEmit(UiMessage.Res(R.string.poll_sent_shopping, text))
+    }
+
+    /** POL-2: "what's for dinner" → the meal plan on the chosen day. */
+    fun pollToMeal(p: PollEntity, text: String, date: String, slot: String = "dinner") = launchSafe {
+        val recipe = c.db.recipes().observeForFamily(p.familyId).first().firstOrNull { it.deletedAt == null && it.title.trim().equals(text.trim(), true) }
+        c.db.mealPlanEntrys().upsert(com.rimon.smartfamily.data.db.MealPlanEntryEntity(id = repo.newId(), familyId = p.familyId, date = date, slot = slot,
+            recipeId = recipe?.id, title = if (recipe == null) text else ""))
+        com.rimon.smartfamily.sync.SyncScheduler.requestSoon(getApplication())
+        _messages.tryEmit(UiMessage.Res(R.string.poll_sent_meal, text))
+    }
     fun deletePoll(p: PollEntity) = launchSafe { repo.deletePoll(p) }
 }

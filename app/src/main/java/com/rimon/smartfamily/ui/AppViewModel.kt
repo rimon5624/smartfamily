@@ -83,6 +83,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun myMembership(familyId: String, userId: String): Flow<MemberEntity?> = repo.observeMyMembership(familyId, userId)
     fun sharedToMe(familyId: String, userId: String) = repo.observeSharedToMe(familyId, userId)
 
+    data class AuditRow(val table: String, val action: String, val title: String, val actor: String?, val at: Long)
+
+    /** Server audit log; empty when offline, not signed in, or not an admin. */
+    suspend fun audit(familyId: String): List<AuditRow> = runCatching {
+        val text = c.api.rpc("family_audit", kotlinx.serialization.json.buildJsonObject {
+            put("fid", kotlinx.serialization.json.JsonPrimitive(familyId)); put("lim", kotlinx.serialization.json.JsonPrimitive(300))
+        })
+        kotlinx.serialization.json.Json.parseToJsonElement(text).let { it as kotlinx.serialization.json.JsonArray }.map { e ->
+            val o = e as kotlinx.serialization.json.JsonObject
+            fun str(k: String) = (o[k] as? kotlinx.serialization.json.JsonPrimitive)?.takeIf { it.isString }?.content
+            AuditRow(str("table_name").orEmpty(), str("action").orEmpty(), str("title").orEmpty(), str("actor"),
+                (o["at"] as? kotlinx.serialization.json.JsonPrimitive)?.content?.toLongOrNull() ?: 0L)
+        }
+    }.getOrDefault(emptyList())
+
     private fun launchSafe(block: suspend () -> Unit) = viewModelScope.launch {
         _busy.value = true
         try {

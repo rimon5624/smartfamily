@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.material.icons.outlined.History
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.outlined.QrCodeScanner
@@ -174,7 +175,7 @@ fun FamiliesScreen(vm: AppViewModel, padding: PaddingValues, onOpen: (String) ->
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FamilyDetailScreen(vm: AppViewModel, familyId: String, onBack: () -> Unit, onOpenModules: (String) -> Unit, onOpenSharing: (String) -> Unit = {}) {
+fun FamilyDetailScreen(vm: AppViewModel, familyId: String, onBack: () -> Unit, onOpenModules: (String) -> Unit, onOpenSharing: (String) -> Unit = {}, onOpenAudit: (String) -> Unit = {}) {
     val family by remember(familyId) { vm.family(familyId) }.collectAsState(initial = null)
     val members by remember(familyId) { vm.members(familyId) }.collectAsState(initial = emptyList())
     val invites by remember(familyId) { vm.invites(familyId) }.collectAsState(initial = emptyList())
@@ -217,6 +218,11 @@ fun FamilyDetailScreen(vm: AppViewModel, familyId: String, onBack: () -> Unit, o
                     Icon(Icons.Outlined.Share, null)
                     Spacer(Modifier.size(8.dp))
                     Text(stringResource(R.string.share_title))
+                }
+                OutlinedButton(onClick = { onOpenAudit(familyId) }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Outlined.History, null)
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(R.string.audit_title))
                 }
             }
             if (f != null) {
@@ -417,4 +423,36 @@ fun TextInputDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
+}
+
+
+/** Who changed what in the family (server-side log; admins only, needs the cloud). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AuditScreen(vm: AppViewModel, familyId: String, onBack: () -> Unit) {
+    val members by remember(familyId) { vm.members(familyId) }.collectAsState(initial = emptyList())
+    val rows by androidx.compose.runtime.produceState<List<AppViewModel.AuditRow>?>(null, familyId) { value = vm.audit(familyId) }
+    val names = members.associate { it.userId to it.displayName }
+    val fmt = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT) }
+    androidx.compose.material3.Scaffold(topBar = {
+        androidx.compose.material3.TopAppBar(
+            title = { Text(stringResource(R.string.audit_title)) },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
+        )
+    }) { inner ->
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.padding(inner), contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)) {
+            when {
+                rows == null -> item { androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth()) }
+                rows!!.isEmpty() -> item { Text(stringResource(R.string.audit_empty), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                else -> items(rows!!.size) { i ->
+                    val r = rows!![i]
+                    val verb = stringResource(when (r.action) { "ADD" -> R.string.audit_add; "DELETE" -> R.string.audit_delete; else -> R.string.audit_edit })
+                    Column(Modifier.padding(vertical = 6.dp)) {
+                        Text("${names[r.actor] ?: "—"} · $verb · ${r.title.ifBlank { r.table }}", style = MaterialTheme.typography.bodyMedium)
+                        Text(fmt.format(Date(r.at)) + " · " + r.table.replace('_', ' '), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+    }
 }

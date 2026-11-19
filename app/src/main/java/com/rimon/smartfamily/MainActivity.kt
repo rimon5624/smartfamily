@@ -338,7 +338,11 @@ private fun MainNav(vm: AppViewModel) {
                     onBack = { nav.popBackStack() },
                     onOpenModules = { nav.navigate("modules/$it") },
                     onOpenSharing = { nav.navigate("sharing/$it") },
+                    onOpenAudit = { nav.navigate("audit/$it") },
                 )
+            }
+            composable("audit/{id}") { back ->
+                com.rimon.smartfamily.ui.screens.AuditScreen(vm, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
             }
             composable("sharing/{id}") { back ->
                 val id = back.arguments?.getString("id").orEmpty()

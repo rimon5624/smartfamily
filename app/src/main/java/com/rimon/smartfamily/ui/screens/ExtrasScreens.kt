@@ -595,6 +595,7 @@ private fun HomeEntryDialog(vm: ExtrasViewModel, e: HomeEntryEntity, kinds: List
 
 // =================== Polls ===================
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun PollsScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit) {
     val polls by remember(viewer.familyId) { vm.polls(viewer.familyId) }.collectAsState(initial = emptyList())
@@ -636,6 +637,22 @@ fun PollsScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit) {
                                 }
                                 LinearProgressIndicator(progress = { frac }, modifier = Modifier.fillMaxWidth().padding(top = 2.dp))
                                 if (!p.anonymous && who.isNotEmpty()) Text(who.mapNotNull { names[it.userId] }.joinToString(", "), style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                        val best = options.indices.maxByOrNull { i -> voters.count { i.toString() in it.choices.split(',') } }
+                        if (!viewer.isChild && best != null && voters.isNotEmpty()) {
+                            var dayPick by remember { mutableStateOf(false) }
+                            Row {
+                                TextButton(onClick = { vm.pollToShopping(p, options[best]) }) { Text(stringResource(R.string.poll_to_shopping)) }
+                                TextButton(onClick = { dayPick = true }) { Text(stringResource(R.string.poll_to_meal)) }
+                            }
+                            if (dayPick) {
+                                val st = androidx.compose.material3.rememberDatePickerState(initialSelectedDateMillis = System.currentTimeMillis())
+                                androidx.compose.material3.DatePickerDialog(onDismissRequest = { dayPick = false },
+                                    confirmButton = { TextButton(onClick = {
+                                        val ms = st.selectedDateMillis ?: System.currentTimeMillis()
+                                        vm.pollToMeal(p, options[best], java.time.Instant.ofEpochMilli(ms).atZone(java.time.ZoneOffset.UTC).toLocalDate().toString()); dayPick = false
+                                    }) { Text(stringResource(R.string.ok)) } }) { androidx.compose.material3.DatePicker(st) }
                             }
                         }
                         if (p.createdBy == viewer.userId || viewer.canManage) Row {

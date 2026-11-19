@@ -1238,4 +1238,34 @@
     <string name="copied_to_family">Copied to %1$s</string>
     <string name="shared_from">Shared with you by %1$s</string>
     <string name="shared_from_ro">Shared with you by %1$s · view only</string>
+    <string name="poll_to_shopping">Winner → shopping</string>
+    <string name="poll_to_meal">Winner → meal plan</string>
+    <string name="poll_sent_shopping">%1$s added to the shopping list</string>
+    <string name="poll_sent_meal">%1$s added to the meal plan</string>
+    <string name="pck_choose">Choose</string>
+    <string name="pck_choose_title">What will %1$s take?</string>
+    <string name="pck_choose_sub">Tap to add or remove. Kids can choose for themselves.</string>
+    <string name="pck_trip_day">Trip day: %1$s — add water and snacks</string>
+    <string-array name="pck_trip_extras">
+        <item>Water bottle</item>
+        <item>Hat</item>
+        <item>Extra snack</item>
+        <item>Fruit</item>
+        <item>Wet wipes</item>
+    </string-array>
+    <string name="chores_busy">Busy day today: %1$d events</string>
+    <string name="chores_busy_move">Move %1$d long chores to tomorrow</string>
+    <string name="chores_postponed">%1$d chores moved to tomorrow</string>
+    <string name="goal_points_new">New family goal</string>
+    <string name="goal_points_title">Goal (e.g. a trip to the zoo)</string>
+    <string name="goal_points_target">Points together</string>
+    <string name="goal_points_reward">Reward (optional)</string>
+    <string name="goal_points_progress">%1$d of %2$d points</string>
+    <string name="goal_reward">Reward: %1$s</string>
+    <string name="goal_celebrate">We did it! Close the goal</string>
+    <string name="audit_title">Who changed what</string>
+    <string name="audit_empty">Nothing yet. Admins see changes made after 2.0, when the cloud is connected.</string>
+    <string name="audit_add">added</string>
+    <string name="audit_edit">edited</string>
+    <string name="audit_delete">deleted</string>
 </resources>

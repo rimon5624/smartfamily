@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.ui.res.stringArrayResource
 import android.content.Intent
 import android.provider.AlarmClock
 import androidx.compose.foundation.clickable
@@ -670,6 +671,8 @@ private fun PackedTab(vm: KitchenViewModel, viewer: Viewer) {
     val packed by remember(viewer.familyId) { vm.packed(viewer.familyId, from, to) }.collectAsState(initial = emptyList())
     var editing by remember { mutableStateOf<MealProfileEntity?>(null) }
     val dayFmt = java.text.SimpleDateFormat("EEE d/M", java.util.Locale.getDefault())
+    val tripDays by remember(viewer.familyId) { vm.tripDays(viewer.familyId) }.collectAsState(initial = emptyMap())
+    var choosing by remember { mutableStateOf<Pair<MealProfileEntity, com.rimon.smartfamily.data.db.PackedMealEntity>?>(null) }
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -686,9 +689,13 @@ private fun PackedTab(vm: KitchenViewModel, viewer: Viewer) {
                         }
                         packed.filter { it.profileId == p.id }.sortedBy { it.date }.forEach { m ->
                             val d = vm.ymd.parse(m.date)
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp).clickable { choosing = p to m }) {
                                 Text(d?.let { dayFmt.format(it) } ?: m.date, Modifier.weight(0.3f), style = MaterialTheme.typography.labelLarge)
-                                Text(m.items.lines().joinToString(", "), Modifier.weight(0.7f), style = MaterialTheme.typography.bodyMedium)
+                                Text(m.items.lines().joinToString(", "), Modifier.weight(0.6f), style = MaterialTheme.typography.bodyMedium)
+                                Icon(Icons.Outlined.Edit, stringResource(R.string.pck_choose), Modifier.size(16.dp))
+                            }
+                            tripDays[m.date]?.let { trip ->
+                                Text(stringResource(R.string.pck_trip_day, trip), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 listOf("PACKED" to R.string.pck_packed, "EATEN" to R.string.pck_eaten, "UNEATEN" to R.string.pck_uneaten).forEach { (st, res) ->
@@ -713,6 +720,28 @@ private fun PackedTab(vm: KitchenViewModel, viewer: Viewer) {
                 Icon(Icons.Outlined.Add, stringResource(R.string.pck_new))
             }
         }
+    }
+    // PCK-5: the child picks from what they like (up to four things); PCK-8 adds trip-day extras.
+    choosing?.let { (p, m) ->
+        val likes = remember(p) { (p.likes + "\n" + p.rules).split('\n', ',').map { it.trim() }.filter { it.isNotEmpty() && it.length < 40 }.distinct() }
+        val extras = if (tripDays[m.date] != null) stringArrayResource(R.array.pck_trip_extras).toList() else emptyList()
+        var picked by remember(m) { mutableStateOf(m.items.lines().map { it.trim() }.filter { it.isNotEmpty() }.toSet()) }
+        AlertDialog(
+            onDismissRequest = { choosing = null },
+            title = { Text(stringResource(R.string.pck_choose_title, p.personName)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(stringResource(R.string.pck_choose_sub), style = MaterialTheme.typography.bodySmall)
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        (picked + likes + extras).distinct().forEach { o ->
+                            FilterChip(selected = o in picked, onClick = { picked = if (o in picked) picked - o else picked + o }, label = { Text(o) })
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { vm.savePacked(m.copy(items = picked.joinToString("\n"), feedback = if (viewer.isChild) "chosen" else m.feedback)); choosing = null }) { Text(stringResource(R.string.save)) } },
+            dismissButton = { TextButton(onClick = { choosing = null }) { Text(stringResource(R.string.cancel)) } },
+        )
     }
     editing?.let { p ->
         var name by remember { mutableStateOf(p.personName) }
