@@ -42,6 +42,13 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         ChatMessageEntity::class,
         ChatReactionEntity::class,
         ChatReadEntity::class,
+        TripEntity::class,
+        TripItemEntity::class,
+        BudgetEntryEntity::class,
+        BudgetLimitEntity::class,
+        HomeEntryEntity::class,
+        PollEntity::class,
+        PollVoteEntity::class,
     ],
     version = SchemaInfo.DB_VERSION,
     exportSchema = true,
@@ -51,6 +58,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6),
+        AutoMigration(from = 6, to = 7),
     ],
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -82,6 +90,13 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun chatMessages(): ChatMessageDao
     abstract fun chatReactions(): ChatReactionDao
     abstract fun chatReads(): ChatReadDao
+    abstract fun trips(): TripDao
+    abstract fun tripItems(): TripItemDao
+    abstract fun budgetEntrys(): BudgetEntryDao
+    abstract fun budgetLimits(): BudgetLimitDao
+    abstract fun homeEntrys(): HomeEntryDao
+    abstract fun polls(): PollDao
+    abstract fun pollVotes(): PollVoteDao
 
     companion object {
         /**

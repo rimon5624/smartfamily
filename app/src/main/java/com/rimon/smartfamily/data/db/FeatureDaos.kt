@@ -163,3 +163,47 @@ interface ChatReadDao : ChatReadDaoBase {
     @Query("SELECT * FROM chat_reads WHERE familyId = :familyId AND userId = :userId AND deletedAt IS NULL")
     fun observeMine(familyId: String, userId: String): Flow<List<ChatReadEntity>>
 }
+
+// ---------- 0.7 ----------
+
+@Dao
+interface TripDao : TripDaoBase {
+    @Query("SELECT * FROM trips WHERE familyId = :familyId AND deletedAt IS NULL ORDER BY startDate DESC")
+    fun observeSorted(familyId: String): Flow<List<TripEntity>>
+}
+
+@Dao
+interface TripItemDao : TripItemDaoBase {
+    @Query("SELECT * FROM trip_items WHERE tripId = :tripId AND deletedAt IS NULL ORDER BY category, sort, title")
+    fun observeTrip(tripId: String): Flow<List<TripItemEntity>>
+
+    @Query("SELECT * FROM trip_items WHERE tripId = :tripId AND deletedAt IS NULL")
+    suspend fun forTrip(tripId: String): List<TripItemEntity>
+}
+
+@Dao
+interface BudgetEntryDao : BudgetEntryDaoBase {
+    @Query("SELECT * FROM budget_entries WHERE familyId = :familyId AND deletedAt IS NULL AND (monthly = 1 OR (date >= :from AND date < :to)) ORDER BY date DESC")
+    fun observeMonth(familyId: String, from: Long, to: Long): Flow<List<BudgetEntryEntity>>
+}
+
+@Dao
+interface BudgetLimitDao : BudgetLimitDaoBase
+
+@Dao
+interface HomeEntryDao : HomeEntryDaoBase {
+    @Query("SELECT * FROM home_entries WHERE familyId = :familyId AND section = :section AND deletedAt IS NULL ORDER BY pinned DESC, title")
+    fun observeSection(familyId: String, section: String): Flow<List<HomeEntryEntity>>
+
+    @Query("SELECT * FROM home_entries WHERE deletedAt IS NULL AND expiresAt IS NOT NULL AND expiresAt BETWEEN :from AND :to")
+    suspend fun expiring(from: Long, to: Long): List<HomeEntryEntity>
+}
+
+@Dao
+interface PollDao : PollDaoBase {
+    @Query("SELECT * FROM polls WHERE familyId = :familyId AND deletedAt IS NULL ORDER BY closed, updatedAt DESC")
+    fun observeSorted(familyId: String): Flow<List<PollEntity>>
+}
+
+@Dao
+interface PollVoteDao : PollVoteDaoBase

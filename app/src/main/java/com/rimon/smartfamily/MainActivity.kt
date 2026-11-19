@@ -112,6 +112,7 @@ private fun MainNav(vm: AppViewModel) {
     val kitchenVm: KitchenViewModel = viewModel()
     val applianceVm: ApplianceViewModel = viewModel()
     val chatVm: com.rimon.smartfamily.ui.ChatViewModel = viewModel()
+    val extrasVm: com.rimon.smartfamily.ui.ExtrasViewModel = viewModel()
     val nav = rememberNavController()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val family by vm.activeFamily.collectAsStateWithLifecycle()
@@ -134,7 +135,7 @@ private fun MainNav(vm: AppViewModel) {
     val showBar = Tab.entries.any { it.route == route }
 
     LaunchedEffect(Unit) {
-        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages).collect { msg ->
+        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages, extrasVm.messages).collect { msg ->
             val text = when (msg) {
                 is UiMessage.Res -> if (msg.arg != null) context.getString(msg.id, msg.arg) else context.getString(msg.id)
                 is UiMessage.Text -> context.getString(R.string.error_generic, msg.text)
@@ -192,6 +193,11 @@ private fun MainNav(vm: AppViewModel) {
                             AppModule.PACKED_MEALS -> nav.navigate("kitchen/2")
                             AppModule.APPLIANCES -> nav.navigate("appliances")
                             AppModule.CHAT -> nav.navigate("chat")
+                            AppModule.TRAVEL -> nav.navigate("travel")
+                            AppModule.BUDGET -> nav.navigate("budget")
+                            AppModule.HOME_BOOK -> nav.navigate("homebook/0")
+                            AppModule.KNOWLEDGE -> nav.navigate("homebook/1")
+                            AppModule.POLLS -> nav.navigate("polls")
                             else -> Unit
                         }
                     },
@@ -282,6 +288,21 @@ private fun MainNav(vm: AppViewModel) {
             }
             composable("chat/{id}") { back ->
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatScreen(chatVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
+            }
+            composable("travel") {
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.TravelScreen(extrasVm, viewer, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("trip/$it") })
+            }
+            composable("trip/{id}") { back ->
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.TripScreen(extrasVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
+            }
+            composable("budget") {
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.BudgetScreen(extrasVm, viewer, onBack = { nav.popBackStack() })
+            }
+            composable("homebook/{tab}") { back ->
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.HomeBookScreen(extrasVm, viewer, back.arguments?.getString("tab")?.toIntOrNull() ?: 0, onBack = { nav.popBackStack() })
+            }
+            composable("polls") {
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.PollsScreen(extrasVm, viewer, onBack = { nav.popBackStack() })
             }
             composable("inventory") {
                 if (famId.isNotEmpty()) InventoryScreen(shopVm, viewer, onBack = { nav.popBackStack() })

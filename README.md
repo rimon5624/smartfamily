@@ -2,9 +2,17 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 0.6.0 — Phase 5 (encrypted family chat)**
+**Current version: 0.7.0 — Phase 6 (travel, budget, home book, polls)**
 
-## What is new in 0.6.0
+## What is new in 0.7.0
+
+- Travel packing: trips with destination search and the free Open-Meteo forecast (no key). The packing list is built from trip type, travellers, days and weather; everyone ticks items on their own phone.
+- Family budget: income and expenses per month, fixed monthly items, per-category monthly limits with progress bars.
+- Home book (contacts, services, warranties with expiry highlighting, documents) and a knowledge box with optional AI tidy-up.
+- Family polls: single or multiple answers, anonymous display, closing date.
+- Supabase: `0007_app_0_7.sql`.
+
+## What was new in 0.6.0
 
 - Family chat, group chats and private chats, end-to-end encrypted (Tink HPKE X25519 + AES-256-GCM). The server stores only ciphertext.
 - Every phone publishes its public key; chat keys are sealed per device and re-shared automatically to new phones and members. Removing a member rotates the key.

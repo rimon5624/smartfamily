@@ -350,6 +350,124 @@ data class ChatReadEntity(
     @Transient val dirty: Boolean = true,
 )
 
+@Serializable
+@Entity(tableName = "trips", indices = [Index("familyId")])
+data class TripEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    val title: String,
+    val destination: String = "",
+    val lat: Double = 0.0,
+    val lon: Double = 0.0,
+    @SerialName("start_date") val startDate: String = "",
+    @SerialName("end_date") val endDate: String = "",
+    val kinds: String = "",
+    val travelers: String = "",
+    val weather: String = "",
+    @SerialName("created_by") val createdBy: String,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "trip_items", indices = [Index("familyId"), Index("tripId")])
+data class TripItemEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("trip_id") val tripId: String,
+    val title: String,
+    val category: String = "general",
+    @SerialName("owner_id") val ownerId: String = "",
+    val qty: Int = 1,
+    val packed: Boolean = false,
+    @SerialName("packed_by") val packedBy: String = "",
+    val sort: Int = 0,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "budget_entries", indices = [Index("familyId"), Index("date")])
+data class BudgetEntryEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    val kind: String = "EXPENSE",
+    val amount: Double,
+    val category: String = "other",
+    val note: String = "",
+    val date: Long,
+    val payer: String = "",
+    val monthly: Boolean = false,
+    @SerialName("created_by") val createdBy: String,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "budget_limits", indices = [Index("familyId")])
+data class BudgetLimitEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    val category: String,
+    val monthly: Double = 0.0,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "home_entries", indices = [Index("familyId")])
+data class HomeEntryEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    val section: String = "HOME",
+    val kind: String = "NOTE",
+    val title: String,
+    val body: String = "",
+    val phone: String = "",
+    val url: String = "",
+    @SerialName("expires_at") val expiresAt: Long? = null,
+    val tags: String = "",
+    val pinned: Boolean = false,
+    @SerialName("created_by") val createdBy: String,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "polls", indices = [Index("familyId")])
+data class PollEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    val question: String,
+    val options: String,
+    val multi: Boolean = false,
+    val anonymous: Boolean = false,
+    @SerialName("closes_at") val closesAt: Long = 0L,
+    val closed: Boolean = false,
+    @SerialName("created_by") val createdBy: String,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "poll_votes", indices = [Index("familyId"), Index("pollId")])
+data class PollVoteEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("poll_id") val pollId: String,
+    @SerialName("user_id") val userId: String,
+    val choices: String = "",
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
 // Base DAOs: the feature DAOs in FeatureDaos.kt extend these and add their own queries.
 
 interface ChoreDaoBase {
@@ -597,4 +715,95 @@ interface ChatReadDaoBase {
     @Query("SELECT * FROM chat_reads WHERE dirty = 1") suspend fun dirty(): List<ChatReadEntity>
     @Query("UPDATE chat_reads SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
     @Query("DELETE FROM chat_reads") suspend fun clear()
+}
+
+interface TripDaoBase {
+    @Query("SELECT * FROM trips WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<TripEntity>>
+    @Query("SELECT * FROM trips WHERE id = :id") suspend fun get(id: String): TripEntity?
+    @Query("SELECT * FROM trips WHERE id = :id") fun observeOne(id: String): Flow<TripEntity?>
+    @Upsert suspend fun upsert(item: TripEntity)
+    @Upsert suspend fun upsertAll(items: List<TripEntity>)
+    @Query("SELECT * FROM trips") suspend fun all(): List<TripEntity>
+    @Query("SELECT * FROM trips WHERE dirty = 1") suspend fun dirty(): List<TripEntity>
+    @Query("UPDATE trips SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM trips") suspend fun clear()
+}
+
+interface TripItemDaoBase {
+    @Query("SELECT * FROM trip_items WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<TripItemEntity>>
+    @Query("SELECT * FROM trip_items WHERE id = :id") suspend fun get(id: String): TripItemEntity?
+    @Query("SELECT * FROM trip_items WHERE id = :id") fun observeOne(id: String): Flow<TripItemEntity?>
+    @Upsert suspend fun upsert(item: TripItemEntity)
+    @Upsert suspend fun upsertAll(items: List<TripItemEntity>)
+    @Query("SELECT * FROM trip_items") suspend fun all(): List<TripItemEntity>
+    @Query("SELECT * FROM trip_items WHERE dirty = 1") suspend fun dirty(): List<TripItemEntity>
+    @Query("UPDATE trip_items SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM trip_items") suspend fun clear()
+}
+
+interface BudgetEntryDaoBase {
+    @Query("SELECT * FROM budget_entries WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<BudgetEntryEntity>>
+    @Query("SELECT * FROM budget_entries WHERE id = :id") suspend fun get(id: String): BudgetEntryEntity?
+    @Query("SELECT * FROM budget_entries WHERE id = :id") fun observeOne(id: String): Flow<BudgetEntryEntity?>
+    @Upsert suspend fun upsert(item: BudgetEntryEntity)
+    @Upsert suspend fun upsertAll(items: List<BudgetEntryEntity>)
+    @Query("SELECT * FROM budget_entries") suspend fun all(): List<BudgetEntryEntity>
+    @Query("SELECT * FROM budget_entries WHERE dirty = 1") suspend fun dirty(): List<BudgetEntryEntity>
+    @Query("UPDATE budget_entries SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM budget_entries") suspend fun clear()
+}
+
+interface BudgetLimitDaoBase {
+    @Query("SELECT * FROM budget_limits WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<BudgetLimitEntity>>
+    @Query("SELECT * FROM budget_limits WHERE id = :id") suspend fun get(id: String): BudgetLimitEntity?
+    @Query("SELECT * FROM budget_limits WHERE id = :id") fun observeOne(id: String): Flow<BudgetLimitEntity?>
+    @Upsert suspend fun upsert(item: BudgetLimitEntity)
+    @Upsert suspend fun upsertAll(items: List<BudgetLimitEntity>)
+    @Query("SELECT * FROM budget_limits") suspend fun all(): List<BudgetLimitEntity>
+    @Query("SELECT * FROM budget_limits WHERE dirty = 1") suspend fun dirty(): List<BudgetLimitEntity>
+    @Query("UPDATE budget_limits SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM budget_limits") suspend fun clear()
+}
+
+interface HomeEntryDaoBase {
+    @Query("SELECT * FROM home_entries WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<HomeEntryEntity>>
+    @Query("SELECT * FROM home_entries WHERE id = :id") suspend fun get(id: String): HomeEntryEntity?
+    @Query("SELECT * FROM home_entries WHERE id = :id") fun observeOne(id: String): Flow<HomeEntryEntity?>
+    @Upsert suspend fun upsert(item: HomeEntryEntity)
+    @Upsert suspend fun upsertAll(items: List<HomeEntryEntity>)
+    @Query("SELECT * FROM home_entries") suspend fun all(): List<HomeEntryEntity>
+    @Query("SELECT * FROM home_entries WHERE dirty = 1") suspend fun dirty(): List<HomeEntryEntity>
+    @Query("UPDATE home_entries SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM home_entries") suspend fun clear()
+}
+
+interface PollDaoBase {
+    @Query("SELECT * FROM polls WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<PollEntity>>
+    @Query("SELECT * FROM polls WHERE id = :id") suspend fun get(id: String): PollEntity?
+    @Query("SELECT * FROM polls WHERE id = :id") fun observeOne(id: String): Flow<PollEntity?>
+    @Upsert suspend fun upsert(item: PollEntity)
+    @Upsert suspend fun upsertAll(items: List<PollEntity>)
+    @Query("SELECT * FROM polls") suspend fun all(): List<PollEntity>
+    @Query("SELECT * FROM polls WHERE dirty = 1") suspend fun dirty(): List<PollEntity>
+    @Query("UPDATE polls SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM polls") suspend fun clear()
+}
+
+interface PollVoteDaoBase {
+    @Query("SELECT * FROM poll_votes WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<PollVoteEntity>>
+    @Query("SELECT * FROM poll_votes WHERE id = :id") suspend fun get(id: String): PollVoteEntity?
+    @Query("SELECT * FROM poll_votes WHERE id = :id") fun observeOne(id: String): Flow<PollVoteEntity?>
+    @Upsert suspend fun upsert(item: PollVoteEntity)
+    @Upsert suspend fun upsertAll(items: List<PollVoteEntity>)
+    @Query("SELECT * FROM poll_votes") suspend fun all(): List<PollVoteEntity>
+    @Query("SELECT * FROM poll_votes WHERE dirty = 1") suspend fun dirty(): List<PollVoteEntity>
+    @Query("UPDATE poll_votes SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM poll_votes") suspend fun clear()
 }

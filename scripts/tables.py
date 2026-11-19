@@ -205,4 +205,68 @@ TABLES = [
         ("userId", "String", None),
         ("lastReadAt", "Long", "0L"),
     ], indices=["chatId"]),
+
+    # ---------- 0.7: travel packing, budget, home book and knowledge, polls ----------
+    dict(name="trips", entity="TripEntity", version=7, policy="adults", fields=[
+        ("title", "String", None),
+        ("destination", "String", '""'),
+        ("lat", "Double", "0.0"),
+        ("lon", "Double", "0.0"),
+        ("startDate", "String", '""'),           # yyyy-MM-dd
+        ("endDate", "String", '""'),
+        ("kinds", "String", '""'),               # comma-separated: BEACH, CITY, NATURE, CAMPING, HOTEL, ABROAD, SHABBAT, BABY
+        ("travelers", "String", '""'),           # comma-separated userIds
+        ("weather", "String", '""'),             # short forecast summary from Open-Meteo
+        ("createdBy", "String", None),
+    ], indices=[]),
+    dict(name="trip_items", entity="TripItemEntity", version=7, policy="members", fields=[
+        ("tripId", "String", None),
+        ("title", "String", None),
+        ("category", "String", '"general"'),
+        ("ownerId", "String", '""'),             # "" = shared item
+        ("qty", "Int", "1"),
+        ("packed", "Boolean", "false"),
+        ("packedBy", "String", '""'),
+        ("sort", "Int", "0"),
+    ], indices=["tripId"]),
+    dict(name="budget_entries", entity="BudgetEntryEntity", version=7, policy="adults", fields=[
+        ("kind", "String", '"EXPENSE"'),         # EXPENSE or INCOME
+        ("amount", "Double", None),
+        ("category", "String", '"other"'),
+        ("note", "String", '""'),
+        ("date", "Long", None),
+        ("payer", "String", '""'),
+        ("monthly", "Boolean", "false"),         # a fixed monthly item (rent, kindergarten...)
+        ("createdBy", "String", None),
+    ], indices=["date"]),
+    dict(name="budget_limits", entity="BudgetLimitEntity", version=7, policy="adults", fields=[
+        ("category", "String", None),
+        ("monthly", "Double", "0.0"),
+    ], indices=[]),
+    dict(name="home_entries", entity="HomeEntryEntity", version=7, policy="adults", fields=[
+        ("section", "String", '"HOME"'),         # HOME (home book) or KNOWLEDGE (knowledge box)
+        ("kind", "String", '"NOTE"'),            # CONTACT, WARRANTY, SERVICE, DOCUMENT, NOTE, HOWTO
+        ("title", "String", None),
+        ("body", "String", '""'),
+        ("phone", "String", '""'),
+        ("url", "String", '""'),
+        ("expiresAt", "Long?", "null"),
+        ("tags", "String", '""'),
+        ("pinned", "Boolean", "false"),
+        ("createdBy", "String", None),
+    ], indices=[]),
+    dict(name="polls", entity="PollEntity", version=7, policy="members", fields=[
+        ("question", "String", None),
+        ("options", "String", None),             # one option per line
+        ("multi", "Boolean", "false"),
+        ("anonymous", "Boolean", "false"),
+        ("closesAt", "Long", "0L"),              # 0 = open until closed by hand
+        ("closed", "Boolean", "false"),
+        ("createdBy", "String", None),
+    ], indices=[]),
+    dict(name="poll_votes", entity="PollVoteEntity", version=7, policy="self", fields=[
+        ("pollId", "String", None),
+        ("userId", "String", None),
+        ("choices", "String", '""'),             # comma-separated option indexes
+    ], indices=["pollId"]),
 ]

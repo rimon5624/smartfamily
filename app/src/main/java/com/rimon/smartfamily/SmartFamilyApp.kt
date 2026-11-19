@@ -38,6 +38,7 @@ class AppContainer(context: Context) {
     val appliances = ApplianceRepository(db, homeLife) { SyncScheduler.requestSoon(appContext) }
     val homeConnect = HomeConnectClient(crypto) { settings.current().homeConnectClientId }
     val smartThings = SmartThingsClient(crypto)
+    val extras = com.rimon.smartfamily.data.repo.ExtrasRepository(db) { SyncScheduler.requestSoon(appContext) }
     val chatCrypto = ChatCrypto(crypto)
     val chat = ChatRepository(db, chatCrypto, api) { SyncScheduler.requestSoon(appContext) }
     val gemini = GeminiClient(crypto) { settings.current().let { it.geminiModel to it.privacyMode } }

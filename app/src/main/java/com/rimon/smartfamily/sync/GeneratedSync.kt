@@ -21,6 +21,13 @@ import com.rimon.smartfamily.data.db.ChatKeyEntity
 import com.rimon.smartfamily.data.db.ChatMessageEntity
 import com.rimon.smartfamily.data.db.ChatReactionEntity
 import com.rimon.smartfamily.data.db.ChatReadEntity
+import com.rimon.smartfamily.data.db.TripEntity
+import com.rimon.smartfamily.data.db.TripItemEntity
+import com.rimon.smartfamily.data.db.BudgetEntryEntity
+import com.rimon.smartfamily.data.db.BudgetLimitEntity
+import com.rimon.smartfamily.data.db.HomeEntryEntity
+import com.rimon.smartfamily.data.db.PollEntity
+import com.rimon.smartfamily.data.db.PollVoteEntity
 import kotlinx.serialization.Serializable
 
 internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
@@ -119,6 +126,41 @@ internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
             { db.chatReads().dirty() }, { it.id }, { db.chatReads().markClean(it) },
             { rows -> db.chatReads().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
         ),
+        TableSync(
+            "trips", "id", TripEntity.serializer(),
+            { db.trips().dirty() }, { it.id }, { db.trips().markClean(it) },
+            { rows -> db.trips().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "trip_items", "id", TripItemEntity.serializer(),
+            { db.tripItems().dirty() }, { it.id }, { db.tripItems().markClean(it) },
+            { rows -> db.tripItems().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "budget_entries", "id", BudgetEntryEntity.serializer(),
+            { db.budgetEntrys().dirty() }, { it.id }, { db.budgetEntrys().markClean(it) },
+            { rows -> db.budgetEntrys().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "budget_limits", "id", BudgetLimitEntity.serializer(),
+            { db.budgetLimits().dirty() }, { it.id }, { db.budgetLimits().markClean(it) },
+            { rows -> db.budgetLimits().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "home_entries", "id", HomeEntryEntity.serializer(),
+            { db.homeEntrys().dirty() }, { it.id }, { db.homeEntrys().markClean(it) },
+            { rows -> db.homeEntrys().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "polls", "id", PollEntity.serializer(),
+            { db.polls().dirty() }, { it.id }, { db.polls().markClean(it) },
+            { rows -> db.polls().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "poll_votes", "id", PollVoteEntity.serializer(),
+            { db.pollVotes().dirty() }, { it.id }, { db.pollVotes().markClean(it) },
+            { rows -> db.pollVotes().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
 )
 
 /** Backup content of the generated tables (BAK-2); missing lists in older backups default to empty. */
@@ -143,6 +185,13 @@ data class GeneratedBackup(
     val chatMessages: List<ChatMessageEntity> = emptyList(),
     val chatReactions: List<ChatReactionEntity> = emptyList(),
     val chatReads: List<ChatReadEntity> = emptyList(),
+    val trips: List<TripEntity> = emptyList(),
+    val tripItems: List<TripItemEntity> = emptyList(),
+    val budgetEntrys: List<BudgetEntryEntity> = emptyList(),
+    val budgetLimits: List<BudgetLimitEntity> = emptyList(),
+    val homeEntrys: List<HomeEntryEntity> = emptyList(),
+    val polls: List<PollEntity> = emptyList(),
+    val pollVotes: List<PollVoteEntity> = emptyList(),
 )
 
 suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
@@ -165,6 +214,13 @@ suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
         chatMessages = db.chatMessages().all(),
         chatReactions = db.chatReactions().all(),
         chatReads = db.chatReads().all(),
+        trips = db.trips().all(),
+        tripItems = db.tripItems().all(),
+        budgetEntrys = db.budgetEntrys().all(),
+        budgetLimits = db.budgetLimits().all(),
+        homeEntrys = db.homeEntrys().all(),
+        polls = db.polls().all(),
+        pollVotes = db.pollVotes().all(),
 )
 
 suspend fun clearGenerated(db: AppDatabase) {
@@ -187,6 +243,13 @@ suspend fun clearGenerated(db: AppDatabase) {
     db.chatMessages().clear()
     db.chatReactions().clear()
     db.chatReads().clear()
+    db.trips().clear()
+    db.tripItems().clear()
+    db.budgetEntrys().clear()
+    db.budgetLimits().clear()
+    db.homeEntrys().clear()
+    db.polls().clear()
+    db.pollVotes().clear()
 }
 
 suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
@@ -209,4 +272,11 @@ suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
     db.chatMessages().upsertAll(p.chatMessages.map { it.copy(dirty = true) })
     db.chatReactions().upsertAll(p.chatReactions.map { it.copy(dirty = true) })
     db.chatReads().upsertAll(p.chatReads.map { it.copy(dirty = true) })
+    db.trips().upsertAll(p.trips.map { it.copy(dirty = true) })
+    db.tripItems().upsertAll(p.tripItems.map { it.copy(dirty = true) })
+    db.budgetEntrys().upsertAll(p.budgetEntrys.map { it.copy(dirty = true) })
+    db.budgetLimits().upsertAll(p.budgetLimits.map { it.copy(dirty = true) })
+    db.homeEntrys().upsertAll(p.homeEntrys.map { it.copy(dirty = true) })
+    db.polls().upsertAll(p.polls.map { it.copy(dirty = true) })
+    db.pollVotes().upsertAll(p.pollVotes.map { it.copy(dirty = true) })
 }
