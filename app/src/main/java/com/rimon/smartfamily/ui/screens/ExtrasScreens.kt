@@ -301,6 +301,9 @@ fun BudgetScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit) {
     val busy by vm.busy.collectAsState()
     var editing by remember { mutableStateOf<BudgetEntryEntity?>(null) }
     var limitFor by remember { mutableStateOf<String?>(null) }
+    val exporter = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        if (uri != null) vm.exportCsv(uri, entries)
+    }
     val income = entries.filter { it.kind == "INCOME" }.sumOf { it.amount }
     val expense = entries.filter { it.kind == "EXPENSE" }.sumOf { it.amount }
     val byCat = entries.filter { it.kind == "EXPENSE" }.groupBy { it.category }.mapValues { e -> e.value.sumOf { it.amount } }
@@ -344,7 +347,10 @@ fun BudgetScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit) {
                 }
             }
             item {
-                TextButton(enabled = !viewer.isChild, onClick = { limitFor = "food" }) { Text(stringResource(R.string.budget_set_limit)) }
+                Row {
+                    TextButton(enabled = !viewer.isChild, onClick = { limitFor = "food" }) { Text(stringResource(R.string.budget_set_limit)) }
+                    TextButton(enabled = entries.isNotEmpty(), onClick = { exporter.launch("budget-%04d-%02d.csv".format(year, month + 1)) }) { Text(stringResource(R.string.budget_export)) }
+                }
                 SectionTitle(stringResource(R.string.budget_entries))
             }
             items(entries, key = { it.id }) { e ->

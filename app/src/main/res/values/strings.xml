@@ -883,4 +883,33 @@
     <string name="crash_title">The app closed unexpectedly</string>
     <string name="crash_body">The error was saved on this phone only. Copy it and paste it in the chat with whoever builds the app, so it can be fixed.</string>
     <string name="crash_copy">Copy error</string>
+
+    <!-- 1.0 -->
+    <string name="settings_security">Security</string>
+    <string name="lock_title">SmartFamily is locked</string>
+    <string name="lock_unlock">Unlock</string>
+    <string name="lock_setting">App lock</string>
+    <string name="lock_setting_sub">Fingerprint, face or the phone\'s PIN when the app opens</string>
+    <string name="lock_now">Every time</string>
+    <string name="lock_after">After %1$d min</string>
+    <string name="secure_setting">Block screenshots</string>
+    <string name="secure_setting_sub">Hides the app in recent apps and blocks screenshots and screen recording</string>
+    <string name="kid_setting">Kid mode</string>
+    <string name="kid_setting_sub">Bigger buttons and text. Automatic = on for child accounts</string>
+    <string name="kid_auto">Automatic</string>
+    <string name="kid_on">On</string>
+    <string name="kid_off">Off</string>
+    <string name="update_setting">Check for updates</string>
+    <string name="update_setting_sub">Installed version %1$s. New versions are announced when the app opens</string>
+    <string name="update_title">Version %1$s is available</string>
+    <string name="update_body">Download the new APK and install it over this one. Your data stays.</string>
+    <string name="update_download">Download</string>
+    <string name="update_later">Later</string>
+    <string name="whats_new_title">What\'s new in %1$s</string>
+    <string name="whats_new_body">• App lock with fingerprint or PIN, and blocking screenshots (Settings → Security)\n• Kid mode: bigger buttons and text for children\n• Price comparison: a comparable total over the items every store has\n• Budget: alerts at 80% and 100% of a category limit, and export to CSV\n• Update check: new versions are announced here\n• Fixed: crash when adding items to a shopping list</string>
+    <string name="prices_comparable">Comparable: %1$s (%2$d items)</string>
+    <string name="budget_over">This category is at %1$s%% of its monthly limit</string>
+    <string name="budget_near">This category reached %1$s%% of its monthly limit</string>
+    <string name="budget_export">Export CSV</string>
+    <string name="budget_exported">Exported</string>
 </resources>

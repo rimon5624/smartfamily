@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -87,7 +88,34 @@ class ExtrasViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- budget ----------
     fun month(familyId: String, year: Int, month: Int) = repo.month(familyId, year, month)
     fun limits(familyId: String) = repo.limits(familyId)
-    fun saveEntry(e: BudgetEntryEntity) = launchSafe { repo.saveEntry(e) }
+    /** BUD-2: after an expense, warn at 80% and 100% of that category's monthly limit. */
+    fun saveEntry(e: BudgetEntryEntity) = launchSafe {
+        repo.saveEntry(e)
+        if (e.kind != "EXPENSE") return@launchSafe
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = e.date }
+        val spent = repo.month(e.familyId, cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH)).first()
+            .filter { it.kind == "EXPENSE" && it.category == e.category }.sumOf { it.amount }
+        val limit = repo.limits(e.familyId).first().firstOrNull { it.category == e.category }?.monthly ?: 0.0
+        if (limit <= 0) return@launchSafe
+        val pct = (spent / limit * 100).toInt()
+        if (pct >= 100) _messages.tryEmit(UiMessage.Res(R.string.budget_over, "$pct"))
+        else if (pct >= 80) _messages.tryEmit(UiMessage.Res(R.string.budget_near, "$pct"))
+    }
+
+    /** BUD-3: export a month to CSV (opens in Excel / Google Sheets). */
+    fun exportCsv(uri: android.net.Uri, entries: List<BudgetEntryEntity>) = launchSafe {
+        val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        fun q(s: String) = "\"" + s.replace("\"", "\"\"") + "\""
+        val csv = buildString {
+            append('\uFEFF') // so Excel opens Hebrew correctly
+            append("date,kind,category,amount,description,monthly\n")
+            entries.forEach { e -> append("${fmt.format(java.util.Date(e.date))},${e.kind},${e.category},${e.amount},${q(e.note)},${e.monthly}\n") }
+        }
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            getApplication<Application>().contentResolver.openOutputStream(uri, "wt")?.use { it.write(csv.toByteArray()) }
+        }
+        _messages.tryEmit(UiMessage.Res(R.string.budget_exported))
+    }
     fun newEntry(familyId: String, userId: String, date: Long) =
         BudgetEntryEntity(id = repo.newId(), familyId = familyId, amount = 0.0, date = date, payer = userId, createdBy = userId)
     fun deleteEntry(e: BudgetEntryEntity) = launchSafe { repo.deleteEntry(e) }

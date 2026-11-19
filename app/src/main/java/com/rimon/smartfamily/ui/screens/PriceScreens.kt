@@ -101,7 +101,10 @@ private fun CompareTab(vm: PriceViewModel, viewer: Viewer, hebrew: Boolean, noSt
     var open by rememberSaveable { mutableStateOf("") }
     val hiddenSet = hidden.split(',').filter { it.isNotBlank() }.toSet()
     val shown = baskets.filter { it.store.chainKey !in hiddenSet }
-    val cheapest = shown.filter { it.found == shown.maxOfOrNull { b -> b.found } }.minOfOrNull { it.total }
+    // PRC-4: "comparable total" only over the items every shown store has, so a missing item never looks cheap.
+    val common = shown.map { b -> b.lines.filter { it.match != null }.map { it.item.id }.toSet() }.reduceOrNull { a, b -> a intersect b }.orEmpty()
+    fun comparable(b: StoreBasket) = b.lines.filter { it.item.id in common }.sumOf { it.total }
+    val cheapest = if (common.isNotEmpty()) shown.minOfOrNull { comparable(it) } else null
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (noStores) item {
             Text(stringResource(R.string.prices_pick_first))
@@ -123,7 +126,7 @@ private fun CompareTab(vm: PriceViewModel, viewer: Viewer, hebrew: Boolean, noSt
             }
         }
         items(shown, key = { it.store.chainKey + it.store.storeId }) { b ->
-            BasketCard(b, hebrew, best = cheapest != null && b.total == cheapest && b.found > 0, expanded = open == b.store.chainKey + b.store.storeId) {
+            BasketCard(b, hebrew, comparable(b), common.size, best = cheapest != null && comparable(b) == cheapest, expanded = open == b.store.chainKey + b.store.storeId) {
                 open = if (open == b.store.chainKey + b.store.storeId) "" else b.store.chainKey + b.store.storeId
             }
         }
@@ -132,7 +135,7 @@ private fun CompareTab(vm: PriceViewModel, viewer: Viewer, hebrew: Boolean, noSt
 }
 
 @Composable
-private fun BasketCard(b: StoreBasket, hebrew: Boolean, best: Boolean, expanded: Boolean, onToggle: () -> Unit) {
+private fun BasketCard(b: StoreBasket, hebrew: Boolean, comparable: Double, commonCount: Int, best: Boolean, expanded: Boolean, onToggle: () -> Unit) {
     val ch = Chains.byKey(b.store.chainKey)
     Card(
         Modifier.fillMaxWidth().clickable(onClick = onToggle),
@@ -147,6 +150,7 @@ private fun BasketCard(b: StoreBasket, hebrew: Boolean, best: Boolean, expanded:
                 Column(horizontalAlignment = Alignment.End) {
                     Text(shekel(b.total), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Text(stringResource(R.string.prices_found, b.found, b.lines.size), style = MaterialTheme.typography.labelSmall)
+                    if (commonCount > 0) Text(stringResource(R.string.prices_comparable, shekel(comparable), commonCount), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                 }
                 Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
             }

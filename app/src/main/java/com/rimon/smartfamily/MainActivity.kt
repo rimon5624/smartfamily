@@ -30,6 +30,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -78,6 +81,24 @@ import com.rimon.smartfamily.ui.theme.SmartFamilyTheme
 
 class MainActivity : AppCompatActivity() {
     private val vm: AppViewModel by viewModels()
+    private val locked = androidx.compose.runtime.mutableStateOf(false)
+
+    override fun onStart() {
+        super.onStart()
+        lifecycleScope.launch {
+            val s = vm.settings.first { it != null }!!
+            locked.value = com.rimon.smartfamily.security.AppLock.needsUnlock(s.appLock, s.lockMinutes) &&
+                com.rimon.smartfamily.security.AppLock.canAuthenticate(this@MainActivity)
+            if (locked.value) unlock()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        com.rimon.smartfamily.security.AppLock.onBackground()
+    }
+
+    private fun unlock() = com.rimon.smartfamily.security.AppLock.prompt(this, getString(R.string.lock_title)) { ok -> if (ok) locked.value = false }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -110,10 +131,19 @@ class MainActivity : AppCompatActivity() {
                             dismissButton = { androidx.compose.material3.TextButton(onClick = { crash = null }) { Text(androidx.compose.ui.res.stringResource(R.string.cancel)) } },
                         )
                     }
+                    // Screenshots and the recent-apps preview are blocked when the user asks for it.
+                    LaunchedEffect(s?.secureScreens) {
+                        if (s?.secureScreens == true) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                        else window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                    }
                     when {
                         s == null -> Box(Modifier.fillMaxSize()) // settings are loading (a few ms)
+                        locked.value -> com.rimon.smartfamily.ui.screens.LockScreen(onUnlock = { unlock() })
                         !s.onboardingDone -> OnboardingScreen(vm)
-                        else -> MainNav(vm)
+                        else -> {
+                            MainNav(vm)
+                            com.rimon.smartfamily.ui.screens.WhatsNewAndUpdates(vm, s)
+                        }
                     }
                 }
             }
@@ -181,6 +211,12 @@ private fun MainNav(vm: AppViewModel) {
         restoreState = true
     }
 
+    // UX-8 kid mode: everything bigger (buttons, text, touch targets) for children.
+    val kid = when (settings?.kidMode) { "ON" -> true; "OFF" -> false; else -> role == Role.CHILD }
+    val baseDensity = androidx.compose.ui.platform.LocalDensity.current
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalDensity provides if (kid) androidx.compose.ui.unit.Density(baseDensity.density * 1.15f, baseDensity.fontScale * 1.1f) else baseDensity,
+    ) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
@@ -349,6 +385,7 @@ private fun MainNav(vm: AppViewModel) {
                 if (famId.isNotEmpty()) InventoryScreen(shopVm, viewer, onBack = { nav.popBackStack() })
             }
         }
+    }
     }
 }
 

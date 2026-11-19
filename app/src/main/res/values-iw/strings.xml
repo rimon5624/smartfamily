@@ -879,4 +879,33 @@
     <string name="crash_title">האפליקציה נסגרה באופן לא צפוי</string>
     <string name="crash_body">השגיאה נשמרה רק בטלפון הזה. אפשר להעתיק אותה ולהדביק בצ\'אט עם מי שבונה את האפליקציה, כדי לתקן.</string>
     <string name="crash_copy">העתקת השגיאה</string>
+
+    <!-- 1.0 -->
+    <string name="settings_security">אבטחה</string>
+    <string name="lock_title">SmartFamily נעולה</string>
+    <string name="lock_unlock">פתיחה</string>
+    <string name="lock_setting">נעילת אפליקציה</string>
+    <string name="lock_setting_sub">טביעת אצבע, זיהוי פנים או קוד הטלפון בכל פתיחה</string>
+    <string name="lock_now">בכל פעם</string>
+    <string name="lock_after">אחרי %1$d דק\'</string>
+    <string name="secure_setting">חסימת צילומי מסך</string>
+    <string name="secure_setting_sub">מסתיר את האפליקציה במסך האפליקציות האחרונות וחוסם צילום והקלטת מסך</string>
+    <string name="kid_setting">מצב ילדים</string>
+    <string name="kid_setting_sub">כפתורים וטקסט גדולים יותר. אוטומטי = פעיל בחשבונות ילדים</string>
+    <string name="kid_auto">אוטומטי</string>
+    <string name="kid_on">פעיל</string>
+    <string name="kid_off">כבוי</string>
+    <string name="update_setting">בדיקת עדכונים</string>
+    <string name="update_setting_sub">גרסה מותקנת %1$s. גרסה חדשה תוצג כשפותחים את האפליקציה</string>
+    <string name="update_title">גרסה %1$s זמינה</string>
+    <string name="update_body">מורידים את ה-APK החדש ומתקינים מעל הקיים. המידע נשמר.</string>
+    <string name="update_download">הורדה</string>
+    <string name="update_later">אחר כך</string>
+    <string name="whats_new_title">מה חדש בגרסה %1$s</string>
+    <string name="whats_new_body">• נעילת אפליקציה בטביעת אצבע או קוד, וחסימת צילומי מסך (הגדרות ← אבטחה)\n• מצב ילדים: כפתורים וטקסט גדולים לילדים\n• השוואת מחירים: סה\"כ בר השוואה רק על מוצרים שיש בכל הסניפים\n• תקציב: התראה ב-80% וב-100% מהתקרה, וייצוא ל-CSV\n• בדיקת עדכונים: גרסה חדשה תוצג כאן\n• תוקן: קריסה בהוספת פריט לרשימת קניות</string>
+    <string name="prices_comparable">בר השוואה: %1$s (%2$d מוצרים)</string>
+    <string name="budget_over">הקטגוריה הגיעה ל-%1$s%% מהתקרה החודשית</string>
+    <string name="budget_near">הקטגוריה הגיעה ל-%1$s%% מהתקרה החודשית</string>
+    <string name="budget_export">ייצוא CSV</string>
+    <string name="budget_exported">יוצא</string>
 </resources>

@@ -2,9 +2,17 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 0.9.1 — fixes**
+**Current version: 1.0.0**
 
-## What is new in 0.9.1
+## What is new in 1.0.0
+
+- App lock (fingerprint / face / phone PIN) with a lock-after delay, and an option to block screenshots (FLAG_SECURE).
+- Kid mode: larger buttons and text, automatic for child accounts or forced per phone.
+- "What's new" after every update, and an update check against this repository's GitHub releases.
+- Price comparison: a comparable total over the items every shown store has (PRC-4).
+- Budget: alerts at 80% and 100% of a category limit, CSV export of a month.
+
+## What was new in 0.9.1
 
 - Fix: the app crashed after adding an item to a shopping list (a number was formatted as text in the "added N items" message). Messages can no longer crash the app.
 - If the app ever crashes, the error is kept on the phone and shown on the next start with a "copy error" button.

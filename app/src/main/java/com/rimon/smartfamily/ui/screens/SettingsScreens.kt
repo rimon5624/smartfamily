@@ -144,6 +144,42 @@ fun SettingsScreen(
                 leading = { Icon(Icons.Outlined.Lock, null) },
                 trailing = { Switch(checked = settings.privacyMode, onCheckedChange = { vm.setPrivacy(it) }) },
             )
+
+            SectionTitle(stringResource(R.string.settings_security))
+            InfoRow(
+                title = stringResource(R.string.lock_setting),
+                subtitle = stringResource(R.string.lock_setting_sub),
+                leading = { Icon(Icons.Outlined.Lock, null) },
+                trailing = { Switch(checked = settings.appLock, onCheckedChange = { vm.setAppLock(it) }) },
+            )
+            if (settings.appLock) Row(Modifier.padding(start = 40.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf(0, 1, 5, 15).forEach { m ->
+                    FilterChip(selected = settings.lockMinutes == m, onClick = { vm.setLockMinutes(m) },
+                        label = { Text(if (m == 0) stringResource(R.string.lock_now) else stringResource(R.string.lock_after, m)) })
+                }
+            }
+            InfoRow(
+                title = stringResource(R.string.secure_setting),
+                subtitle = stringResource(R.string.secure_setting_sub),
+                leading = { Spacer(Modifier.size(24.dp)) },
+                trailing = { Switch(checked = settings.secureScreens, onCheckedChange = { vm.setSecureScreens(it) }) },
+            )
+            InfoRow(
+                title = stringResource(R.string.kid_setting),
+                subtitle = stringResource(R.string.kid_setting_sub),
+                leading = { Spacer(Modifier.size(24.dp)) },
+            )
+            Row(Modifier.padding(start = 40.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("AUTO" to R.string.kid_auto, "ON" to R.string.kid_on, "OFF" to R.string.kid_off).forEach { (k, l) ->
+                    FilterChip(selected = settings.kidMode == k, onClick = { vm.setKidMode(k) }, label = { Text(stringResource(l)) })
+                }
+            }
+            InfoRow(
+                title = stringResource(R.string.update_setting),
+                subtitle = stringResource(R.string.update_setting_sub, com.rimon.smartfamily.BuildConfig.VERSION_NAME),
+                leading = { Spacer(Modifier.size(24.dp)) },
+                trailing = { Switch(checked = settings.updateChecks, onCheckedChange = { vm.setUpdateChecks(it) }) },
+            )
             active?.let { fam ->
                 ClickRow(Icons.Outlined.Tune, stringResource(R.string.modules_title), stringResource(R.string.settings_modules_sub)) {
                     onModules(fam.id)

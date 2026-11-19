@@ -146,6 +146,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setTheme(mode: ThemeMode) = launchSafe { c.settings.setThemeMode(mode) }
     fun setDynamicColor(v: Boolean) = launchSafe { c.settings.setDynamicColor(v) }
     fun setPrivacy(v: Boolean) = launchSafe { c.settings.setPrivacyMode(v) }
+    fun setAppLock(v: Boolean) = launchSafe { c.settings.setAppLock(v) }
+    fun setLockMinutes(v: Int) = launchSafe { c.settings.setLockMinutes(v) }
+    fun setSecureScreens(v: Boolean) = launchSafe { c.settings.setSecureScreens(v) }
+    fun setKidMode(v: String) = launchSafe { c.settings.setKidMode(v) }
+    fun setUpdateChecks(v: Boolean) = launchSafe { c.settings.setUpdateChecks(v) }
+    fun markVersionSeen() = launchSafe { c.settings.setLastSeenVersion(com.rimon.smartfamily.BuildConfig.VERSION_NAME) }
+    val update = kotlinx.coroutines.flow.MutableStateFlow<com.rimon.smartfamily.smart.UpdateInfo?>(null)
+    fun checkUpdate() = viewModelScope.launch { update.value = runCatching { com.rimon.smartfamily.smart.UpdateChecker.latest() }.getOrNull() }
     fun setExpiryAlerts(v: Boolean) = launchSafe { c.settings.setExpiryAlerts(v) }
     fun setZmanimCity(v: String) = launchSafe { c.settings.setZmanimCity(v) }
     fun setChoreReminders(v: Boolean) = launchSafe { c.settings.setChoreReminders(v) }

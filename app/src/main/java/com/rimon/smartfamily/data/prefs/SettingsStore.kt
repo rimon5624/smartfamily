@@ -35,6 +35,14 @@ data class AppSettings(
     val zmanimCity: String = "jerusalem",
     val choreReminders: Boolean = true,
     val homeConnectClientId: String = "",
+    // 1.0
+    val appLock: Boolean = false,
+    val lockMinutes: Int = 1,
+    val secureScreens: Boolean = false,
+    /** AUTO = on for child accounts; ON / OFF force it on this phone. */
+    val kidMode: String = "AUTO",
+    val lastSeenVersion: String = "",
+    val updateChecks: Boolean = true,
 ) {
     val supabaseConfigured: Boolean get() = supabaseUrl.isNotBlank() && supabaseAnonKey.isNotBlank()
 }
@@ -60,6 +68,12 @@ class SettingsStore(private val context: Context) {
         val zmanimCity = stringPreferencesKey("zmanim_city")
         val choreReminders = booleanPreferencesKey("chore_reminders")
         val homeConnectClientId = stringPreferencesKey("home_connect_client_id")
+        val appLock = booleanPreferencesKey("app_lock")
+        val lockMinutes = androidx.datastore.preferences.core.intPreferencesKey("lock_minutes")
+        val secureScreens = booleanPreferencesKey("secure_screens")
+        val kidMode = stringPreferencesKey("kid_mode")
+        val lastSeenVersion = stringPreferencesKey("last_seen_version")
+        val updateChecks = booleanPreferencesKey("update_checks")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p -> p.toSettings() }
@@ -85,7 +99,20 @@ class SettingsStore(private val context: Context) {
         zmanimCity = this[K.zmanimCity] ?: "jerusalem",
         choreReminders = this[K.choreReminders] ?: true,
         homeConnectClientId = this[K.homeConnectClientId] ?: "",
+        appLock = this[K.appLock] ?: false,
+        lockMinutes = this[K.lockMinutes] ?: 1,
+        secureScreens = this[K.secureScreens] ?: false,
+        kidMode = this[K.kidMode] ?: "AUTO",
+        lastSeenVersion = this[K.lastSeenVersion] ?: "",
+        updateChecks = this[K.updateChecks] ?: true,
     )
+
+    suspend fun setAppLock(v: Boolean) = context.dataStore.edit { it[K.appLock] = v }
+    suspend fun setLockMinutes(v: Int) = context.dataStore.edit { it[K.lockMinutes] = v }
+    suspend fun setSecureScreens(v: Boolean) = context.dataStore.edit { it[K.secureScreens] = v }
+    suspend fun setKidMode(v: String) = context.dataStore.edit { it[K.kidMode] = v }
+    suspend fun setLastSeenVersion(v: String) = context.dataStore.edit { it[K.lastSeenVersion] = v }
+    suspend fun setUpdateChecks(v: Boolean) = context.dataStore.edit { it[K.updateChecks] = v }
 
     suspend fun setLanguage(v: String) = context.dataStore.edit { it[K.language] = v }
     suspend fun setOnboardingDone(v: Boolean) = context.dataStore.edit { it[K.onboardingDone] = v }
