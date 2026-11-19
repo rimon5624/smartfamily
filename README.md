@@ -2,9 +2,26 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 1.0.0**
+**Current version: 2.0.0**
 
-## What is new in 1.0.0
+## What is new in 2.0.0
+
+- **Calendar rebuilt** (like Yoman Yehudi): continuous vertical scrolling, Hebrew or Gregorian month basis, week / day (with zmanim) / agenda / year views, a Shabbat row with parsha and times, Hebrew date search ("ט״ו בשבט תשפ״ז"), a converter, Hebrew-date entry for family dates and events, Hebrew monthly and yearly repeats, and .ics export / import with the phone calendar.
+- **Assistant layer**: quick add from text or voice (it guesses shopping / event / chore / note), search across everything, and a "now" card on the home screen.
+- **Shopping**: swipe to tick or delete with undo, a store mode that learns the aisle order and keeps the screen on, "due staples" from purchase rhythm, confetti when a list is done.
+- **Money**: bills and subscriptions (with reminders and automatic next date), pocket money, savings goals, shared costs (who owes whom); budget forecast, 6-month chart, receipt scan.
+- **Kids**: routine boards with emoji and templates, growth log, a shared family points goal.
+- **Home**: repairs and service people, meter readings with spike alert, kits (emergency, leave home, beach, camping, Shabbat away…) with expiry reminders, encrypted secrets and a Wi-Fi QR.
+- **Family hub**: family tree, photo albums, phone book; **Shabbat hub**: countdown, preparation timeline, guests, holiday packs (Pesach, Sukkot, Rosh Hashana, Chanukah, Purim, Shavuot).
+- **Chat**: pinned messages, starred, scheduled messages, forwarding, item cards, location, video, AI summary.
+- **Kitchen**: voice-controlled cooking ("next" / "back"), unit converter, "what can I cook", chametz filter, freezer age, expiry from a photo; packed meals the kids choose themselves and trip-day extras.
+- **Prices**: Victory, Mahsanei HaShuk and Het Cohen, promotions, price history and price-drop alerts, split shopping plan.
+- **Chores**: minutes-based fair share, streaks, busy-day suggestion to move long chores.
+- **Polls**: the winner goes to the shopping list or the meal plan.
+- **Sharing**: copy a list or recipe to another of my families, a "shared with you by…" banner, invite by QR.
+- **Everyday**: home-screen widgets (shopping, today), app shortcuts, a quick-settings tile, first-time help on each screen, elders mode (extra large), weekly summary on Saturday night, weekly automatic encrypted backup to Downloads, and an audit log ("who changed what") for admins.
+
+## What was new in 1.0.0
 
 - App lock (fingerprint / face / phone PIN) with a lock-after delay, and an option to block screenshots (FLAG_SECURE).
 - Kid mode: larger buttons and text, automatic for child accounts or forced per phone.

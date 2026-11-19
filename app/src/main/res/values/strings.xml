@@ -906,7 +906,7 @@
     <string name="update_download">Download</string>
     <string name="update_later">Later</string>
     <string name="whats_new_title">What\'s new in %1$s</string>
-    <string name="whats_new_body">• App lock with fingerprint or PIN, and blocking screenshots (Settings → Security)\n• Kid mode: bigger buttons and text for children\n• Price comparison: a comparable total over the items every store has\n• Budget: alerts at 80% and 100% of a category limit, and export to CSV\n• Update check: new versions are announced here\n• Fixed: crash when adding items to a shopping list</string>
+    <string name="whats_new_body">• Calendar rebuilt: vertical scrolling, Hebrew or Gregorian months, Hebrew date search, week/day/year views, Shabbat row, .ics with the phone calendar\n• Quick add by voice or text, search everything, a “now” card\n• Money: bills and subscriptions, pocket money, goals, shared costs\n• Kids routines, growth log and a family points goal\n• Repairs, meters, kits, secrets and Wi-Fi QR\n• Family tree, albums, Shabbat hub and holiday packs\n• Chat: pins, stars, scheduled messages, cards and location\n• Widgets, shortcuts, quick tile, elders mode, weekly backup, “who changed what”</string>
     <string name="prices_comparable">Comparable: %1$s (%2$d items)</string>
     <string name="budget_over">This category is at %1$s%% of its monthly limit</string>
     <string name="budget_near">This category reached %1$s%% of its monthly limit</string>
