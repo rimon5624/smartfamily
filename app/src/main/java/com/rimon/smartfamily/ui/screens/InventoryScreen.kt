@@ -223,7 +223,7 @@ private fun InventoryRow(item: InventoryItemEntity, onPlus: () -> Unit, onMinus:
                     )
                     if (low) Text(stringResource(R.string.inv_low), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
                     // INV-7 freezer log: how long it has been in the freezer
-                    if (item.location == "freezer") Text(stringResource(R.string.inv_frozen_since, SimpleDateFormat("dd/MM", Locale.getDefault()).format(Date(item.createdAt))), style = MaterialTheme.typography.bodySmall)
+                    if (item.location == "freezer") Text(stringResource(R.string.inv_frozen_since, SimpleDateFormat("dd/MM", Locale.getDefault()).format(Date(item.addedAt))), style = MaterialTheme.typography.bodySmall)
                 }
                 ExpiryChip(item.expiresAt)
             }
