@@ -4,4 +4,6 @@
     <cache-path name="photos" path="photos/" />
     <!-- Appliance manuals kept on this phone, opened in a PDF viewer -->
     <files-path name="manuals" path="manuals/" />
+    <!-- Decrypted chat media, opened in another app on request -->
+    <cache-path name="chat" path="chat/" />
 </paths>

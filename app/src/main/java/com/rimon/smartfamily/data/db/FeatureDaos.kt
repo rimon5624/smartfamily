@@ -104,3 +104,62 @@ interface LaundryPresetDao : LaundryPresetDaoBase {
     @Query("SELECT * FROM laundry_presets WHERE applianceId = :applianceId AND deletedAt IS NULL ORDER BY name")
     fun observeFor(applianceId: String): Flow<List<LaundryPresetEntity>>
 }
+
+// ---------- 0.6 ----------
+
+@Dao
+interface UserKeyDao : UserKeyDaoBase {
+    @Query("SELECT * FROM user_keys WHERE familyId = :familyId AND userId IN (:userIds) AND deletedAt IS NULL")
+    suspend fun forUsers(familyId: String, userIds: List<String>): List<UserKeyEntity>
+
+    @Query("SELECT * FROM user_keys WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeFamily(familyId: String): Flow<List<UserKeyEntity>>
+}
+
+@Dao
+interface ChatDao : ChatDaoBase {
+    @Query("SELECT * FROM chats WHERE familyId = :familyId AND deletedAt IS NULL ORDER BY lastMessageAt DESC")
+    fun observeSorted(familyId: String): Flow<List<ChatEntity>>
+
+    @Query("SELECT * FROM chats WHERE familyId = :familyId AND kind = 'FAMILY' AND deletedAt IS NULL LIMIT 1")
+    suspend fun familyChat(familyId: String): ChatEntity?
+
+    @Query("SELECT * FROM chats WHERE deletedAt IS NULL")
+    suspend fun allActive(): List<ChatEntity>
+}
+
+@Dao
+interface ChatKeyDao : ChatKeyDaoBase {
+    @Query("SELECT * FROM chat_keys WHERE chatId = :chatId AND deviceId = :deviceId AND deletedAt IS NULL")
+    suspend fun forDevice(chatId: String, deviceId: String): List<ChatKeyEntity>
+
+    @Query("SELECT * FROM chat_keys WHERE chatId = :chatId AND epoch = :epoch AND deletedAt IS NULL")
+    suspend fun forEpoch(chatId: String, epoch: Int): List<ChatKeyEntity>
+}
+
+@Dao
+interface ChatMessageDao : ChatMessageDaoBase {
+    @Query("SELECT * FROM chat_messages WHERE chatId = :chatId AND deletedAt IS NULL ORDER BY sentAt")
+    fun observeChat(chatId: String): Flow<List<ChatMessageEntity>>
+
+    @Query("SELECT * FROM chat_messages WHERE chatId = :chatId AND deletedAt IS NULL ORDER BY sentAt DESC LIMIT 1")
+    fun observeLast(chatId: String): Flow<ChatMessageEntity?>
+
+    @Query("SELECT * FROM chat_messages WHERE deletedAt IS NULL AND sentAt > :since AND senderId != :me ORDER BY sentAt")
+    suspend fun incomingSince(since: Long, me: String): List<ChatMessageEntity>
+}
+
+@Dao
+interface ChatReactionDao : ChatReactionDaoBase {
+    @Query("SELECT * FROM chat_reactions WHERE chatId = :chatId AND deletedAt IS NULL")
+    fun observeChat(chatId: String): Flow<List<ChatReactionEntity>>
+}
+
+@Dao
+interface ChatReadDao : ChatReadDaoBase {
+    @Query("SELECT * FROM chat_reads WHERE chatId = :chatId AND deletedAt IS NULL")
+    fun observeChat(chatId: String): Flow<List<ChatReadEntity>>
+
+    @Query("SELECT * FROM chat_reads WHERE familyId = :familyId AND userId = :userId AND deletedAt IS NULL")
+    fun observeMine(familyId: String, userId: String): Flow<List<ChatReadEntity>>
+}

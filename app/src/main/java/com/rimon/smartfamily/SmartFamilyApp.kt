@@ -7,6 +7,8 @@ import com.rimon.smartfamily.data.db.AppDatabase
 import com.rimon.smartfamily.data.prefs.SettingsStore
 import com.rimon.smartfamily.data.repo.FamilyRepository
 import com.rimon.smartfamily.data.repo.ApplianceRepository
+import com.rimon.smartfamily.data.repo.ChatRepository
+import com.rimon.smartfamily.security.ChatCrypto
 import com.rimon.smartfamily.data.repo.HomeLifeRepository
 import com.rimon.smartfamily.smart.HomeConnectClient
 import com.rimon.smartfamily.smart.SmartThingsClient
@@ -29,13 +31,15 @@ class AppContainer(context: Context) {
     val api = SupabaseApi(crypto) { settings.current().let { it.supabaseUrl to it.supabaseAnonKey } }
     val sync = SyncEngine(db, api, settings)
     val families = FamilyRepository(db, settings) { SyncScheduler.requestSoon(appContext) }
-    val backup = BackupManager(appContext, db)
+    val backup = BackupManager(appContext, db) { chatCrypto }
     val shopping = ShoppingRepository(db) { SyncScheduler.requestSoon(appContext) }
     val homeLife = HomeLifeRepository(db) { SyncScheduler.requestSoon(appContext) }
     val kitchen = KitchenRepository(db, shopping) { SyncScheduler.requestSoon(appContext) }
     val appliances = ApplianceRepository(db, homeLife) { SyncScheduler.requestSoon(appContext) }
     val homeConnect = HomeConnectClient(crypto) { settings.current().homeConnectClientId }
     val smartThings = SmartThingsClient(crypto)
+    val chatCrypto = ChatCrypto(crypto)
+    val chat = ChatRepository(db, chatCrypto, api) { SyncScheduler.requestSoon(appContext) }
     val gemini = GeminiClient(crypto) { settings.current().let { it.geminiModel to it.privacyMode } }
 }
 

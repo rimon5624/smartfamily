@@ -205,7 +205,9 @@ class SyncEngine(
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val app = applicationContext as SmartFamilyApp
-        return if (app.container.sync.syncNow().isSuccess) Result.success() else Result.retry()
+        val ok = app.container.sync.syncNow().isSuccess
+        runCatching { com.rimon.smartfamily.smart.ChatNotifier.afterSync(applicationContext, app.container) }
+        return if (ok) Result.success() else Result.retry()
     }
 }
 

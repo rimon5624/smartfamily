@@ -2,9 +2,20 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 0.5.0 — Phase 4 (appliances)**
+**Current version: 0.6.0 — Phase 5 (encrypted family chat)**
 
-## What is new in 0.5.0
+## What is new in 0.6.0
+
+- Family chat, group chats and private chats, end-to-end encrypted (Tink HPKE X25519 + AES-256-GCM). The server stores only ciphertext.
+- Every phone publishes its public key; chat keys are sealed per device and re-shared automatically to new phones and members. Removing a member rotates the key.
+- Text, photos, files and voice messages (hold the mic). Media is encrypted on the phone before upload to the private `chat-media` bucket.
+- Voice transcription with Gemini (free tier, your own key).
+- Replies, reactions, edit, delete for everyone, read receipts, search, disappearing messages, safety numbers.
+- Notifications for new messages after each sync (held during Shabbat). Instant push (FCM) comes later.
+- The chat private key is included in the encrypted backup.
+- Supabase: `0006_app_0_6.sql` and `0006_chat_storage.sql`.
+
+## What was new in 0.5.0
 
 - Appliances: washer, dryer, washer-dryer, dishwasher, AC, car, oven, fridge, water heater; brand, model, serial, warranty, store, service phone
 - Fill brand/model/serial from a photo of the label (AI)

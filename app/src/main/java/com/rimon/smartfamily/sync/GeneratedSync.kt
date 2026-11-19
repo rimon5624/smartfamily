@@ -15,6 +15,12 @@ import com.rimon.smartfamily.data.db.MealProfileEntity
 import com.rimon.smartfamily.data.db.PackedMealEntity
 import com.rimon.smartfamily.data.db.ApplianceEntity
 import com.rimon.smartfamily.data.db.LaundryPresetEntity
+import com.rimon.smartfamily.data.db.UserKeyEntity
+import com.rimon.smartfamily.data.db.ChatEntity
+import com.rimon.smartfamily.data.db.ChatKeyEntity
+import com.rimon.smartfamily.data.db.ChatMessageEntity
+import com.rimon.smartfamily.data.db.ChatReactionEntity
+import com.rimon.smartfamily.data.db.ChatReadEntity
 import kotlinx.serialization.Serializable
 
 internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
@@ -83,6 +89,36 @@ internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
             { db.laundryPresets().dirty() }, { it.id }, { db.laundryPresets().markClean(it) },
             { rows -> db.laundryPresets().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
         ),
+        TableSync(
+            "user_keys", "id", UserKeyEntity.serializer(),
+            { db.userKeys().dirty() }, { it.id }, { db.userKeys().markClean(it) },
+            { rows -> db.userKeys().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "chats", "id", ChatEntity.serializer(),
+            { db.chats().dirty() }, { it.id }, { db.chats().markClean(it) },
+            { rows -> db.chats().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "chat_keys", "id", ChatKeyEntity.serializer(),
+            { db.chatKeys().dirty() }, { it.id }, { db.chatKeys().markClean(it) },
+            { rows -> db.chatKeys().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "chat_messages", "id", ChatMessageEntity.serializer(),
+            { db.chatMessages().dirty() }, { it.id }, { db.chatMessages().markClean(it) },
+            { rows -> db.chatMessages().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "chat_reactions", "id", ChatReactionEntity.serializer(),
+            { db.chatReactions().dirty() }, { it.id }, { db.chatReactions().markClean(it) },
+            { rows -> db.chatReactions().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "chat_reads", "id", ChatReadEntity.serializer(),
+            { db.chatReads().dirty() }, { it.id }, { db.chatReads().markClean(it) },
+            { rows -> db.chatReads().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
 )
 
 /** Backup content of the generated tables (BAK-2); missing lists in older backups default to empty. */
@@ -101,6 +137,12 @@ data class GeneratedBackup(
     val packedMeals: List<PackedMealEntity> = emptyList(),
     val appliances: List<ApplianceEntity> = emptyList(),
     val laundryPresets: List<LaundryPresetEntity> = emptyList(),
+    val userKeys: List<UserKeyEntity> = emptyList(),
+    val chats: List<ChatEntity> = emptyList(),
+    val chatKeys: List<ChatKeyEntity> = emptyList(),
+    val chatMessages: List<ChatMessageEntity> = emptyList(),
+    val chatReactions: List<ChatReactionEntity> = emptyList(),
+    val chatReads: List<ChatReadEntity> = emptyList(),
 )
 
 suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
@@ -117,6 +159,12 @@ suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
         packedMeals = db.packedMeals().all(),
         appliances = db.appliances().all(),
         laundryPresets = db.laundryPresets().all(),
+        userKeys = db.userKeys().all(),
+        chats = db.chats().all(),
+        chatKeys = db.chatKeys().all(),
+        chatMessages = db.chatMessages().all(),
+        chatReactions = db.chatReactions().all(),
+        chatReads = db.chatReads().all(),
 )
 
 suspend fun clearGenerated(db: AppDatabase) {
@@ -133,6 +181,12 @@ suspend fun clearGenerated(db: AppDatabase) {
     db.packedMeals().clear()
     db.appliances().clear()
     db.laundryPresets().clear()
+    db.userKeys().clear()
+    db.chats().clear()
+    db.chatKeys().clear()
+    db.chatMessages().clear()
+    db.chatReactions().clear()
+    db.chatReads().clear()
 }
 
 suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
@@ -149,4 +203,10 @@ suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
     db.packedMeals().upsertAll(p.packedMeals.map { it.copy(dirty = true) })
     db.appliances().upsertAll(p.appliances.map { it.copy(dirty = true) })
     db.laundryPresets().upsertAll(p.laundryPresets.map { it.copy(dirty = true) })
+    db.userKeys().upsertAll(p.userKeys.map { it.copy(dirty = true) })
+    db.chats().upsertAll(p.chats.map { it.copy(dirty = true) })
+    db.chatKeys().upsertAll(p.chatKeys.map { it.copy(dirty = true) })
+    db.chatMessages().upsertAll(p.chatMessages.map { it.copy(dirty = true) })
+    db.chatReactions().upsertAll(p.chatReactions.map { it.copy(dirty = true) })
+    db.chatReads().upsertAll(p.chatReads.map { it.copy(dirty = true) })
 }

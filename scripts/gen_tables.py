@@ -165,6 +165,10 @@ POLICY_WRITE = {
     "adults": "public.sf_my_role(family_id) in ('OWNER','ADMIN','MEMBER')",
     "members": "public.sf_my_role(family_id) in ('OWNER','ADMIN','MEMBER','CHILD')",
     "admins": "public.sf_my_role(family_id) in ('OWNER','ADMIN')",
+    # rows a member writes only for themselves (their key, their read marker, their reaction)
+    "self": "public.sf_is_member(family_id) and user_id = auth.uid()::text",
+    # chat messages: only the sender may write or edit them
+    "sender": "public.sf_is_member(family_id) and sender_id = auth.uid()::text",
 }
 
 

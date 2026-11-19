@@ -116,6 +116,34 @@ class SupabaseApi(
     suspend fun rpc(function: String, args: JsonElement): String =
         call("POST", "/rest/v1/rpc/$function", args.toString())
 
+    // ---- Storage (encrypted chat media) ----
+
+    suspend fun uploadObject(bucket: String, path: String, bytes: ByteArray) = withContext(Dispatchers.IO) {
+        val (url, anonKey) = config()
+        val req = Request.Builder()
+            .url("$url/storage/v1/object/$bucket/$path")
+            .header("apikey", anonKey)
+            .header("Authorization", "Bearer ${accessToken()}")
+            .post(bytes.toRequestBody("application/octet-stream".toMediaType()))
+            .build()
+        http.newCall(req).execute().use { r ->
+            if (!r.isSuccessful) throw SupabaseException(r.code, errorMessage(r.body?.string().orEmpty(), r.code))
+        }
+    }
+
+    suspend fun downloadObject(bucket: String, path: String): ByteArray = withContext(Dispatchers.IO) {
+        val (url, anonKey) = config()
+        val req = Request.Builder()
+            .url("$url/storage/v1/object/authenticated/$bucket/$path")
+            .header("apikey", anonKey)
+            .header("Authorization", "Bearer ${accessToken()}")
+            .build()
+        http.newCall(req).execute().use { r ->
+            if (!r.isSuccessful) throw SupabaseException(r.code, "HTTP ${r.code}")
+            r.body!!.bytes()
+        }
+    }
+
     private suspend fun call(
         method: String,
         path: String,

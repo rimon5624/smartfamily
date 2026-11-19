@@ -6,6 +6,8 @@ policy:
   adults   - active members read; owner/admin/member write (children and guests read only)
   members  - every active member (children included) reads and writes
   admins   - active members read; owner/admin write
+  self     - active members read; each member writes only rows with their own user_id
+  sender   - active members read; only the sender writes (chat messages)
 """
 
 TABLES = [
@@ -156,4 +158,51 @@ TABLES = [
         ("options", "String", '""'),
         ("note", "String", '""'),
     ], indices=["applianceId"]),
+
+    # ---------- 0.6: end-to-end encrypted chat ----------
+    dict(name="user_keys", entity="UserKeyEntity", version=6, policy="self", fields=[
+        ("userId", "String", None),
+        ("deviceId", "String", None),
+        ("publicKeyset", "String", None),        # Tink HPKE public keyset (JSON); the private key never leaves the phone
+        ("fingerprint", "String", '""'),         # safety number shown for verification (CHT-12)
+    ], indices=["userId"]),
+    dict(name="chats", entity="ChatEntity", version=6, policy="members", fields=[
+        ("kind", "String", '"GROUP"'),           # FAMILY, GROUP, DIRECT
+        ("title", "String", '""'),
+        ("members", "String", '""'),             # comma-separated userIds
+        ("epoch", "Int", "1"),                   # current key generation; rotated when someone leaves (CHT-13)
+        ("createdBy", "String", None),
+        ("lastMessageAt", "Long", "0L"),
+        ("disappearDays", "Int", "0"),
+    ], indices=[]),
+    dict(name="chat_keys", entity="ChatKeyEntity", version=6, policy="members", fields=[
+        ("chatId", "String", None),
+        ("userId", "String", None),
+        ("deviceId", "String", None),
+        ("epoch", "Int", None),
+        ("wrapped", "String", None),             # the chat key encrypted to that device's public key
+    ], indices=["chatId"]),
+    dict(name="chat_messages", entity="ChatMessageEntity", version=6, policy="sender", fields=[
+        ("chatId", "String", None),
+        ("senderId", "String", None),
+        ("epoch", "Int", None),
+        ("nonce", "String", None),
+        ("ciphertext", "String", None),          # AES-256-GCM of the message JSON (text, media keys, transcript)
+        ("kind", "String", '"text"'),            # text, image, voice, file
+        ("sentAt", "Long", None),
+        ("editedAt", "Long?", "null"),
+        ("replyTo", "String", '""'),
+        ("mediaPath", "String", '""'),           # encrypted file in Supabase Storage (bucket chat-media)
+    ], indices=["chatId"]),
+    dict(name="chat_reactions", entity="ChatReactionEntity", version=6, policy="self", fields=[
+        ("chatId", "String", None),
+        ("messageId", "String", None),
+        ("userId", "String", None),
+        ("emoji", "String", None),
+    ], indices=["messageId"]),
+    dict(name="chat_reads", entity="ChatReadEntity", version=6, policy="self", fields=[
+        ("chatId", "String", None),
+        ("userId", "String", None),
+        ("lastReadAt", "Long", "0L"),
+    ], indices=["chatId"]),
 ]

@@ -47,6 +47,9 @@ data class BackupPayload(
     val inventory: List<InventoryItemEntity> = emptyList(),
     // Tables generated from scripts/tables.py (app 0.3.0 onwards).
     val generated: GeneratedBackup = GeneratedBackup(),
+    // 0.6.0: this phone's private chat key and device id, so encrypted chats can be read after restore.
+    val chatKeyset: String = "",
+    val chatDeviceId: String = "",
 )
 
 /** Unencrypted header: everything needed to derive the key, nothing about the content. */
@@ -72,7 +75,11 @@ class UnsupportedBackupException(msg: String) : Exception(msg)
  * BAK-2: the whole local database in one file, encrypted with AES-256-GCM under a key derived
  * from the backup password with Argon2id. The file is useless without the password.
  */
-class BackupManager(private val context: Context, private val db: AppDatabase) {
+class BackupManager(
+    private val context: Context,
+    private val db: AppDatabase,
+    private val chatCrypto: () -> com.rimon.smartfamily.security.ChatCrypto,
+) {
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
@@ -91,6 +98,8 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             purchases = db.purchases().all(),
             inventory = db.inventory().all(),
             generated = exportGenerated(db),
+            chatKeyset = chatCrypto().exportPrivate().orEmpty(),
+            chatDeviceId = chatCrypto().deviceId,
         )
         val plain = json.encodeToString(BackupPayload.serializer(), payload).toByteArray(Charsets.UTF_8)
         val rnd = SecureRandom()
@@ -150,6 +159,9 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             db.purchases().upsertAll(payload.purchases.map { it.copy(dirty = true) })
             db.inventory().upsertAll(payload.inventory.map { it.copy(dirty = true) })
             restoreGenerated(db, payload.generated)
+        }
+        if (payload.chatKeyset.isNotBlank() && payload.chatDeviceId.isNotBlank()) {
+            runCatching { chatCrypto().importPrivate(payload.chatKeyset, payload.chatDeviceId) }
         }
     }
 

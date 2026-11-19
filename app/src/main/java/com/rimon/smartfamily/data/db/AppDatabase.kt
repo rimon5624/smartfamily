@@ -35,6 +35,13 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         // 0.5.0
         ApplianceEntity::class,
         LaundryPresetEntity::class,
+        // 0.6.0
+        UserKeyEntity::class,
+        ChatEntity::class,
+        ChatKeyEntity::class,
+        ChatMessageEntity::class,
+        ChatReactionEntity::class,
+        ChatReadEntity::class,
     ],
     version = SchemaInfo.DB_VERSION,
     exportSchema = true,
@@ -43,6 +50,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5),
+        AutoMigration(from = 5, to = 6),
     ],
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -68,6 +76,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun packedMeals(): PackedMealDao
     abstract fun appliances(): ApplianceDao
     abstract fun laundryPresets(): LaundryPresetDao
+    abstract fun userKeys(): UserKeyDao
+    abstract fun chats(): ChatDao
+    abstract fun chatKeys(): ChatKeyDao
+    abstract fun chatMessages(): ChatMessageDao
+    abstract fun chatReactions(): ChatReactionDao
+    abstract fun chatReads(): ChatReadDao
 
     companion object {
         /**

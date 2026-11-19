@@ -257,6 +257,99 @@ data class LaundryPresetEntity(
     @Transient val dirty: Boolean = true,
 )
 
+@Serializable
+@Entity(tableName = "user_keys", indices = [Index("familyId"), Index("userId")])
+data class UserKeyEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("user_id") val userId: String,
+    @SerialName("device_id") val deviceId: String,
+    @SerialName("public_keyset") val publicKeyset: String,
+    val fingerprint: String = "",
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "chats", indices = [Index("familyId")])
+data class ChatEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    val kind: String = "GROUP",
+    val title: String = "",
+    val members: String = "",
+    val epoch: Int = 1,
+    @SerialName("created_by") val createdBy: String,
+    @SerialName("last_message_at") val lastMessageAt: Long = 0L,
+    @SerialName("disappear_days") val disappearDays: Int = 0,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "chat_keys", indices = [Index("familyId"), Index("chatId")])
+data class ChatKeyEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("chat_id") val chatId: String,
+    @SerialName("user_id") val userId: String,
+    @SerialName("device_id") val deviceId: String,
+    val epoch: Int,
+    val wrapped: String,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "chat_messages", indices = [Index("familyId"), Index("chatId")])
+data class ChatMessageEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("chat_id") val chatId: String,
+    @SerialName("sender_id") val senderId: String,
+    val epoch: Int,
+    val nonce: String,
+    val ciphertext: String,
+    val kind: String = "text",
+    @SerialName("sent_at") val sentAt: Long,
+    @SerialName("edited_at") val editedAt: Long? = null,
+    @SerialName("reply_to") val replyTo: String = "",
+    @SerialName("media_path") val mediaPath: String = "",
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "chat_reactions", indices = [Index("familyId"), Index("messageId")])
+data class ChatReactionEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("chat_id") val chatId: String,
+    @SerialName("message_id") val messageId: String,
+    @SerialName("user_id") val userId: String,
+    val emoji: String,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "chat_reads", indices = [Index("familyId"), Index("chatId")])
+data class ChatReadEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("chat_id") val chatId: String,
+    @SerialName("user_id") val userId: String,
+    @SerialName("last_read_at") val lastReadAt: Long = 0L,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
 // Base DAOs: the feature DAOs in FeatureDaos.kt extend these and add their own queries.
 
 interface ChoreDaoBase {
@@ -426,4 +519,82 @@ interface LaundryPresetDaoBase {
     @Query("SELECT * FROM laundry_presets WHERE dirty = 1") suspend fun dirty(): List<LaundryPresetEntity>
     @Query("UPDATE laundry_presets SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
     @Query("DELETE FROM laundry_presets") suspend fun clear()
+}
+
+interface UserKeyDaoBase {
+    @Query("SELECT * FROM user_keys WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<UserKeyEntity>>
+    @Query("SELECT * FROM user_keys WHERE id = :id") suspend fun get(id: String): UserKeyEntity?
+    @Query("SELECT * FROM user_keys WHERE id = :id") fun observeOne(id: String): Flow<UserKeyEntity?>
+    @Upsert suspend fun upsert(item: UserKeyEntity)
+    @Upsert suspend fun upsertAll(items: List<UserKeyEntity>)
+    @Query("SELECT * FROM user_keys") suspend fun all(): List<UserKeyEntity>
+    @Query("SELECT * FROM user_keys WHERE dirty = 1") suspend fun dirty(): List<UserKeyEntity>
+    @Query("UPDATE user_keys SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM user_keys") suspend fun clear()
+}
+
+interface ChatDaoBase {
+    @Query("SELECT * FROM chats WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<ChatEntity>>
+    @Query("SELECT * FROM chats WHERE id = :id") suspend fun get(id: String): ChatEntity?
+    @Query("SELECT * FROM chats WHERE id = :id") fun observeOne(id: String): Flow<ChatEntity?>
+    @Upsert suspend fun upsert(item: ChatEntity)
+    @Upsert suspend fun upsertAll(items: List<ChatEntity>)
+    @Query("SELECT * FROM chats") suspend fun all(): List<ChatEntity>
+    @Query("SELECT * FROM chats WHERE dirty = 1") suspend fun dirty(): List<ChatEntity>
+    @Query("UPDATE chats SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM chats") suspend fun clear()
+}
+
+interface ChatKeyDaoBase {
+    @Query("SELECT * FROM chat_keys WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<ChatKeyEntity>>
+    @Query("SELECT * FROM chat_keys WHERE id = :id") suspend fun get(id: String): ChatKeyEntity?
+    @Query("SELECT * FROM chat_keys WHERE id = :id") fun observeOne(id: String): Flow<ChatKeyEntity?>
+    @Upsert suspend fun upsert(item: ChatKeyEntity)
+    @Upsert suspend fun upsertAll(items: List<ChatKeyEntity>)
+    @Query("SELECT * FROM chat_keys") suspend fun all(): List<ChatKeyEntity>
+    @Query("SELECT * FROM chat_keys WHERE dirty = 1") suspend fun dirty(): List<ChatKeyEntity>
+    @Query("UPDATE chat_keys SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM chat_keys") suspend fun clear()
+}
+
+interface ChatMessageDaoBase {
+    @Query("SELECT * FROM chat_messages WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<ChatMessageEntity>>
+    @Query("SELECT * FROM chat_messages WHERE id = :id") suspend fun get(id: String): ChatMessageEntity?
+    @Query("SELECT * FROM chat_messages WHERE id = :id") fun observeOne(id: String): Flow<ChatMessageEntity?>
+    @Upsert suspend fun upsert(item: ChatMessageEntity)
+    @Upsert suspend fun upsertAll(items: List<ChatMessageEntity>)
+    @Query("SELECT * FROM chat_messages") suspend fun all(): List<ChatMessageEntity>
+    @Query("SELECT * FROM chat_messages WHERE dirty = 1") suspend fun dirty(): List<ChatMessageEntity>
+    @Query("UPDATE chat_messages SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM chat_messages") suspend fun clear()
+}
+
+interface ChatReactionDaoBase {
+    @Query("SELECT * FROM chat_reactions WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<ChatReactionEntity>>
+    @Query("SELECT * FROM chat_reactions WHERE id = :id") suspend fun get(id: String): ChatReactionEntity?
+    @Query("SELECT * FROM chat_reactions WHERE id = :id") fun observeOne(id: String): Flow<ChatReactionEntity?>
+    @Upsert suspend fun upsert(item: ChatReactionEntity)
+    @Upsert suspend fun upsertAll(items: List<ChatReactionEntity>)
+    @Query("SELECT * FROM chat_reactions") suspend fun all(): List<ChatReactionEntity>
+    @Query("SELECT * FROM chat_reactions WHERE dirty = 1") suspend fun dirty(): List<ChatReactionEntity>
+    @Query("UPDATE chat_reactions SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM chat_reactions") suspend fun clear()
+}
+
+interface ChatReadDaoBase {
+    @Query("SELECT * FROM chat_reads WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<ChatReadEntity>>
+    @Query("SELECT * FROM chat_reads WHERE id = :id") suspend fun get(id: String): ChatReadEntity?
+    @Query("SELECT * FROM chat_reads WHERE id = :id") fun observeOne(id: String): Flow<ChatReadEntity?>
+    @Upsert suspend fun upsert(item: ChatReadEntity)
+    @Upsert suspend fun upsertAll(items: List<ChatReadEntity>)
+    @Query("SELECT * FROM chat_reads") suspend fun all(): List<ChatReadEntity>
+    @Query("SELECT * FROM chat_reads WHERE dirty = 1") suspend fun dirty(): List<ChatReadEntity>
+    @Query("UPDATE chat_reads SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM chat_reads") suspend fun clear()
 }

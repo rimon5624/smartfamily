@@ -115,6 +115,9 @@ dependencies {
     // Hebrew calendar, holidays and zmanim (LGPL 2.1), computed on the phone
     implementation("com.kosherjava:zmanim:2.5.0")
 
+    // End-to-end encryption for the family chat (HPKE X25519 + AES-GCM)
+    implementation("com.google.crypto.tink:tink-android:1.15.0")
+
     // Argon2id for backup passwords
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
 }

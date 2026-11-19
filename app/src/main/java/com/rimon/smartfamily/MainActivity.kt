@@ -111,6 +111,7 @@ private fun MainNav(vm: AppViewModel) {
     val lifeVm: HomeLifeViewModel = viewModel()
     val kitchenVm: KitchenViewModel = viewModel()
     val applianceVm: ApplianceViewModel = viewModel()
+    val chatVm: com.rimon.smartfamily.ui.ChatViewModel = viewModel()
     val nav = rememberNavController()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val family by vm.activeFamily.collectAsStateWithLifecycle()
@@ -133,7 +134,7 @@ private fun MainNav(vm: AppViewModel) {
     val showBar = Tab.entries.any { it.route == route }
 
     LaunchedEffect(Unit) {
-        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages).collect { msg ->
+        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages).collect { msg ->
             val text = when (msg) {
                 is UiMessage.Res -> if (msg.arg != null) context.getString(msg.id, msg.arg) else context.getString(msg.id)
                 is UiMessage.Text -> context.getString(R.string.error_generic, msg.text)
@@ -190,6 +191,7 @@ private fun MainNav(vm: AppViewModel) {
                             AppModule.RECIPES -> nav.navigate("kitchen/0")
                             AppModule.PACKED_MEALS -> nav.navigate("kitchen/2")
                             AppModule.APPLIANCES -> nav.navigate("appliances")
+                            AppModule.CHAT -> nav.navigate("chat")
                             else -> Unit
                         }
                     },
@@ -274,6 +276,12 @@ private fun MainNav(vm: AppViewModel) {
             }
             composable("smarthome") {
                 SmartHomeScreen(applianceVm, settings?.homeConnectClientId.orEmpty(), onBack = { nav.popBackStack() })
+            }
+            composable("chat") {
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatListScreen(chatVm, viewer, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("chat/$it") })
+            }
+            composable("chat/{id}") { back ->
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatScreen(chatVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
             }
             composable("inventory") {
                 if (famId.isNotEmpty()) InventoryScreen(shopVm, viewer, onBack = { nav.popBackStack() })
