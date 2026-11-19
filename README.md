@@ -2,9 +2,16 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 0.7.0 — Phase 6 (travel, budget, home book, polls)**
+**Current version: 0.8.0 — Phase 7 (price comparison)**
 
-## What is new in 0.7.0
+## What is new in 0.8.0
+
+- Price comparison across 23 Israeli chains (Shufersal, Rami Levy, Osher Ad, Yohananof, Carrefour, Tiv Taam, Shuk Hayir, Super Sapir, and more), straight from the public price-transparency files: FTP (publishedprices), binaprojects, prices.*.co.il and prices.shufersal.co.il. No server, no key, free.
+- Pick branches, then compare a shopping list: every chain side by side, with a chain filter; barcode matches first, name matches marked ≈.
+- Prices are cached on the phone only (not synced).
+- Shira Market is not included: no public price source was found.
+
+## What was new in 0.7.0
 
 - Travel packing: trips with destination search and the free Open-Meteo forecast (no key). The packing list is built from trip type, travellers, days and weather; everyone ticks items on their own phone.
 - Family budget: income and expenses per month, fixed monthly items, per-category monthly limits with progress bars.

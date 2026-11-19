@@ -49,6 +49,8 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         HomeEntryEntity::class,
         PollEntity::class,
         PollVoteEntity::class,
+        PriceStoreEntity::class,
+        PriceItemEntity::class,
     ],
     version = SchemaInfo.DB_VERSION,
     exportSchema = true,
@@ -59,6 +61,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 6, to = 7),
+        AutoMigration(from = 7, to = 8),
     ],
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -97,6 +100,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun homeEntrys(): HomeEntryDao
     abstract fun polls(): PollDao
     abstract fun pollVotes(): PollVoteDao
+    abstract fun prices(): PriceDao
 
     companion object {
         /**

@@ -824,4 +824,27 @@
     <string name="poll_question">שאלה</string>
     <string name="poll_option">אפשרות %1$d</string>
     <string name="poll_closes">נסגר בתאריך</string>
+
+    <!-- 0.8: price comparison -->
+    <string name="help_prices">בוחרים את הסניפים הקרובים (לשונית סניפים). האפליקציה מורידה את קובצי המחירים הציבוריים ישירות מכל רשת, בחינם, לפי חוק שקיפות המחירים. אחר כך בוחרים רשימת קניות ורואים את כל הרשתות זו לצד זו, לא רק את הזולה. ✓ = אותו ברקוד, ≈ = התאמה לפי שם (כדאי לבדוק). מחירי מדף, מועדון ומבצעים עשויים להיות שונים.</string>
+    <string name="prices_refresh">עדכון מחירים</string>
+    <string name="prices_downloading">מוריד %1$s…</string>
+    <string name="prices_compare">השוואה</string>
+    <string name="prices_stores">סניפים (%1$d)</string>
+    <string name="prices_pick_first">קודם בוחרים את הסניפים שבהם קונים.</string>
+    <string name="prices_choose_stores">בחירת סניפים</string>
+    <string name="prices_which_list">איזו רשימה?</string>
+    <string name="prices_show_chains">רשתות להצגה</string>
+    <string name="prices_found">נמצאו %1$d מתוך %2$d מוצרים</string>
+    <string name="prices_not_found">לא נמצא בסניף הזה</string>
+    <string name="prices_as_of">מחירים נכון ל-%1$s</string>
+    <string name="prices_disclaimer">המחירים מגיעים מקובצי המחירים הציבוריים של הרשתות ולא כוללים מחירי מועדון ומבצעים. התאמות לפי שם (≈) הן הערכה.</string>
+    <string name="prices_stores_intro">פותחים רשת, מוצאים את הסניף ומסמנים. המחירים שלו יורדים פעם אחת ומתעדכנים בלחיצה על ⟳.</string>
+    <string name="prices_city_filter">סינון לפי עיר או סניף</string>
+    <string name="prices_shira_note">שירה מרקט: לא מצאתי קובץ מחירים ציבורי שלה, ולכן היא עוד לא ברשימה. אם ידוע איפה היא מפרסמת מחירים, אפשר להוסיף אותה.</string>
+    <string name="prices_load_stores">טעינת סניפים</string>
+    <string name="prices_items">%1$d מוצרים</string>
+    <string name="prices_stores_loaded">נטענו %1$s סניפים</string>
+    <string name="prices_store_failed">לא הצלחתי להוריד את %1$s</string>
+    <string name="prices_updated">המחירים עודכנו</string>
 </resources>

@@ -113,6 +113,7 @@ private fun MainNav(vm: AppViewModel) {
     val applianceVm: ApplianceViewModel = viewModel()
     val chatVm: com.rimon.smartfamily.ui.ChatViewModel = viewModel()
     val extrasVm: com.rimon.smartfamily.ui.ExtrasViewModel = viewModel()
+    val priceVm: com.rimon.smartfamily.ui.PriceViewModel = viewModel()
     val nav = rememberNavController()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val family by vm.activeFamily.collectAsStateWithLifecycle()
@@ -135,7 +136,7 @@ private fun MainNav(vm: AppViewModel) {
     val showBar = Tab.entries.any { it.route == route }
 
     LaunchedEffect(Unit) {
-        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages, extrasVm.messages).collect { msg ->
+        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages, extrasVm.messages, priceVm.messages).collect { msg ->
             val text = when (msg) {
                 is UiMessage.Res -> if (msg.arg != null) context.getString(msg.id, msg.arg) else context.getString(msg.id)
                 is UiMessage.Text -> context.getString(R.string.error_generic, msg.text)
@@ -198,6 +199,7 @@ private fun MainNav(vm: AppViewModel) {
                             AppModule.HOME_BOOK -> nav.navigate("homebook/0")
                             AppModule.KNOWLEDGE -> nav.navigate("homebook/1")
                             AppModule.POLLS -> nav.navigate("polls")
+                            AppModule.PRICES -> nav.navigate("prices")
                             else -> Unit
                         }
                     },
@@ -300,6 +302,9 @@ private fun MainNav(vm: AppViewModel) {
             }
             composable("homebook/{tab}") { back ->
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.HomeBookScreen(extrasVm, viewer, back.arguments?.getString("tab")?.toIntOrNull() ?: 0, onBack = { nav.popBackStack() })
+            }
+            composable("prices") {
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.PricesScreen(priceVm, viewer, onBack = { nav.popBackStack() })
             }
             composable("polls") {
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.PollsScreen(extrasVm, viewer, onBack = { nav.popBackStack() })

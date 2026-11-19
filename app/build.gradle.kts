@@ -105,6 +105,8 @@ dependencies {
 
     // Networking (Supabase REST: Auth + PostgREST)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // FTP for the chains published on url.retail.publishedprices.co.il (price comparison)
+    implementation("commons-net:commons-net:3.11.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 

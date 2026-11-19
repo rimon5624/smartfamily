@@ -828,4 +828,27 @@
     <string name="poll_question">Question</string>
     <string name="poll_option">Option %1$d</string>
     <string name="poll_closes">Closes on</string>
+
+    <!-- 0.8: price comparison -->
+    <string name="help_prices">Pick the branches near you (Stores tab). The app downloads their public price files straight from each chain, for free, as required by the Israeli Food Law. Then choose a shopping list: you see every chain side by side, not just the cheapest. ✓ = same barcode, ≈ = closest name match (check it). Prices on the shelf, club deals and promotions may differ.</string>
+    <string name="prices_refresh">Update prices</string>
+    <string name="prices_downloading">Downloading %1$s…</string>
+    <string name="prices_compare">Compare</string>
+    <string name="prices_stores">Stores (%1$d)</string>
+    <string name="prices_pick_first">First pick the branches you shop at.</string>
+    <string name="prices_choose_stores">Choose branches</string>
+    <string name="prices_which_list">Which list?</string>
+    <string name="prices_show_chains">Chains to show</string>
+    <string name="prices_found">%1$d of %2$d items found</string>
+    <string name="prices_not_found">Not found in this store</string>
+    <string name="prices_as_of">Prices as of %1$s</string>
+    <string name="prices_disclaimer">Prices come from the chains\' public price files and do not include club prices or promotions. Name matches (≈) are a best guess.</string>
+    <string name="prices_stores_intro">Open a chain, find your branch and tick it. Its prices are downloaded once and updated when you tap ⟳.</string>
+    <string name="prices_city_filter">Filter by city or branch</string>
+    <string name="prices_shira_note">Shira Market: I could not find a public price file for it, so it is not on the list yet. If you know where it publishes its prices, it can be added.</string>
+    <string name="prices_load_stores">Load branches</string>
+    <string name="prices_items">%1$d items</string>
+    <string name="prices_stores_loaded">%1$s branches loaded</string>
+    <string name="prices_store_failed">Could not download %1$s</string>
+    <string name="prices_updated">Prices updated</string>
 </resources>
