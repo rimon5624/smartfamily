@@ -90,3 +90,17 @@ interface PackedMealDao : PackedMealDaoBase {
     @Query("SELECT * FROM packed_meals WHERE deletedAt IS NULL AND date = :date")
     suspend fun onDate(date: String): List<PackedMealEntity>
 }
+
+// ---------- 0.5 ----------
+
+@Dao
+interface ApplianceDao : ApplianceDaoBase {
+    @Query("SELECT * FROM appliances WHERE familyId = :familyId AND deletedAt IS NULL ORDER BY type, name")
+    fun observeSorted(familyId: String): Flow<List<ApplianceEntity>>
+}
+
+@Dao
+interface LaundryPresetDao : LaundryPresetDaoBase {
+    @Query("SELECT * FROM laundry_presets WHERE applianceId = :applianceId AND deletedAt IS NULL ORDER BY name")
+    fun observeFor(applianceId: String): Flow<List<LaundryPresetEntity>>
+}

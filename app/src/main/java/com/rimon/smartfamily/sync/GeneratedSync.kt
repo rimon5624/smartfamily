@@ -13,6 +13,8 @@ import com.rimon.smartfamily.data.db.RecipeRatingEntity
 import com.rimon.smartfamily.data.db.MealPlanEntryEntity
 import com.rimon.smartfamily.data.db.MealProfileEntity
 import com.rimon.smartfamily.data.db.PackedMealEntity
+import com.rimon.smartfamily.data.db.ApplianceEntity
+import com.rimon.smartfamily.data.db.LaundryPresetEntity
 import kotlinx.serialization.Serializable
 
 internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
@@ -71,6 +73,16 @@ internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
             { db.packedMeals().dirty() }, { it.id }, { db.packedMeals().markClean(it) },
             { rows -> db.packedMeals().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
         ),
+        TableSync(
+            "appliances", "id", ApplianceEntity.serializer(),
+            { db.appliances().dirty() }, { it.id }, { db.appliances().markClean(it) },
+            { rows -> db.appliances().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
+        TableSync(
+            "laundry_presets", "id", LaundryPresetEntity.serializer(),
+            { db.laundryPresets().dirty() }, { it.id }, { db.laundryPresets().markClean(it) },
+            { rows -> db.laundryPresets().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
 )
 
 /** Backup content of the generated tables (BAK-2); missing lists in older backups default to empty. */
@@ -87,6 +99,8 @@ data class GeneratedBackup(
     val mealPlanEntrys: List<MealPlanEntryEntity> = emptyList(),
     val mealProfiles: List<MealProfileEntity> = emptyList(),
     val packedMeals: List<PackedMealEntity> = emptyList(),
+    val appliances: List<ApplianceEntity> = emptyList(),
+    val laundryPresets: List<LaundryPresetEntity> = emptyList(),
 )
 
 suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
@@ -101,6 +115,8 @@ suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
         mealPlanEntrys = db.mealPlanEntrys().all(),
         mealProfiles = db.mealProfiles().all(),
         packedMeals = db.packedMeals().all(),
+        appliances = db.appliances().all(),
+        laundryPresets = db.laundryPresets().all(),
 )
 
 suspend fun clearGenerated(db: AppDatabase) {
@@ -115,6 +131,8 @@ suspend fun clearGenerated(db: AppDatabase) {
     db.mealPlanEntrys().clear()
     db.mealProfiles().clear()
     db.packedMeals().clear()
+    db.appliances().clear()
+    db.laundryPresets().clear()
 }
 
 suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
@@ -129,4 +147,6 @@ suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
     db.mealPlanEntrys().upsertAll(p.mealPlanEntrys.map { it.copy(dirty = true) })
     db.mealProfiles().upsertAll(p.mealProfiles.map { it.copy(dirty = true) })
     db.packedMeals().upsertAll(p.packedMeals.map { it.copy(dirty = true) })
+    db.appliances().upsertAll(p.appliances.map { it.copy(dirty = true) })
+    db.laundryPresets().upsertAll(p.laundryPresets.map { it.copy(dirty = true) })
 }

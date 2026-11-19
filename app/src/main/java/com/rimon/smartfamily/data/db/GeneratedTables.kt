@@ -214,6 +214,49 @@ data class PackedMealEntity(
     @Transient val dirty: Boolean = true,
 )
 
+@Serializable
+@Entity(tableName = "appliances", indices = [Index("familyId")])
+data class ApplianceEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    val type: String = "washer",
+    val name: String,
+    val brand: String = "",
+    val model: String = "",
+    val serial: String = "",
+    @SerialName("purchase_date") val purchaseDate: String = "",
+    @SerialName("warranty_end") val warrantyEnd: String = "",
+    val store: String = "",
+    val price: Double = 0.0,
+    @SerialName("service_phone") val servicePhone: String = "",
+    val notes: String = "",
+    val ecosystem: String = "",
+    @SerialName("external_id") val externalId: String = "",
+    val profile: String = "",
+    @SerialName("profile_source") val profileSource: String = "",
+    @SerialName("created_by") val createdBy: String,
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
+@Serializable
+@Entity(tableName = "laundry_presets", indices = [Index("familyId"), Index("applianceId")])
+data class LaundryPresetEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("appliance_id") val applianceId: String,
+    val name: String,
+    val program: String = "",
+    val temperature: String = "",
+    val spin: String = "",
+    val options: String = "",
+    val note: String = "",
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
 // Base DAOs: the feature DAOs in FeatureDaos.kt extend these and add their own queries.
 
 interface ChoreDaoBase {
@@ -357,4 +400,30 @@ interface PackedMealDaoBase {
     @Query("SELECT * FROM packed_meals WHERE dirty = 1") suspend fun dirty(): List<PackedMealEntity>
     @Query("UPDATE packed_meals SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
     @Query("DELETE FROM packed_meals") suspend fun clear()
+}
+
+interface ApplianceDaoBase {
+    @Query("SELECT * FROM appliances WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<ApplianceEntity>>
+    @Query("SELECT * FROM appliances WHERE id = :id") suspend fun get(id: String): ApplianceEntity?
+    @Query("SELECT * FROM appliances WHERE id = :id") fun observeOne(id: String): Flow<ApplianceEntity?>
+    @Upsert suspend fun upsert(item: ApplianceEntity)
+    @Upsert suspend fun upsertAll(items: List<ApplianceEntity>)
+    @Query("SELECT * FROM appliances") suspend fun all(): List<ApplianceEntity>
+    @Query("SELECT * FROM appliances WHERE dirty = 1") suspend fun dirty(): List<ApplianceEntity>
+    @Query("UPDATE appliances SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM appliances") suspend fun clear()
+}
+
+interface LaundryPresetDaoBase {
+    @Query("SELECT * FROM laundry_presets WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<LaundryPresetEntity>>
+    @Query("SELECT * FROM laundry_presets WHERE id = :id") suspend fun get(id: String): LaundryPresetEntity?
+    @Query("SELECT * FROM laundry_presets WHERE id = :id") fun observeOne(id: String): Flow<LaundryPresetEntity?>
+    @Upsert suspend fun upsert(item: LaundryPresetEntity)
+    @Upsert suspend fun upsertAll(items: List<LaundryPresetEntity>)
+    @Query("SELECT * FROM laundry_presets") suspend fun all(): List<LaundryPresetEntity>
+    @Query("SELECT * FROM laundry_presets WHERE dirty = 1") suspend fun dirty(): List<LaundryPresetEntity>
+    @Query("UPDATE laundry_presets SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM laundry_presets") suspend fun clear()
 }

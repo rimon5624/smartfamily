@@ -2,7 +2,17 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 0.4.0 — Phase 3 (kitchen)**
+**Current version: 0.5.0 — Phase 4 (appliances)**
+
+## What is new in 0.5.0
+
+- Appliances: washer, dryer, washer-dryer, dishwasher, AC, car, oven, fridge, water heater; brand, model, serial, warranty, store, service phone
+- Fill brand/model/serial from a photo of the label (AI)
+- A structured guide per appliance (programs, buttons, symbols, error codes, maintenance, safety, with manual page numbers) built from: the PDF manual (Gemini), any AI chat (copy the prompt, attach the PDF, paste the answer back — free), a photo of the panel or a manual page, or common programs as a start
+- "What to run": picks one of your own machine's programs by fabric, colour, soil and the care-label photo; timer on the phone's clock; presets per person
+- Maintenance tasks become recurring chores
+- Live status: Bosch/Siemens via Home Connect (device-flow sign-in; start a program when remote start is on), Samsung via SmartThings (status)
+- Tadiran ACs: guide and reminders only (no open interface)
 
 ## What is new in 0.4.0
 

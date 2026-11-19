@@ -127,4 +127,33 @@ TABLES = [
         ("status", "String", '"PLANNED"'),       # PLANNED, PACKED, UNEATEN, EATEN
         ("feedback", "String", '""'),
     ], indices=["profileId", "date"]),
+
+    # ---------- 0.5: appliances ----------
+    dict(name="appliances", entity="ApplianceEntity", version=5, policy="adults", fields=[
+        ("type", "String", '"washer"'),          # washer, dryer, washer_dryer, dishwasher, ac, car, oven, fridge, water_heater, other
+        ("name", "String", None),
+        ("brand", "String", '""'),
+        ("model", "String", '""'),
+        ("serial", "String", '""'),
+        ("purchaseDate", "String", '""'),        # yyyy-MM-dd
+        ("warrantyEnd", "String", '""'),
+        ("store", "String", '""'),
+        ("price", "Double", "0.0"),
+        ("servicePhone", "String", '""'),
+        ("notes", "String", '""'),
+        ("ecosystem", "String", '""'),           # "", home_connect, smartthings
+        ("externalId", "String", '""'),          # the device id in that ecosystem
+        ("profile", "String", '""'),             # structured manual JSON (APL-7)
+        ("profileSource", "String", '""'),       # pdf, ai_chat, photo, text, generic
+        ("createdBy", "String", None),
+    ], indices=[]),
+    dict(name="laundry_presets", entity="LaundryPresetEntity", version=5, policy="adults", fields=[
+        ("applianceId", "String", None),
+        ("name", "String", None),
+        ("program", "String", '""'),
+        ("temperature", "String", '""'),
+        ("spin", "String", '""'),
+        ("options", "String", '""'),
+        ("note", "String", '""'),
+    ], indices=["applianceId"]),
 ]

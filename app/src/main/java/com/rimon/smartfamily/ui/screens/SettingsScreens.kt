@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.LocationCity
+import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Cloud
@@ -80,6 +81,7 @@ fun SettingsScreen(
     onBackup: () -> Unit,
     onModules: (String) -> Unit,
     onAi: () -> Unit,
+    onSmartHome: () -> Unit,
 ) {
     val s by vm.settings.collectAsStateWithLifecycle()
     val name by vm.displayName.collectAsStateWithLifecycle()
@@ -161,6 +163,7 @@ fun SettingsScreen(
                 stringResource(if (vm.aiConfigured) R.string.ai_sub_on else R.string.ai_sub_off),
                 onAi,
             )
+            ClickRow(Icons.Outlined.Sensors, stringResource(R.string.sh_title), stringResource(R.string.sh_hc) + " · " + stringResource(R.string.sh_st), onSmartHome)
             CityRow(settings.zmanimCity, settings.language) { vm.setZmanimCity(it) }
             InfoRow(
                 title = stringResource(R.string.settings_reminders),

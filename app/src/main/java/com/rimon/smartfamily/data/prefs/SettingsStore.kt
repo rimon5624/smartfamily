@@ -34,6 +34,7 @@ data class AppSettings(
     val expiryAlerts: Boolean = true,
     val zmanimCity: String = "jerusalem",
     val choreReminders: Boolean = true,
+    val homeConnectClientId: String = "",
 ) {
     val supabaseConfigured: Boolean get() = supabaseUrl.isNotBlank() && supabaseAnonKey.isNotBlank()
 }
@@ -58,6 +59,7 @@ class SettingsStore(private val context: Context) {
         val expiryAlerts = booleanPreferencesKey("expiry_alerts")
         val zmanimCity = stringPreferencesKey("zmanim_city")
         val choreReminders = booleanPreferencesKey("chore_reminders")
+        val homeConnectClientId = stringPreferencesKey("home_connect_client_id")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p -> p.toSettings() }
@@ -82,6 +84,7 @@ class SettingsStore(private val context: Context) {
         expiryAlerts = this[K.expiryAlerts] ?: true,
         zmanimCity = this[K.zmanimCity] ?: "jerusalem",
         choreReminders = this[K.choreReminders] ?: true,
+        homeConnectClientId = this[K.homeConnectClientId] ?: "",
     )
 
     suspend fun setLanguage(v: String) = context.dataStore.edit { it[K.language] = v }
@@ -96,6 +99,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setExpiryAlerts(v: Boolean) = context.dataStore.edit { it[K.expiryAlerts] = v }
     suspend fun setZmanimCity(v: String) = context.dataStore.edit { it[K.zmanimCity] = v }
     suspend fun setChoreReminders(v: Boolean) = context.dataStore.edit { it[K.choreReminders] = v }
+    suspend fun setHomeConnectClientId(v: String) = context.dataStore.edit { it[K.homeConnectClientId] = v.trim() }
     suspend fun setAccountEmail(v: String) = context.dataStore.edit { it[K.accountEmail] = v }
 
     suspend fun setSupabase(url: String, anonKey: String) = context.dataStore.edit {

@@ -45,7 +45,11 @@ import com.rimon.smartfamily.model.AppModule
 import com.rimon.smartfamily.model.Role
 import com.rimon.smartfamily.ui.AppViewModel
 import com.rimon.smartfamily.ui.HomeLifeViewModel
+import com.rimon.smartfamily.ui.ApplianceViewModel
 import com.rimon.smartfamily.ui.KitchenViewModel
+import com.rimon.smartfamily.ui.screens.ApplianceDetailScreen
+import com.rimon.smartfamily.ui.screens.AppliancesScreen
+import com.rimon.smartfamily.ui.screens.SmartHomeScreen
 import com.rimon.smartfamily.ui.screens.CookingScreen
 import com.rimon.smartfamily.ui.screens.KitchenScreen
 import com.rimon.smartfamily.ui.screens.RecipeDetailScreen
@@ -106,6 +110,7 @@ private fun MainNav(vm: AppViewModel) {
     val shopVm: ShoppingViewModel = viewModel()
     val lifeVm: HomeLifeViewModel = viewModel()
     val kitchenVm: KitchenViewModel = viewModel()
+    val applianceVm: ApplianceViewModel = viewModel()
     val nav = rememberNavController()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val family by vm.activeFamily.collectAsStateWithLifecycle()
@@ -128,7 +133,7 @@ private fun MainNav(vm: AppViewModel) {
     val showBar = Tab.entries.any { it.route == route }
 
     LaunchedEffect(Unit) {
-        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages).collect { msg ->
+        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages).collect { msg ->
             val text = when (msg) {
                 is UiMessage.Res -> if (msg.arg != null) context.getString(msg.id, msg.arg) else context.getString(msg.id)
                 is UiMessage.Text -> context.getString(R.string.error_generic, msg.text)
@@ -184,6 +189,7 @@ private fun MainNav(vm: AppViewModel) {
                             AppModule.CALENDAR -> nav.navigate("calendar")
                             AppModule.RECIPES -> nav.navigate("kitchen/0")
                             AppModule.PACKED_MEALS -> nav.navigate("kitchen/2")
+                            AppModule.APPLIANCES -> nav.navigate("appliances")
                             else -> Unit
                         }
                     },
@@ -199,6 +205,7 @@ private fun MainNav(vm: AppViewModel) {
                     onBackup = { nav.navigate("backup") },
                     onModules = { nav.navigate("modules/$it") },
                     onAi = { nav.navigate("ai") },
+                    onSmartHome = { nav.navigate("smarthome") },
                 )
             }
             composable("family/{id}") { back ->
@@ -257,6 +264,16 @@ private fun MainNav(vm: AppViewModel) {
             }
             composable("cook/{id}") { back ->
                 CookingScreen(kitchenVm, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
+            }
+            composable("appliances") {
+                if (famId.isNotEmpty()) AppliancesScreen(applianceVm, viewer, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("appliance/$it") })
+            }
+            composable("appliance/{id}") { back ->
+                ApplianceDetailScreen(applianceVm, viewer, back.arguments?.getString("id").orEmpty(),
+                    onBack = { nav.popBackStack() }, onSmartHome = { nav.navigate("smarthome") })
+            }
+            composable("smarthome") {
+                SmartHomeScreen(applianceVm, settings?.homeConnectClientId.orEmpty(), onBack = { nav.popBackStack() })
             }
             composable("inventory") {
                 if (famId.isNotEmpty()) InventoryScreen(shopVm, viewer, onBack = { nav.popBackStack() })

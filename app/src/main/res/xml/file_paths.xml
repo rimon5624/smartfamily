@@ -2,4 +2,6 @@
 <paths>
     <!-- Photos taken for item recognition; deleted after use -->
     <cache-path name="photos" path="photos/" />
+    <!-- Appliance manuals kept on this phone, opened in a PDF viewer -->
+    <files-path name="manuals" path="manuals/" />
 </paths>

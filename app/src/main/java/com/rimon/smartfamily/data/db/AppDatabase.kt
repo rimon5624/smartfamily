@@ -32,6 +32,9 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         MealPlanEntryEntity::class,
         MealProfileEntity::class,
         PackedMealEntity::class,
+        // 0.5.0
+        ApplianceEntity::class,
+        LaundryPresetEntity::class,
     ],
     version = SchemaInfo.DB_VERSION,
     exportSchema = true,
@@ -39,6 +42,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
     autoMigrations = [
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),
+        AutoMigration(from = 4, to = 5),
     ],
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -62,6 +66,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun mealPlanEntrys(): MealPlanEntryDao
     abstract fun mealProfiles(): MealProfileDao
     abstract fun packedMeals(): PackedMealDao
+    abstract fun appliances(): ApplianceDao
+    abstract fun laundryPresets(): LaundryPresetDao
 
     companion object {
         /**
