@@ -965,4 +965,28 @@
     <string name="event_n_days">%1$d days</string>
     <string name="rep_monthly_heb">Monthly (Hebrew date)</string>
     <string name="rep_yearly_heb">Yearly (Hebrew date)</string>
+    <!-- 2.0 assistant -->
+    <string name="speech_locale">en-US</string>
+    <string name="qa_title">Quick add</string>
+    <string name="qa_hint">e.g. \"milk and eggs\", \"Tuesday 16:00 dentist for Tzur\", \"clean the AC filter tomorrow\"</string>
+    <string name="qa_voice">Speak</string>
+    <string name="qa_shopping">Shopping</string>
+    <string name="qa_event">Event</string>
+    <string name="qa_chore">Task</string>
+    <string name="qa_note">Note</string>
+    <string name="qa_saved_event">Added to the calendar</string>
+    <string name="qa_saved_chore">Task added</string>
+    <string name="qa_saved_note">Saved in the knowledge box</string>
+    <string name="search_all">Search everything</string>
+    <string name="search_none">Nothing found</string>
+    <string name="now_morning">Good morning – today</string>
+    <string name="now_noon">Today</string>
+    <string name="now_evening">Tonight and tomorrow</string>
+    <string name="now_night">For tomorrow</string>
+    <string name="now_pack_today">🎒 To pack today: %1$s</string>
+    <string name="now_pack_tomorrow">🎒 To pack tomorrow: %1$s</string>
+    <string name="now_cook_today">🍲 Cooking today: %1$s</string>
+    <string name="now_cook_tomorrow">🍲 Cooking tomorrow: %1$s</string>
+    <string name="now_chores">🧹 %1$d tasks today: %2$s</string>
+    <string name="now_shopping">🛒 %1$d items on the shopping list</string>
 </resources>

@@ -961,4 +961,28 @@
     <string name="event_n_days">%1$d ימים</string>
     <string name="rep_monthly_heb">כל חודש (עברי)</string>
     <string name="rep_yearly_heb">כל שנה (עברי)</string>
+    <!-- 2.0 assistant -->
+    <string name="speech_locale">he-IL</string>
+    <string name="qa_title">הוספה מהירה</string>
+    <string name="qa_hint">למשל: \"חלב וביצים\", \"ביום שלישי 16:00 רופא שיניים לצור\", \"לנקות פילטר מזגן מחר\"</string>
+    <string name="qa_voice">דיבור</string>
+    <string name="qa_shopping">קניות</string>
+    <string name="qa_event">אירוע</string>
+    <string name="qa_chore">משימה</string>
+    <string name="qa_note">הערה</string>
+    <string name="qa_saved_event">נוסף ליומן</string>
+    <string name="qa_saved_chore">המשימה נוספה</string>
+    <string name="qa_saved_note">נשמר בתיבת הידע</string>
+    <string name="search_all">חיפוש בכל האפליקציה</string>
+    <string name="search_none">לא נמצא</string>
+    <string name="now_morning">בוקר טוב – היום</string>
+    <string name="now_noon">היום</string>
+    <string name="now_evening">הערב ומחר</string>
+    <string name="now_night">למחר</string>
+    <string name="now_pack_today">🎒 לארוז היום: %1$s</string>
+    <string name="now_pack_tomorrow">🎒 לארוז מחר: %1$s</string>
+    <string name="now_cook_today">🍲 מבשלים היום: %1$s</string>
+    <string name="now_cook_tomorrow">🍲 מבשלים מחר: %1$s</string>
+    <string name="now_chores">🧹 %1$d משימות היום: %2$s</string>
+    <string name="now_shopping">🛒 %1$d פריטים ברשימת הקניות</string>
 </resources>

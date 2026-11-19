@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -167,6 +168,8 @@ private fun MainNav(vm: AppViewModel) {
     val extrasVm: com.rimon.smartfamily.ui.ExtrasViewModel = viewModel()
     val priceVm: com.rimon.smartfamily.ui.PriceViewModel = viewModel()
     val shareVm: com.rimon.smartfamily.ui.screens.ShareViewModel = viewModel()
+    val assistantVm: com.rimon.smartfamily.ui.screens.AssistantViewModel = viewModel()
+    var quickAdd by remember { mutableStateOf(false) }
     val nav = rememberNavController()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val family by vm.activeFamily.collectAsStateWithLifecycle()
@@ -192,7 +195,7 @@ private fun MainNav(vm: AppViewModel) {
     val showBar = Tab.entries.any { it.route == route }
 
     LaunchedEffect(Unit) {
-        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages, extrasVm.messages, priceVm.messages, shareVm.messages).collect { msg ->
+        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages, extrasVm.messages, priceVm.messages, shareVm.messages, assistantVm.messages).collect { msg ->
             val text = when (msg) {
                 // Numbers are passed as numbers so both %1$s and %1$d work; a bad format never crashes the app.
                 is UiMessage.Res -> runCatching {
@@ -245,6 +248,8 @@ private fun MainNav(vm: AppViewModel) {
                     onOpenCloud = { nav.navigate("cloud") },
                     extra = {
                         val city = settings?.zmanimCity ?: "jerusalem"
+                        if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.NowPanel(viewer, city, lifeVm, kitchenVm, shopVm,
+                            onQuickAdd = { quickAdd = true }, onSearch = { nav.navigate("search") }, onOpen = { nav.navigate(it) })
                         val shabbat by produceState<com.rimon.smartfamily.smart.ShabbatTimes?>(null, city) {
                             value = runCatching { lifeVm.shabbat(city) }.getOrNull()
                         }
@@ -378,6 +383,15 @@ private fun MainNav(vm: AppViewModel) {
             composable("homebook/{tab}") { back ->
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.HomeBookScreen(extrasVm, viewer, back.arguments?.getString("tab")?.toIntOrNull() ?: 0, onBack = { nav.popBackStack() })
             }
+            composable("search") {
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.SearchScreen(assistantVm, viewer, onBack = { nav.popBackStack() }) { h ->
+                    nav.navigate(when (h.kind) {
+                        "item" -> "shopping/list/${h.id}"; "recipe" -> "recipe/${h.id}"; "home" -> if (h.sub == "KNOWLEDGE") "homebook/1" else "homebook/0"
+                        "trip" -> "trip/${h.id}"; "poll" -> "polls"; "chore" -> "chores"; "pantry" -> "inventory"; "appliance" -> "appliance/${h.id}"
+                        else -> "calendar"
+                    })
+                }
+            }
             composable("prices") {
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.PricesScreen(priceVm, viewer, onBack = { nav.popBackStack() })
             }
@@ -389,6 +403,7 @@ private fun MainNav(vm: AppViewModel) {
             }
         }
     }
+    if (quickAdd) com.rimon.smartfamily.ui.screens.QuickAddDialog(assistantVm, viewer, onDismiss = { quickAdd = false })
     }
 }
 

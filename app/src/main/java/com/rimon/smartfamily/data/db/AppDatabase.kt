@@ -105,6 +105,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun prices(): PriceDao
     abstract fun familyShares(): FamilyShareDao
     abstract fun people(): PeopleDao
+    abstract fun search(): SearchDao
 
     companion object {
         /**

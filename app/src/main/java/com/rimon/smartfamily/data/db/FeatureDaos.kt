@@ -241,3 +241,25 @@ interface FamilyShareDao : FamilyShareDaoBase {
     )
     fun observeSharedToMe(sourceFamilyId: String, userId: String): Flow<List<FamilyShareEntity>>
 }
+
+// ---------- 2.0: one search across the app ----------
+
+data class SearchHit(val kind: String, val id: String, val title: String, val sub: String)
+
+@Dao
+interface SearchDao {
+    @Query("""
+        SELECT 'item' AS kind, listId AS id, name AS title, '' AS sub FROM list_items WHERE familyId = :f AND deletedAt IS NULL AND name LIKE '%' || :q || '%'
+        UNION ALL SELECT 'recipe', id, title, '' FROM recipes WHERE familyId = :f AND deletedAt IS NULL AND (title LIKE '%' || :q || '%' OR ingredients LIKE '%' || :q || '%')
+        UNION ALL SELECT 'home', id, title, section FROM home_entries WHERE familyId = :f AND deletedAt IS NULL AND (title LIKE '%' || :q || '%' OR body LIKE '%' || :q || '%' OR phone LIKE '%' || :q || '%' OR tags LIKE '%' || :q || '%')
+        UNION ALL SELECT 'event', id, title, location FROM events WHERE familyId = :f AND deletedAt IS NULL AND (title LIKE '%' || :q || '%' OR location LIKE '%' || :q || '%')
+        UNION ALL SELECT 'date', id, title, personName FROM family_dates WHERE familyId = :f AND deletedAt IS NULL AND (title LIKE '%' || :q || '%' OR personName LIKE '%' || :q || '%')
+        UNION ALL SELECT 'trip', id, title, destination FROM trips WHERE familyId = :f AND deletedAt IS NULL AND (title LIKE '%' || :q || '%' OR destination LIKE '%' || :q || '%')
+        UNION ALL SELECT 'poll', id, question, '' FROM polls WHERE familyId = :f AND deletedAt IS NULL AND question LIKE '%' || :q || '%'
+        UNION ALL SELECT 'chore', id, title, '' FROM chores WHERE familyId = :f AND deletedAt IS NULL AND title LIKE '%' || :q || '%'
+        UNION ALL SELECT 'pantry', id, name, location FROM inventory_items WHERE familyId = :f AND deletedAt IS NULL AND name LIKE '%' || :q || '%'
+        UNION ALL SELECT 'appliance', id, name, brand FROM appliances WHERE familyId = :f AND deletedAt IS NULL AND (name LIKE '%' || :q || '%' OR brand LIKE '%' || :q || '%' OR model LIKE '%' || :q || '%')
+        LIMIT 80
+    """)
+    suspend fun search(f: String, q: String): List<SearchHit>
+}
