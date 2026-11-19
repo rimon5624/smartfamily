@@ -216,6 +216,60 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         _transcripts.value = ids.mapNotNull { id -> transcriptPrefs.getString(id, null)?.let { id to it } }.toMap()
     }
 
+    // ---------- 2.0 ----------
+
+    /** CHT-2: a recipe, list, event, poll… sent as a card that opens the item. */
+    fun sendCard(chat: ChatEntity, type: String, id: String, title: String) = launchSafe {
+        if (!repo.hasKey(chat)) return@launchSafe say(R.string.chat_waiting_key)
+        repo.send(chat, uid(), MessagePayload(text = title, cardType = type, cardId = id, cardTitle = title), "card")
+    }
+
+    fun cardItems(familyId: String, module: com.rimon.smartfamily.model.AppModule, onItems: (List<com.rimon.smartfamily.data.repo.ShareItem>) -> Unit) = launchSafe { onItems(c.shares.items(familyId, module)) }
+
+    @android.annotation.SuppressLint("MissingPermission")
+    fun sendLocation(chat: ChatEntity) = launchSafe {
+        val lm = getApplication<Application>().getSystemService(android.location.LocationManager::class.java)
+        val loc = listOf(android.location.LocationManager.GPS_PROVIDER, android.location.LocationManager.NETWORK_PROVIDER, android.location.LocationManager.PASSIVE_PROVIDER)
+            .mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time }
+            ?: return@launchSafe say(R.string.chat_no_location)
+        repo.send(chat, uid(), MessagePayload(text = getApplication<Application>().getString(R.string.chat_my_location), lat = loc.latitude, lon = loc.longitude), "location")
+    }
+
+    fun forward(m: ShownMessage, to: ChatEntity) = launchSafe {
+        val p = m.payload ?: return@launchSafe
+        if (!repo.hasKey(to)) return@launchSafe say(R.string.chat_waiting_key)
+        repo.send(to, uid(), p.copy(forwarded = true, transcript = ""), m.entity.kind, mediaPath = m.entity.mediaPath)
+        say(R.string.chat_forwarded)
+    }
+
+    /** CHT-3 pinned messages are a shared 📌 reaction; starred ones stay on this phone. */
+    fun togglePin(m: ChatMessageEntity) = react(m, "📌")
+    private val starPrefs = app.getSharedPreferences("sf_starred", android.content.Context.MODE_PRIVATE)
+    val starred = MutableStateFlow(starPrefs.getStringSet("ids", emptySet())!!.toSet())
+    fun toggleStar(id: String) {
+        val now = if (id in starred.value) starred.value - id else starred.value + id
+        starPrefs.edit().putStringSet("ids", now).apply(); starred.value = now
+    }
+
+    fun scheduled(chatId: String) = c.db.scheduledMessages().observeChat(chatId)
+    fun schedule(chat: ChatEntity, text: String, at: Long) = launchSafe {
+        c.db.scheduledMessages().upsert(com.rimon.smartfamily.data.db.ScheduledMessageEntity(java.util.UUID.randomUUID().toString(), chat.id, text.trim(), at))
+        say(R.string.chat_scheduled)
+    }
+    fun cancelScheduled(id: String) = launchSafe { c.db.scheduledMessages().delete(id) }
+
+    /** CHT-9: a short summary of what was written since I last read (Gemini, free tier; only on request). */
+    private val _summary = MutableStateFlow<String?>(null)
+    val summary = _summary.asStateFlow()
+    fun clearSummary() { _summary.value = null }
+    fun summarize(chat: ChatEntity, shown: List<ShownMessage>, since: Long, names: Map<String, String>) = launchSafe {
+        val lines = shown.filter { it.entity.sentAt > since && it.payload?.text?.isNotBlank() == true }.takeLast(150)
+            .joinToString("\n") { (names[it.entity.senderId] ?: "?") + ": " + (it.payload?.text ?: it.payload?.transcript ?: "") }
+        if (lines.isBlank()) return@launchSafe say(R.string.chat_nothing_new)
+        val lang = getApplication<Application>().resources.configuration.locales[0].language.let { if (it == "iw" || it == "he") "Hebrew" else "English" }
+        _summary.value = c.gemini.ask("Summarize this family group chat in $lang in up to 6 short bullet points: decisions, questions waiting for an answer, things to do. Chat:\n$lines").trim()
+    }
+
     fun edit(m: ShownMessage, text: String) = launchSafe { m.payload?.let { repo.edit(m.entity, it.copy(text = text.trim())) } }
     fun delete(m: ChatMessageEntity) = launchSafe { repo.deleteForEveryone(m) }
     fun react(m: ChatMessageEntity, emoji: String) = launchSafe { repo.toggleReaction(m, uid(), emoji) }

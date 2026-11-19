@@ -24,6 +24,13 @@ data class MessagePayload(
     val durationSec: Int = 0,
     val transcript: String = "",
     val deleted: Boolean = false,
+    // 2.0: in-app item cards, locations, forwarded messages
+    val cardType: String = "",
+    val cardId: String = "",
+    val cardTitle: String = "",
+    val lat: Double = 0.0,
+    val lon: Double = 0.0,
+    val forwarded: Boolean = false,
 )
 
 /** A message after decryption; [payload] is null when this phone has no key for it yet. */

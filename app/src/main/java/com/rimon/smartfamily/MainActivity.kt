@@ -373,7 +373,7 @@ private fun MainNav(vm: AppViewModel) {
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatListScreen(chatVm, viewer, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("chat/$it") })
             }
             composable("chat/{id}") { back ->
-                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatScreen(chatVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatScreen(chatVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }, onOpenRoute = { nav.navigate(it) })
             }
             composable("travel") {
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.TravelScreen(extrasVm, viewer, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("trip/$it") })

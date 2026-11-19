@@ -1143,4 +1143,22 @@
     <string name="tl_shop">Last shopping for Shabbat</string>
     <string name="tl_showers">Showers and getting dressed</string>
     <string name="tl_table">Set the table, candles ready</string>
+    <string name="chat_no_location">No location yet – turn on location and try again</string>
+    <string name="chat_my_location">My location</string>
+    <string name="chat_forwarded">Forwarded</string>
+    <string name="chat_scheduled">Will be sent at the chosen time</string>
+    <string name="chat_nothing_new">Nothing new to summarize</string>
+    <string name="chat_summarize">Summarize unread</string>
+    <string name="chat_media">Media</string>
+    <string name="chat_starred">Starred</string>
+    <string name="chat_scheduled_list">Scheduled (%1$d)</string>
+    <string name="chat_schedule_hint">Long-press the send button to schedule a message.</string>
+    <string name="chat_forward">Forward</string>
+    <string name="chat_pin">Pin</string>
+    <string name="chat_unpin">Unpin</string>
+    <string name="chat_star">Star</string>
+    <string name="chat_unstar">Remove star</string>
+    <string name="chat_video">Video</string>
+    <string name="chat_location">Location</string>
+    <string name="chat_card">Send an item (list, recipe, trip…)</string>
 </resources>

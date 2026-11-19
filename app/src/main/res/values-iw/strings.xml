@@ -1139,4 +1139,22 @@
     <string name="tl_shop">קניות אחרונות לשבת</string>
     <string name="tl_showers">מקלחות והתלבשות</string>
     <string name="tl_table">עורכים שולחן, נרות מוכנים</string>
+    <string name="chat_no_location">אין עדיין מיקום – צריך להדליק מיקום ולנסות שוב</string>
+    <string name="chat_my_location">המיקום שלי</string>
+    <string name="chat_forwarded">הועבר</string>
+    <string name="chat_scheduled">יישלח בזמן שנבחר</string>
+    <string name="chat_nothing_new">אין משהו חדש לסכם</string>
+    <string name="chat_summarize">סיכום מה שלא נקרא</string>
+    <string name="chat_media">מדיה</string>
+    <string name="chat_starred">מסומנים בכוכב</string>
+    <string name="chat_scheduled_list">מתוזמנות (%1$d)</string>
+    <string name="chat_schedule_hint">לחיצה ארוכה על כפתור השליחה מתזמנת הודעה.</string>
+    <string name="chat_forward">העברה</string>
+    <string name="chat_pin">הצמדה</string>
+    <string name="chat_unpin">ביטול הצמדה</string>
+    <string name="chat_star">סימון בכוכב</string>
+    <string name="chat_unstar">הסרת כוכב</string>
+    <string name="chat_video">סרטון</string>
+    <string name="chat_location">מיקום</string>
+    <string name="chat_card">שליחת פריט (רשימה, מתכון, נסיעה…)</string>
 </resources>

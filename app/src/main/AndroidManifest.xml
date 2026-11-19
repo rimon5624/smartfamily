@@ -9,6 +9,9 @@
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
     <!-- Voice messages in the family chat -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Sending my location in the family chat (only when I tap it) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- Camera is used through the system camera app; the app itself never needs the permission. -->
     <queries>

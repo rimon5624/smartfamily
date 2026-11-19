@@ -48,6 +48,7 @@ import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Stop
@@ -102,6 +103,8 @@ import com.rimon.smartfamily.R
 import com.rimon.smartfamily.data.db.ChatEntity
 import com.rimon.smartfamily.data.db.MemberEntity
 import com.rimon.smartfamily.data.repo.ShownMessage
+import com.rimon.smartfamily.data.repo.MessagePayload
+import androidx.compose.foundation.verticalScroll
 import com.rimon.smartfamily.ui.ChatViewModel
 import com.rimon.smartfamily.ui.components.Avatar
 import com.rimon.smartfamily.ui.components.HelpButton
@@ -235,9 +238,9 @@ private fun timeLabel(ms: Long): String {
 
 // ---------------- conversation ----------------
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> Unit) {
+fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> Unit, onOpenRoute: (String) -> Unit = {}) {
     val context = LocalContext.current
     val chat by remember(chatId) { vm.chat(chatId) }.collectAsState(initial = null)
     val members by vm.people.collectAsState(initial = emptyList())
@@ -267,6 +270,21 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
 
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if (uri != null) vm.sendMedia(c, uri, "image") }
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) vm.sendMedia(c, uri, "file") }
+    val pickVideo = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if (uri != null) vm.sendMedia(c, uri, "video") }
+    val locPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) vm.sendLocation(c) }
+    val starred by vm.starred.collectAsState()
+    val summary by vm.summary.collectAsState()
+    val scheduledList by remember(c.id) { vm.scheduled(c.id) }.collectAsState(initial = emptyList())
+    var more by remember { mutableStateOf(false) }
+    var showStarred by remember { mutableStateOf(false) }
+    var showMedia by remember { mutableStateOf(false) }
+    var showScheduled by remember { mutableStateOf(false) }
+    var cardPicker by remember { mutableStateOf(false) }
+    var forwarding by remember { mutableStateOf<ShownMessage?>(null) }
+    var scheduling by remember { mutableStateOf(false) }
+    val allChats by remember(viewer.userId) { vm.chats(viewer.userId) }.collectAsState(initial = emptyList())
+    val myRead = reads.firstOrNull { it.userId == viewer.userId }?.lastReadAt ?: 0L
+    val pinned = messages.filter { m -> reactions.any { it.messageId == m.entity.id && it.emoji == "📌" && it.deletedAt == null } }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         if (!ok) Toast.makeText(context, R.string.chat_mic_needed, Toast.LENGTH_LONG).show()
     }
@@ -302,12 +320,27 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
                 actions = {
                     IconButton(onClick = { searching = !searching; if (!searching) query = "" }) { Icon(if (searching) Icons.Outlined.Close else Icons.Outlined.Search, stringResource(R.string.chat_search)) }
                     IconButton(onClick = { info = true }) { Icon(Icons.Outlined.Info, stringResource(R.string.chat_info)) }
+                    Box {
+                        IconButton(onClick = { more = true }) { Icon(Icons.Outlined.MoreVert, null) }
+                        DropdownMenu(more, { more = false }) {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.chat_summarize)) }, onClick = { more = false; vm.summarize(c, messages, myRead.coerceAtMost(System.currentTimeMillis() - 1), names) })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.chat_media)) }, onClick = { more = false; showMedia = true })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.chat_starred)) }, onClick = { more = false; showStarred = true })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.chat_scheduled_list, scheduledList.size)) }, onClick = { more = false; showScheduled = true })
+                        }
+                    }
                 },
             )
         },
     ) { inner ->
         Column(Modifier.padding(inner).fillMaxSize().imePadding()) {
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            pinned.lastOrNull()?.let { pm ->
+                Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxWidth()) {
+                    Text("📌 " + (pm.payload?.text?.ifBlank { null } ?: pm.payload?.cardTitle ?: "…") + if (pinned.size > 1) "  (+${pinned.size - 1})" else "",
+                        Modifier.padding(horizontal = 16.dp, vertical = 6.dp), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
+                }
+            }
             LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, contentPadding = PaddingValues(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 items(visible, key = { it.entity.id }) { m ->
                     val mine = m.entity.senderId == viewer.userId
@@ -324,6 +357,9 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
                         onEdit = { editing = m.entity.id; text = m.payload?.text.orEmpty() },
                         onDelete = { vm.delete(m.entity) },
                         onReact = { vm.react(m.entity, it) },
+                        starred = m.entity.id in starred, pinned = pinned.any { it.entity.id == m.entity.id },
+                        onStar = { vm.toggleStar(m.entity.id) }, onPin = { vm.togglePin(m.entity) }, onForward = { forwarding = m },
+                        onOpenRoute = onOpenRoute, myName = names[viewer.userId].orEmpty(),
                     )
                 }
             }
@@ -350,6 +386,15 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
                         DropdownMenuItem(text = { Text(stringResource(R.string.chat_attach_file)) }, leadingIcon = { Icon(Icons.Outlined.AttachFile, null) }, onClick = {
                             attach = false; pickFile.launch(arrayOf("*/*"))
                         })
+                        DropdownMenuItem(text = { Text("🎬 " + stringResource(R.string.chat_video)) }, onClick = {
+                            attach = false; pickVideo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
+                        })
+                        DropdownMenuItem(text = { Text("📍 " + stringResource(R.string.chat_location)) }, onClick = {
+                            attach = false
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) vm.sendLocation(c)
+                            else locPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        })
+                        DropdownMenuItem(text = { Text("🃏 " + stringResource(R.string.chat_card)) }, onClick = { attach = false; cardPicker = true })
                     }
                 }
                 OutlinedTextField(
@@ -362,11 +407,14 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
                 )
                 Spacer(Modifier.size(6.dp))
                 if (text.isNotBlank() && !recording) {
-                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp).clip(CircleShape).clickable {
-                        val target = messages.firstOrNull { it.entity.id == editing }
-                        if (target != null) vm.edit(target, text) else vm.sendText(c, text, replyTo)
-                        text = ""; replyTo = ""; editing = ""
-                    }) {
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp).clip(CircleShape).combinedClickable(
+                        onLongClick = { if (editing.isEmpty()) scheduling = true },
+                        onClick = {
+                            val target = messages.firstOrNull { it.entity.id == editing }
+                            if (target != null) vm.edit(target, text) else vm.sendText(c, text, replyTo)
+                            text = ""; replyTo = ""; editing = ""
+                        },
+                    )) {
                         Box(contentAlignment = Alignment.Center) { Icon(Icons.AutoMirrored.Outlined.Send, stringResource(R.string.chat_send), tint = MaterialTheme.colorScheme.onPrimary) }
                     }
                 } else {
@@ -393,6 +441,58 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
     }
 
     if (info) ChatInfoDialog(vm, c, members.filter { it.status == "ACTIVE" }, viewer, onDismiss = { info = false })
+    summary?.let { s ->
+        AlertDialog(onDismissRequest = { vm.clearSummary() }, title = { Text(stringResource(R.string.chat_summarize)) },
+            text = { Text(s, Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) },
+            confirmButton = { TextButton(onClick = { vm.clearSummary() }) { Text(stringResource(R.string.ok)) } })
+    }
+    if (showStarred || showMedia) {
+        val list = if (showStarred) messages.filter { it.entity.id in starred } else messages.filter { it.entity.kind in setOf("image", "video", "file") && it.payload?.deleted != true }
+        AlertDialog(onDismissRequest = { showStarred = false; showMedia = false },
+            title = { Text(stringResource(if (showStarred) R.string.chat_starred else R.string.chat_media)) },
+            text = {
+                LazyColumn {
+                    if (list.isEmpty()) item { Text(stringResource(R.string.chat_none)) }
+                    items(list, key = { "s" + it.entity.id }) { m ->
+                        if (m.entity.kind == "image") ImageContent(vm, m) else Text((names[m.entity.senderId] ?: "") + ": " + (m.payload?.text?.ifBlank { null } ?: m.payload?.mediaName ?: ""), Modifier.padding(vertical = 4.dp))
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showStarred = false; showMedia = false }) { Text(stringResource(R.string.ok)) } })
+    }
+    if (showScheduled) AlertDialog(onDismissRequest = { showScheduled = false }, title = { Text(stringResource(R.string.chat_scheduled_list, scheduledList.size)) },
+        text = {
+            Column {
+                if (scheduledList.isEmpty()) Text(stringResource(R.string.chat_schedule_hint))
+                scheduledList.forEach { s ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(Date(s.sendAt)) + " · " + s.text, Modifier.weight(1f))
+                        TextButton(onClick = { vm.cancelScheduled(s.id) }) { Text(stringResource(R.string.cancel)) }
+                    }
+                }
+            }
+        }, confirmButton = { TextButton(onClick = { showScheduled = false }) { Text(stringResource(R.string.ok)) } })
+    if (scheduling) {
+        val cal = java.util.Calendar.getInstance()
+        android.app.DatePickerDialog(context, { _, y, mo, d ->
+            android.app.TimePickerDialog(context, { _, h, mi ->
+                val at = java.util.Calendar.getInstance().apply { set(y, mo, d, h, mi, 0) }.timeInMillis
+                vm.schedule(c, text, at); text = ""
+            }, cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE), true).show()
+        }, cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH), cal.get(java.util.Calendar.DAY_OF_MONTH)).show()
+        scheduling = false
+    }
+    forwarding?.let { fm ->
+        AlertDialog(onDismissRequest = { forwarding = null }, title = { Text(stringResource(R.string.chat_forward)) },
+            text = {
+                LazyColumn {
+                    items(allChats.filter { it.id != c.id && it.familyId == c.familyId }, key = { "f" + it.id }) { other ->
+                        Text(chatTitle(other, members, viewer.userId), Modifier.fillMaxWidth().clickable { vm.forward(fm, other); forwarding = null }.padding(12.dp))
+                    }
+                }
+            }, confirmButton = { TextButton(onClick = { forwarding = null }) { Text(stringResource(R.string.cancel)) } })
+    }
+    if (cardPicker) CardPickerDialog(vm, c, viewer, onDismiss = { cardPicker = false })
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -401,6 +501,8 @@ private fun MessageBubble(
     vm: ChatViewModel, m: ShownMessage, mine: Boolean, showName: Boolean, senderName: String,
     replied: ShownMessage?, repliedName: String?, reactions: Map<String, Int>, readByAll: Boolean, transcript: String?,
     onReply: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit, onReact: (String) -> Unit,
+    starred: Boolean = false, pinned: Boolean = false, onStar: () -> Unit = {}, onPin: () -> Unit = {}, onForward: () -> Unit = {},
+    onOpenRoute: (String) -> Unit = {}, myName: String = "",
 ) {
     val clipboard = LocalClipboardManager.current
     var menu by remember { mutableStateOf(false) }
@@ -430,7 +532,10 @@ private fun MessageBubble(
                     m.entity.kind == "image" -> ImageContent(vm, m)
                     m.entity.kind == "voice" -> VoiceContent(vm, m, transcript)
                     m.entity.kind == "file" -> FileContent(vm, m)
-                    else -> Text(p.text, style = MaterialTheme.typography.bodyLarge)
+                    m.entity.kind == "video" -> FileContent(vm, m)
+                    m.entity.kind == "card" -> CardContent(p, onOpenRoute)
+                    m.entity.kind == "location" -> LocationContent(p)
+                    else -> Text(mentions(p.text, myName), style = MaterialTheme.typography.bodyLarge)
                 }
                 Row(Modifier.align(Alignment.End), verticalAlignment = Alignment.CenterVertically) {
                     if (m.entity.editedAt != null && !deleted) Text(stringResource(R.string.chat_edited) + " · ", style = MaterialTheme.typography.labelSmall)
@@ -445,6 +550,9 @@ private fun MessageBubble(
                 }
                 HorizontalDivider()
                 DropdownMenuItem(text = { Text(stringResource(R.string.chat_reply)) }, onClick = { menu = false; onReply() })
+                DropdownMenuItem(text = { Text(stringResource(R.string.chat_forward)) }, onClick = { menu = false; onForward() })
+                DropdownMenuItem(text = { Text(stringResource(if (pinned) R.string.chat_unpin else R.string.chat_pin)) }, onClick = { menu = false; onPin() })
+                DropdownMenuItem(text = { Text(stringResource(if (starred) R.string.chat_unstar else R.string.chat_star)) }, onClick = { menu = false; onStar() })
                 if (p?.text?.isNotBlank() == true) DropdownMenuItem(text = { Text(stringResource(R.string.chat_copy)) }, onClick = { menu = false; clipboard.setText(AnnotatedString(p.text)) })
                 if (mine && m.entity.kind == "text") DropdownMenuItem(text = { Text(stringResource(R.string.chat_edit)) }, onClick = { menu = false; onEdit() })
                 if (mine) DropdownMenuItem(text = { Text(stringResource(R.string.chat_delete_all)) }, onClick = { menu = false; onDelete() })
@@ -569,4 +677,65 @@ private fun ChatInfoDialog(vm: ChatViewModel, chat: ChatEntity, members: List<Me
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
+}
+
+
+/** @mentions are highlighted; a mention of me is bold. */
+@Composable
+private fun mentions(text: String, myName: String): androidx.compose.ui.text.AnnotatedString {
+    val color = MaterialTheme.colorScheme.primary
+    return androidx.compose.ui.text.buildAnnotatedString {
+        var last = 0
+        Regex("@[\\p{L}\\p{N}_]+").findAll(text).forEach { m ->
+            append(text.substring(last, m.range.first))
+            val me = myName.isNotBlank() && m.value.drop(1).equals(myName.split(' ').first(), ignoreCase = true)
+            withStyle(androidx.compose.ui.text.SpanStyle(color = color, fontWeight = if (me) FontWeight.Bold else FontWeight.SemiBold)) { append(m.value) }
+            last = m.range.last + 1
+        }
+        append(text.substring(last))
+    }
+}
+
+private fun cardRoute(type: String, id: String) = when (type) {
+    "shopping" -> "shopping/list/$id"; "recipes" -> "recipe/$id"; "travel" -> "trip/$id"; "polls" -> "polls"; "calendar" -> "calendar"
+    "chores" -> "chores"; "appliances" -> "appliance/$id"; "home_book" -> "homebook/0"; "knowledge" -> "homebook/1"; else -> "home"
+}
+
+@Composable
+private fun CardContent(p: MessagePayload, onOpenRoute: (String) -> Unit) {
+    Card(onClick = { onOpenRoute(cardRoute(p.cardType, p.cardId)) }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(when (p.cardType) { "shopping" -> "🛒"; "recipes" -> "🍲"; "travel" -> "🧳"; "polls" -> "📊"; "calendar" -> "📅"; "chores" -> "🧹"; else -> "📎" }, style = MaterialTheme.typography.headlineSmall)
+            Column(Modifier.padding(start = 8.dp)) {
+                Text(p.cardTitle, style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.chat_open_file), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocationContent(p: MessagePayload) {
+    val context = LocalContext.current
+    TextButton(onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:${p.lat},${p.lon}?q=${p.lat},${p.lon}"))) } }) {
+        Text("📍 " + p.text + "\n" + String.format(Locale.US, "%.5f, %.5f", p.lat, p.lon))
+    }
+}
+
+@Composable
+private fun CardPickerDialog(vm: ChatViewModel, chat: ChatEntity, viewer: Viewer, onDismiss: () -> Unit) {
+    val modules = listOf(com.rimon.smartfamily.model.AppModule.SHOPPING, com.rimon.smartfamily.model.AppModule.RECIPES, com.rimon.smartfamily.model.AppModule.TRAVEL,
+        com.rimon.smartfamily.model.AppModule.POLLS, com.rimon.smartfamily.model.AppModule.CALENDAR, com.rimon.smartfamily.model.AppModule.CHORES)
+    var module by remember { mutableStateOf(modules.first()) }
+    var list by remember { mutableStateOf<List<com.rimon.smartfamily.data.repo.ShareItem>>(emptyList()) }
+    LaunchedEffect(module) { vm.cardItems(viewer.familyId, module) { list = it } }
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.chat_card)) },
+        text = {
+            LazyColumn {
+                item { ChoiceIn(null, modules.map { it.key to stringResource(it.title) }, module.key) { k -> module = modules.first { it.key == k } } }
+                items(list, key = { "c" + it.id }) { i ->
+                    Text(i.title, Modifier.fillMaxWidth().clickable { vm.sendCard(chat, module.key, i.id, i.title); onDismiss() }.padding(12.dp))
+                }
+            }
+        }, confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } })
 }

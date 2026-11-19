@@ -30,6 +30,16 @@ object ChatNotifier {
         runCatching {
             c.db.chats().allActive().filter { s.userId in it.members.split(',') }.forEach { c.chat.shareKeys(it) }
         }
+        // CHT-3 scheduled messages written on this phone go out when their time comes
+        runCatching {
+            c.db.scheduledMessages().due(System.currentTimeMillis()).forEach { sm ->
+                val chat = c.chat.chat(sm.chatId)
+                if (chat != null && c.chat.hasKey(chat)) {
+                    c.chat.send(chat, s.userId, com.rimon.smartfamily.data.repo.MessagePayload(text = sm.text), "text")
+                    c.db.scheduledMessages().delete(sm.id)
+                }
+            }
+        }
         val prefs = context.getSharedPreferences("sf_chat", Context.MODE_PRIVATE)
         val since = prefs.getLong("last_notified", System.currentTimeMillis() - 60 * 60 * 1000)
         val incoming = c.chat.incomingSince(since, s.userId).filter { it.chatId != openChatId }
@@ -44,6 +54,8 @@ object ChatNotifier {
                 m.kind == "voice" -> "🎤 " + context.getString(R.string.chat_voice)
                 m.kind == "image" -> "📷 " + context.getString(R.string.chat_photo)
                 m.kind == "file" -> "📎 " + p.mediaName
+                m.kind == "card" -> "🃏 " + p.cardTitle
+                m.kind == "location" -> "📍 " + p.text
                 else -> p.text
             }
             "${names[m.senderId] ?: "?"}: $text"
