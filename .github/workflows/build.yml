@@ -26,6 +26,11 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Check generated table code is up to date
+        run: |
+          python3 scripts/gen_tables.py
+          git diff --exit-code -- app/src supabase || (echo "::error::Run python3 scripts/gen_tables.py and commit the result" && exit 1)
+
       - name: Read version
         id: ver
         run: echo "name=$(grep '^APP_VERSION_NAME=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"

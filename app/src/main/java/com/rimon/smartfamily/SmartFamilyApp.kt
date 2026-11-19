@@ -6,7 +6,9 @@ import com.rimon.smartfamily.backup.BackupManager
 import com.rimon.smartfamily.data.db.AppDatabase
 import com.rimon.smartfamily.data.prefs.SettingsStore
 import com.rimon.smartfamily.data.repo.FamilyRepository
+import com.rimon.smartfamily.data.repo.HomeLifeRepository
 import com.rimon.smartfamily.data.repo.ShoppingRepository
+import com.rimon.smartfamily.smart.ReminderWorker
 import com.rimon.smartfamily.smart.ExpiryWorker
 import com.rimon.smartfamily.smart.GeminiClient
 import com.rimon.smartfamily.security.KeystoreCrypto
@@ -25,6 +27,7 @@ class AppContainer(context: Context) {
     val families = FamilyRepository(db, settings) { SyncScheduler.requestSoon(appContext) }
     val backup = BackupManager(appContext, db)
     val shopping = ShoppingRepository(db) { SyncScheduler.requestSoon(appContext) }
+    val homeLife = HomeLifeRepository(db) { SyncScheduler.requestSoon(appContext) }
     val gemini = GeminiClient(crypto) { settings.current().let { it.geminiModel to it.privacyMode } }
 }
 
@@ -37,5 +40,6 @@ class SmartFamilyApp : Application() {
         container = AppContainer(this)
         SyncScheduler.schedulePeriodic(this)
         ExpiryWorker.schedule(this)
+        ReminderWorker.schedule(this)
     }
 }

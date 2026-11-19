@@ -126,12 +126,13 @@ class SupabaseApi(
         val (url, anonKey) = config()
         if (url.isBlank() || anonKey.isBlank()) throw SupabaseException(0, "Supabase is not connected")
         if (!url.startsWith("https://")) throw SupabaseException(0, "The Supabase URL must start with https://")
-        val token = if (auth) accessToken() else anonKey
         val builder = Request.Builder()
             .url(url + path)
             .header("apikey", anonKey)
-            .header("Authorization", "Bearer $token")
             .header("Accept", "application/json")
+        // New-style keys (sb_publishable_...) are not JWTs: send them only as apikey.
+        if (auth) builder.header("Authorization", "Bearer ${accessToken()}")
+        else if (!anonKey.startsWith("sb_")) builder.header("Authorization", "Bearer $anonKey")
         extraHeaders.forEach { (k, v) -> builder.header(k, v) }
         val reqBody = body?.toRequestBody(jsonType)
         when (method) {

@@ -2,7 +2,19 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 0.2.0 — Phase 1 (shopping and home inventory)**
+**Current version: 0.3.0 — Phase 2 (home routine)**
+
+## What is new in 0.3.0
+
+- Chores with schedules (daily, set weekdays, every N days, before Shabbat, once), owners, turns between people, steps, snooze
+- 14 ready-made chores (laundry, bathrooms, sheets, floors, bins, Shabbat cooking, hot plate, lights timer, table, candles…)
+- Shabbat card on the home screen: parasha or holiday, candle lighting and havdalah for your city, countdown
+- "Before Shabbat" chores are timed from candle lighting (KosherJava, computed on the phone)
+- Kids: points for chores after a parent approves, rewards to redeem
+- Family dates by Hebrew or Gregorian date (Adar in leap years, after-sunset births), with reminders
+- Family calendar with the Hebrew date and holidays on every day, events with repeats
+- Reminders every 15 minutes, held from candle lighting to havdalah
+- Supabase: run `supabase/migrations/0003_app_0_3.sql`
 
 ## What is new in 0.2.0
 

@@ -1,6 +1,7 @@
 package com.rimon.smartfamily.data.db
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -18,9 +19,20 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         ListItemEntity::class,
         PurchaseEntity::class,
         InventoryItemEntity::class,
+        // 0.3.0
+        ChoreEntity::class,
+        ChoreCompletionEntity::class,
+        PointsEntryEntity::class,
+        RewardEntity::class,
+        FamilyDateEntity::class,
+        EventEntity::class,
     ],
     version = SchemaInfo.DB_VERSION,
     exportSchema = true,
+    // New tables only: Room writes these migrations itself from the exported schemas in app/schemas.
+    autoMigrations = [
+        AutoMigration(from = 2, to = 3),
+    ],
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun profiles(): ProfileDao
@@ -32,6 +44,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun listItems(): ListItemDao
     abstract fun purchases(): PurchaseDao
     abstract fun inventory(): InventoryDao
+    abstract fun chores(): ChoreDao
+    abstract fun choreCompletions(): ChoreCompletionDao
+    abstract fun pointsEntrys(): PointsEntryDao
+    abstract fun rewards(): RewardDao
+    abstract fun familyDates(): FamilyDateDao
+    abstract fun events(): EventDao
 
     companion object {
         /**

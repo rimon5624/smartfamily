@@ -31,7 +31,7 @@ import kotlinx.serialization.json.put
 import java.util.concurrent.TimeUnit
 
 /** One synced table: how to read local changes, write server rows and mark rows clean. */
-private class TableSync<T>(
+internal class TableSync<T>(
     val table: String,
     val onConflict: String,
     val serializer: KSerializer<T>,
@@ -95,7 +95,9 @@ class SyncEngine(
 ) {
     private val mutex = Mutex()
 
-    private val tables: List<TableSync<*>> = listOf(
+    private val tables: List<TableSync<*>> = handwrittenTables() + generatedTableSyncs(db)
+
+    private fun handwrittenTables(): List<TableSync<*>> = listOf(
         TableSync(
             "profiles", "id", ProfileEntity.serializer(),
             { db.profiles().dirty() }, { it.id }, { db.profiles().markClean(it) },

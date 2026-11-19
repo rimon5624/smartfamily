@@ -105,6 +105,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
+    // Hebrew calendar, holidays and zmanim (LGPL 2.1), computed on the phone
+    implementation("com.kosherjava:zmanim:2.5.0")
+
     // Argon2id for backup passwords
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
 }

@@ -16,6 +16,10 @@ import com.rimon.smartfamily.data.db.ProfileEntity
 import com.rimon.smartfamily.data.db.PurchaseEntity
 import com.rimon.smartfamily.data.db.ShoppingListEntity
 import com.rimon.smartfamily.model.SchemaInfo
+import com.rimon.smartfamily.sync.GeneratedBackup
+import com.rimon.smartfamily.sync.clearGenerated
+import com.rimon.smartfamily.sync.exportGenerated
+import com.rimon.smartfamily.sync.restoreGenerated
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -41,6 +45,8 @@ data class BackupPayload(
     val listItems: List<ListItemEntity> = emptyList(),
     val purchases: List<PurchaseEntity> = emptyList(),
     val inventory: List<InventoryItemEntity> = emptyList(),
+    // Tables generated from scripts/tables.py (app 0.3.0 onwards).
+    val generated: GeneratedBackup = GeneratedBackup(),
 )
 
 /** Unencrypted header: everything needed to derive the key, nothing about the content. */
@@ -84,6 +90,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             listItems = db.listItems().all(),
             purchases = db.purchases().all(),
             inventory = db.inventory().all(),
+            generated = exportGenerated(db),
         )
         val plain = json.encodeToString(BackupPayload.serializer(), payload).toByteArray(Charsets.UTF_8)
         val rnd = SecureRandom()
@@ -129,6 +136,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
     /** Replaces the local data with the backup; rows are marked dirty so they sync back up. */
     suspend fun restore(payload: BackupPayload) = withContext(Dispatchers.IO) {
         db.withTransaction {
+            clearGenerated(db)
             db.inventory().clear(); db.purchases().clear(); db.listItems().clear(); db.lists().clear()
             db.moduleSettings().clear(); db.invites().clear(); db.members().clear()
             db.families().clear(); db.profiles().clear()
@@ -141,6 +149,7 @@ class BackupManager(private val context: Context, private val db: AppDatabase) {
             db.listItems().upsertAll(payload.listItems.map { it.copy(dirty = true) })
             db.purchases().upsertAll(payload.purchases.map { it.copy(dirty = true) })
             db.inventory().upsertAll(payload.inventory.map { it.copy(dirty = true) })
+            restoreGenerated(db, payload.generated)
         }
     }
 

@@ -68,6 +68,7 @@ fun HomeScreen(
     onOpenModules: (String) -> Unit,
     onOpenCloud: () -> Unit,
     onOpenModule: (AppModule) -> Unit,
+    extra: @Composable () -> Unit = {},
 ) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val family by vm.activeFamily.collectAsStateWithLifecycle()
@@ -106,6 +107,7 @@ fun HomeScreen(
                     onSwitch = { vm.setActiveFamily(it) },
                 )
             }
+            item(span = { GridItemSpan(2) }) { extra() }
             item(span = { GridItemSpan(2) }) {
                 val s = settings
                 SyncCard(

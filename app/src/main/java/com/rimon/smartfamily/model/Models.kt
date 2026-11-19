@@ -27,7 +27,7 @@ enum class AppModule(
     POLLS("polls", R.string.mod_polls, R.string.mod_polls_sub, 6, false);
 
     /** Modules that already have screens in this version. */
-    val available: Boolean get() = this == SHOPPING || this == INVENTORY
+    val available: Boolean get() = this in setOf(SHOPPING, INVENTORY, CHORES, CALENDAR)
 
     companion object {
         fun fromKey(key: String): AppModule? = entries.firstOrNull { it.key == key }
@@ -59,7 +59,7 @@ enum class MemberStatus { ACTIVE, PENDING }
 
 /** The current version of the backup file format and database schema. */
 object SchemaInfo {
-    const val DB_VERSION = 2
+    const val DB_VERSION = 3
     const val BACKUP_FORMAT = "smartfamily-backup"
     const val BACKUP_FORMAT_VERSION = 1
 }

@@ -39,11 +39,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.produceState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rimon.smartfamily.model.AppModule
 import com.rimon.smartfamily.model.Role
 import com.rimon.smartfamily.ui.AppViewModel
+import com.rimon.smartfamily.ui.HomeLifeViewModel
 import com.rimon.smartfamily.ui.ShoppingViewModel
+import com.rimon.smartfamily.ui.screens.CalendarScreen
+import com.rimon.smartfamily.ui.screens.ChoresScreen
 import com.rimon.smartfamily.ui.screens.AiSettingsScreen
 import com.rimon.smartfamily.ui.screens.InventoryScreen
 import com.rimon.smartfamily.ui.screens.ShoppingListScreen
@@ -95,6 +99,7 @@ private enum class Tab(val route: String, val label: Int, val on: ImageVector, v
 @Composable
 private fun MainNav(vm: AppViewModel) {
     val shopVm: ShoppingViewModel = viewModel()
+    val lifeVm: HomeLifeViewModel = viewModel()
     val nav = rememberNavController()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val family by vm.activeFamily.collectAsStateWithLifecycle()
@@ -117,7 +122,7 @@ private fun MainNav(vm: AppViewModel) {
     val showBar = Tab.entries.any { it.route == route }
 
     LaunchedEffect(Unit) {
-        merge(vm.messages, shopVm.messages).collect { msg ->
+        merge(vm.messages, shopVm.messages, lifeVm.messages).collect { msg ->
             val text = when (msg) {
                 is UiMessage.Res -> if (msg.arg != null) context.getString(msg.id, msg.arg) else context.getString(msg.id)
                 is UiMessage.Text -> context.getString(R.string.error_generic, msg.text)
@@ -158,10 +163,19 @@ private fun MainNav(vm: AppViewModel) {
                     onCreateFamily = { go(Tab.FAMILIES) },
                     onOpenModules = { nav.navigate("modules/$it") },
                     onOpenCloud = { nav.navigate("cloud") },
+                    extra = {
+                        val city = settings?.zmanimCity ?: "jerusalem"
+                        val shabbat by produceState<com.rimon.smartfamily.smart.ShabbatTimes?>(null, city) {
+                            value = runCatching { lifeVm.shabbat(city) }.getOrNull()
+                        }
+                        com.rimon.smartfamily.ui.screens.ShabbatCard(shabbat, System.currentTimeMillis(), emptyList())
+                    },
                     onOpenModule = { m ->
                         when (m) {
                             AppModule.SHOPPING -> nav.navigate("shopping")
                             AppModule.INVENTORY -> nav.navigate("inventory")
+                            AppModule.CHORES -> nav.navigate("chores")
+                            AppModule.CALENDAR -> nav.navigate("calendar")
                             else -> Unit
                         }
                     },
@@ -206,6 +220,12 @@ private fun MainNav(vm: AppViewModel) {
             }
             composable("shopping/list/{id}") { back ->
                 ShoppingListScreen(shopVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
+            }
+            composable("chores") {
+                if (famId.isNotEmpty()) ChoresScreen(lifeVm, viewer, settings?.zmanimCity ?: "jerusalem", onBack = { nav.popBackStack() })
+            }
+            composable("calendar") {
+                if (famId.isNotEmpty()) CalendarScreen(lifeVm, viewer, onBack = { nav.popBackStack() })
             }
             composable("inventory") {
                 if (famId.isNotEmpty()) InventoryScreen(shopVm, viewer, onBack = { nav.popBackStack() })

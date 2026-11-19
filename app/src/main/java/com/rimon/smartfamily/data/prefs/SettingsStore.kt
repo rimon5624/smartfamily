@@ -32,6 +32,8 @@ data class AppSettings(
     /** Home screen module order chosen by the user (comma-separated keys); empty = default. */
     val moduleOrder: String = "",
     val expiryAlerts: Boolean = true,
+    val zmanimCity: String = "jerusalem",
+    val choreReminders: Boolean = true,
 ) {
     val supabaseConfigured: Boolean get() = supabaseUrl.isNotBlank() && supabaseAnonKey.isNotBlank()
 }
@@ -54,6 +56,8 @@ class SettingsStore(private val context: Context) {
         val geminiModel = stringPreferencesKey("gemini_model")
         val moduleOrder = stringPreferencesKey("module_order")
         val expiryAlerts = booleanPreferencesKey("expiry_alerts")
+        val zmanimCity = stringPreferencesKey("zmanim_city")
+        val choreReminders = booleanPreferencesKey("chore_reminders")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p -> p.toSettings() }
@@ -76,6 +80,8 @@ class SettingsStore(private val context: Context) {
         geminiModel = this[K.geminiModel] ?: "",
         moduleOrder = this[K.moduleOrder] ?: "",
         expiryAlerts = this[K.expiryAlerts] ?: true,
+        zmanimCity = this[K.zmanimCity] ?: "jerusalem",
+        choreReminders = this[K.choreReminders] ?: true,
     )
 
     suspend fun setLanguage(v: String) = context.dataStore.edit { it[K.language] = v }
@@ -88,6 +94,8 @@ class SettingsStore(private val context: Context) {
     suspend fun setGeminiModel(v: String) = context.dataStore.edit { it[K.geminiModel] = v.trim() }
     suspend fun setModuleOrder(v: String) = context.dataStore.edit { it[K.moduleOrder] = v }
     suspend fun setExpiryAlerts(v: Boolean) = context.dataStore.edit { it[K.expiryAlerts] = v }
+    suspend fun setZmanimCity(v: String) = context.dataStore.edit { it[K.zmanimCity] = v }
+    suspend fun setChoreReminders(v: Boolean) = context.dataStore.edit { it[K.choreReminders] = v }
     suspend fun setAccountEmail(v: String) = context.dataStore.edit { it[K.accountEmail] = v }
 
     suspend fun setSupabase(url: String, anonKey: String) = context.dataStore.edit {

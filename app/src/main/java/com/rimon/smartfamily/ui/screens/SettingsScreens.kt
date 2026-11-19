@@ -18,7 +18,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.LocationCity
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Cloud
@@ -159,6 +161,13 @@ fun SettingsScreen(
                 stringResource(if (vm.aiConfigured) R.string.ai_sub_on else R.string.ai_sub_off),
                 onAi,
             )
+            CityRow(settings.zmanimCity, settings.language) { vm.setZmanimCity(it) }
+            InfoRow(
+                title = stringResource(R.string.settings_reminders),
+                subtitle = stringResource(R.string.settings_reminders_sub),
+                leading = { Icon(Icons.Outlined.Alarm, null) },
+                trailing = { Switch(checked = settings.choreReminders, onCheckedChange = { vm.setChoreReminders(it) }) },
+            )
             InfoRow(
                 title = stringResource(R.string.inv_alerts),
                 subtitle = stringResource(R.string.inv_alerts_sub),
@@ -184,6 +193,21 @@ fun SettingsScreen(
             onDismiss = { editingName = false },
             onConfirm = { vm.setDisplayName(it); editingName = false },
         )
+    }
+}
+
+@Composable
+private fun CityRow(current: String, language: String, onPick: (String) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    val city = com.rimon.smartfamily.smart.Cities.byKey(current)
+    val he = language != "en"
+    androidx.compose.foundation.layout.Box {
+        ClickRow(Icons.Outlined.LocationCity, stringResource(R.string.shabbat_city), if (he) city.he else city.en) { open = true }
+        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            com.rimon.smartfamily.smart.Cities.all.forEach { c ->
+                androidx.compose.material3.DropdownMenuItem(text = { Text(if (he) c.he else c.en) }, onClick = { open = false; onPick(c.key) })
+            }
+        }
     }
 }
 
