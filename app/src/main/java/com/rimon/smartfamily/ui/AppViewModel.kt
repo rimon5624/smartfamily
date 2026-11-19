@@ -81,6 +81,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun family(familyId: String) = repo.observeFamily(familyId)
     fun modules(familyId: String, userId: String): Flow<List<ModuleState>> = repo.observeModules(familyId, userId)
     fun myMembership(familyId: String, userId: String): Flow<MemberEntity?> = repo.observeMyMembership(familyId, userId)
+    fun sharedToMe(familyId: String, userId: String) = repo.observeSharedToMe(familyId, userId)
 
     private fun launchSafe(block: suspend () -> Unit) = viewModelScope.launch {
         _busy.value = true

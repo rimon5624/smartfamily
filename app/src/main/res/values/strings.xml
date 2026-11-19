@@ -851,4 +851,32 @@
     <string name="prices_stores_loaded">%1$s branches loaded</string>
     <string name="prices_store_failed">Could not download %1$s</string>
     <string name="prices_updated">Prices updated</string>
+
+    <!-- 0.9: sharing between families -->
+    <string name="share_title">Share with other families</string>
+    <string name="help_sharing">Share a whole module (all recipes, the calendar…) or one item (a recipe, a trip, a shopping list, a chat) with another family, read-only or editable. Nothing is shown to them until one of their admins accepts. A shared chat is only visible to the people in it. The family that receives a share sees your family in its family list with only what you shared.</string>
+    <string name="share_new">Share</string>
+    <string name="share_my_code">This family\'s link code</string>
+    <string name="share_my_code_body">Send it to the other family\'s admin so they can share with you.</string>
+    <string name="share_incoming">Shared with us</string>
+    <string name="share_outgoing">We share</string>
+    <string name="share_none">Nothing is shared yet.</string>
+    <string name="share_accept">Accept</string>
+    <string name="share_decline">Decline</string>
+    <string name="share_stop">Stop sharing</string>
+    <string name="share_whole">Everything</string>
+    <string name="share_can_edit">Can edit</string>
+    <string name="share_read_only">Read only</string>
+    <string name="share_status_pending">Waiting for approval</string>
+    <string name="share_status_accepted">Active</string>
+    <string name="share_status_declined">Declined</string>
+    <string name="share_their_code">The other family\'s link code</string>
+    <string name="share_check">Check</string>
+    <string name="share_not_found">No family with this code</string>
+    <string name="share_what">What to share</string>
+    <string name="share_which_item">All of it, or one item?</string>
+    <string name="share_allow_edit">They can edit too</string>
+    <string name="share_chat_note">Chat link: people from both families can start group and private chats with each other. Messages stay end-to-end encrypted.</string>
+    <string name="share_send">Send offer</string>
+    <string name="share_sent">Offer sent. It starts once their admin accepts.</string>
 </resources>

@@ -28,6 +28,7 @@ import com.rimon.smartfamily.data.db.BudgetLimitEntity
 import com.rimon.smartfamily.data.db.HomeEntryEntity
 import com.rimon.smartfamily.data.db.PollEntity
 import com.rimon.smartfamily.data.db.PollVoteEntity
+import com.rimon.smartfamily.data.db.FamilyShareEntity
 import kotlinx.serialization.Serializable
 
 internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
@@ -161,6 +162,11 @@ internal fun generatedTableSyncs(db: AppDatabase): List<TableSync<*>> = listOf(
             { db.pollVotes().dirty() }, { it.id }, { db.pollVotes().markClean(it) },
             { rows -> db.pollVotes().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
         ),
+        TableSync(
+            "family_shares", "id", FamilyShareEntity.serializer(),
+            { db.familyShares().dirty() }, { it.id }, { db.familyShares().markClean(it) },
+            { rows -> db.familyShares().upsertAll(rows.map { it.copy(dirty = false) }) }, { it.updatedAt },
+        ),
 )
 
 /** Backup content of the generated tables (BAK-2); missing lists in older backups default to empty. */
@@ -192,6 +198,7 @@ data class GeneratedBackup(
     val homeEntrys: List<HomeEntryEntity> = emptyList(),
     val polls: List<PollEntity> = emptyList(),
     val pollVotes: List<PollVoteEntity> = emptyList(),
+    val familyShares: List<FamilyShareEntity> = emptyList(),
 )
 
 suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
@@ -221,6 +228,7 @@ suspend fun exportGenerated(db: AppDatabase) = GeneratedBackup(
         homeEntrys = db.homeEntrys().all(),
         polls = db.polls().all(),
         pollVotes = db.pollVotes().all(),
+        familyShares = db.familyShares().all(),
 )
 
 suspend fun clearGenerated(db: AppDatabase) {
@@ -250,6 +258,7 @@ suspend fun clearGenerated(db: AppDatabase) {
     db.homeEntrys().clear()
     db.polls().clear()
     db.pollVotes().clear()
+    db.familyShares().clear()
 }
 
 suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
@@ -279,4 +288,5 @@ suspend fun restoreGenerated(db: AppDatabase, p: GeneratedBackup) {
     db.homeEntrys().upsertAll(p.homeEntrys.map { it.copy(dirty = true) })
     db.polls().upsertAll(p.polls.map { it.copy(dirty = true) })
     db.pollVotes().upsertAll(p.pollVotes.map { it.copy(dirty = true) })
+    db.familyShares().upsertAll(p.familyShares.map { it.copy(dirty = true) })
 }

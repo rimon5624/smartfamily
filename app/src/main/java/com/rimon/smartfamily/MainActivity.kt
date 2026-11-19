@@ -114,6 +114,7 @@ private fun MainNav(vm: AppViewModel) {
     val chatVm: com.rimon.smartfamily.ui.ChatViewModel = viewModel()
     val extrasVm: com.rimon.smartfamily.ui.ExtrasViewModel = viewModel()
     val priceVm: com.rimon.smartfamily.ui.PriceViewModel = viewModel()
+    val shareVm: com.rimon.smartfamily.ui.screens.ShareViewModel = viewModel()
     val nav = rememberNavController()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val family by vm.activeFamily.collectAsStateWithLifecycle()
@@ -122,10 +123,13 @@ private fun MainNav(vm: AppViewModel) {
     val me by remember(famId, uid) { vm.myMembership(famId, uid) }.collectAsState(initial = null)
     val modules by remember(famId, uid) { vm.modules(famId, uid) }.collectAsState(initial = emptyList())
     val role = me?.let { Role.parse(it.role) }
+    // 0.9: a family that only shares with us: editable only where it allowed editing.
+    val sharedIn by remember(famId, uid) { vm.sharedToMe(famId, uid) }.collectAsState(initial = emptyList())
+    val sharedView = me == null && sharedIn.isNotEmpty()
     val viewer = Viewer(
         familyId = famId,
         userId = uid,
-        isChild = role == Role.CHILD || role == Role.GUEST,
+        isChild = role == Role.CHILD || role == Role.GUEST || (sharedView && sharedIn.none { it.canWrite }),
         canManage = role?.canManage == true,
         inventoryOn = modules.any { it.module == AppModule.INVENTORY && it.effective },
     )
@@ -136,7 +140,7 @@ private fun MainNav(vm: AppViewModel) {
     val showBar = Tab.entries.any { it.route == route }
 
     LaunchedEffect(Unit) {
-        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages, extrasVm.messages, priceVm.messages).collect { msg ->
+        merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages, extrasVm.messages, priceVm.messages, shareVm.messages).collect { msg ->
             val text = when (msg) {
                 is UiMessage.Res -> if (msg.arg != null) context.getString(msg.id, msg.arg) else context.getString(msg.id)
                 is UiMessage.Text -> context.getString(R.string.error_generic, msg.text)
@@ -223,7 +227,13 @@ private fun MainNav(vm: AppViewModel) {
                     vm, back.arguments?.getString("id").orEmpty(),
                     onBack = { nav.popBackStack() },
                     onOpenModules = { nav.navigate("modules/$it") },
+                    onOpenSharing = { nav.navigate("sharing/$it") },
                 )
+            }
+            composable("sharing/{id}") { back ->
+                val id = back.arguments?.getString("id").orEmpty()
+                val mine by remember(id, uid) { vm.myMembership(id, uid) }.collectAsState(initial = null)
+                com.rimon.smartfamily.ui.screens.SharingScreen(shareVm, id, isAdmin = mine?.let { Role.parse(it.role).canManage } == true, onBack = { nav.popBackStack() })
             }
             composable("modules/{id}") { back ->
                 ModulesScreen(vm, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })

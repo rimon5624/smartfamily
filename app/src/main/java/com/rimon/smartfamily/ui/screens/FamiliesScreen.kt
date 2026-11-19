@@ -156,7 +156,7 @@ fun FamiliesScreen(vm: AppViewModel, padding: PaddingValues, onOpen: (String) ->
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FamilyDetailScreen(vm: AppViewModel, familyId: String, onBack: () -> Unit, onOpenModules: (String) -> Unit) {
+fun FamilyDetailScreen(vm: AppViewModel, familyId: String, onBack: () -> Unit, onOpenModules: (String) -> Unit, onOpenSharing: (String) -> Unit = {}) {
     val family by remember(familyId) { vm.family(familyId) }.collectAsState(initial = null)
     val members by remember(familyId) { vm.members(familyId) }.collectAsState(initial = emptyList())
     val invites by remember(familyId) { vm.invites(familyId) }.collectAsState(initial = emptyList())
@@ -194,6 +194,11 @@ fun FamilyDetailScreen(vm: AppViewModel, familyId: String, onBack: () -> Unit, o
                     Icon(Icons.Outlined.Tune, null)
                     Spacer(Modifier.size(8.dp))
                     Text(stringResource(R.string.family_modules))
+                }
+                OutlinedButton(onClick = { onOpenSharing(familyId) }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Outlined.Share, null)
+                    Spacer(Modifier.size(8.dp))
+                    Text(stringResource(R.string.share_title))
                 }
             }
             if (f != null) {

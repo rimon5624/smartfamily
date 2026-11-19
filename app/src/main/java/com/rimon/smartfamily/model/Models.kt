@@ -59,7 +59,7 @@ enum class MemberStatus { ACTIVE, PENDING }
 
 /** The current version of the backup file format and database schema. */
 object SchemaInfo {
-    const val DB_VERSION = 8
+    const val DB_VERSION = 9
     const val BACKUP_FORMAT = "smartfamily-backup"
     const val BACKUP_FORMAT_VERSION = 1
 }

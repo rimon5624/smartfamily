@@ -114,6 +114,13 @@ interface UserKeyDao : UserKeyDaoBase {
 
     @Query("SELECT * FROM user_keys WHERE familyId = :familyId AND deletedAt IS NULL")
     fun observeFamily(familyId: String): Flow<List<UserKeyEntity>>
+
+    /** 0.9: device keys of these people in any family visible to me (linked families included). */
+    @Query("SELECT * FROM user_keys WHERE userId IN (:userIds) AND deletedAt IS NULL")
+    suspend fun forUsersAny(userIds: List<String>): List<UserKeyEntity>
+
+    @Query("SELECT * FROM user_keys WHERE deletedAt IS NULL")
+    fun observeAll(): Flow<List<UserKeyEntity>>
 }
 
 @Dao
@@ -126,6 +133,10 @@ interface ChatDao : ChatDaoBase {
 
     @Query("SELECT * FROM chats WHERE deletedAt IS NULL")
     suspend fun allActive(): List<ChatEntity>
+
+    /** 0.9: every chat I am in, in my families and in linked families. */
+    @Query("SELECT * FROM chats WHERE deletedAt IS NULL AND (',' || members || ',') LIKE '%,' || :userId || ',%' ORDER BY lastMessageAt DESC")
+    fun observeMine(userId: String): Flow<List<ChatEntity>>
 }
 
 @Dao
@@ -207,3 +218,26 @@ interface PollDao : PollDaoBase {
 
 @Dao
 interface PollVoteDao : PollVoteDaoBase
+
+// ---------- 0.9 ----------
+
+@Dao
+interface PeopleDao {
+    /** Everyone visible on this phone: my families and families linked to them by a share. */
+    @Query("SELECT * FROM family_members WHERE deletedAt IS NULL AND status = 'ACTIVE'")
+    fun observeAllActive(): Flow<List<MemberEntity>>
+}
+
+@Dao
+interface FamilyShareDao : FamilyShareDaoBase {
+    /** Offers this family made, and offers made to it. */
+    @Query("SELECT * FROM family_shares WHERE (familyId = :familyId OR targetFamilyId = :familyId) AND deletedAt IS NULL ORDER BY updatedAt DESC")
+    fun observeInvolving(familyId: String): Flow<List<FamilyShareEntity>>
+
+    /** Accepted shares from [sourceFamilyId] to any family the user belongs to. */
+    @Query(
+        """SELECT * FROM family_shares WHERE familyId = :sourceFamilyId AND status = 'ACCEPTED' AND deletedAt IS NULL
+           AND targetFamilyId IN (SELECT familyId FROM family_members WHERE userId = :userId AND status = 'ACTIVE' AND deletedAt IS NULL)"""
+    )
+    fun observeSharedToMe(sourceFamilyId: String, userId: String): Flow<List<FamilyShareEntity>>
+}

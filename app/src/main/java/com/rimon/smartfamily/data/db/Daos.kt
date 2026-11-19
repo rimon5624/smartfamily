@@ -27,8 +27,10 @@ interface ProfileDao {
 interface FamilyDao {
     @Query(
         """SELECT f.* FROM families f
-           JOIN family_members m ON m.familyId = f.id
-           WHERE m.userId = :userId AND m.deletedAt IS NULL AND m.status = 'ACTIVE' AND f.deletedAt IS NULL
+           WHERE f.deletedAt IS NULL AND (
+             f.id IN (SELECT familyId FROM family_members WHERE userId = :userId AND deletedAt IS NULL AND status = 'ACTIVE')
+             OR f.id IN (SELECT s.familyId FROM family_shares s WHERE s.status = 'ACCEPTED' AND s.deletedAt IS NULL
+                         AND s.targetFamilyId IN (SELECT familyId FROM family_members WHERE userId = :userId AND deletedAt IS NULL AND status = 'ACTIVE')))
            ORDER BY f.createdAt"""
     )
     fun observeForUser(userId: String): Flow<List<FamilyEntity>>

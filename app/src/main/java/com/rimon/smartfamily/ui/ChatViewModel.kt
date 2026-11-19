@@ -59,13 +59,15 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun uid() = c.settings.current().userId
 
     val signedIn get() = c.api.isSignedIn
-    fun chats(familyId: String) = repo.observeChats(familyId)
+    fun chats(userId: String) = repo.observeChats(userId)
     fun chat(id: String) = repo.observeChat(id)
     fun reactions(chatId: String) = repo.observeReactions(chatId)
     fun reads(chatId: String) = repo.observeReads(chatId)
     fun myReads(familyId: String, userId: String) = repo.observeMyReads(familyId, userId)
     fun members(familyId: String) = c.families.observeMembers(familyId)
-    fun keys(familyId: String) = repo.observeKeys(familyId)
+    /** Everyone I can chat with: my families and linked families (0.9), one entry per person. */
+    val people = repo.observePeople().map { list -> list.distinctBy { it.userId } }
+    fun keys() = repo.observeKeys()
     fun myFingerprint() = repo.myFingerprint()
     val myDevice get() = repo.myDeviceId
 

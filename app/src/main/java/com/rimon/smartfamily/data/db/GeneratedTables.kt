@@ -468,6 +468,26 @@ data class PollVoteEntity(
     @Transient val dirty: Boolean = true,
 )
 
+@Serializable
+@Entity(tableName = "family_shares", indices = [Index("familyId"), Index("targetFamilyId")])
+data class FamilyShareEntity(
+    @PrimaryKey val id: String,
+    @SerialName("family_id") val familyId: String,
+    @SerialName("target_family_id") val targetFamilyId: String,
+    @SerialName("source_name") val sourceName: String = "",
+    @SerialName("target_name") val targetName: String = "",
+    val module: String,
+    @SerialName("item_id") val itemId: String = "",
+    @SerialName("item_title") val itemTitle: String = "",
+    @SerialName("can_write") val canWrite: Boolean = false,
+    val status: String = "PENDING",
+    @SerialName("created_by") val createdBy: String,
+    @SerialName("decided_by") val decidedBy: String = "",
+    @SerialName("updated_at") val updatedAt: Long = System.currentTimeMillis(),
+    @SerialName("deleted_at") val deletedAt: Long? = null,
+    @Transient val dirty: Boolean = true,
+)
+
 // Base DAOs: the feature DAOs in FeatureDaos.kt extend these and add their own queries.
 
 interface ChoreDaoBase {
@@ -806,4 +826,17 @@ interface PollVoteDaoBase {
     @Query("SELECT * FROM poll_votes WHERE dirty = 1") suspend fun dirty(): List<PollVoteEntity>
     @Query("UPDATE poll_votes SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
     @Query("DELETE FROM poll_votes") suspend fun clear()
+}
+
+interface FamilyShareDaoBase {
+    @Query("SELECT * FROM family_shares WHERE familyId = :familyId AND deletedAt IS NULL")
+    fun observeForFamily(familyId: String): Flow<List<FamilyShareEntity>>
+    @Query("SELECT * FROM family_shares WHERE id = :id") suspend fun get(id: String): FamilyShareEntity?
+    @Query("SELECT * FROM family_shares WHERE id = :id") fun observeOne(id: String): Flow<FamilyShareEntity?>
+    @Upsert suspend fun upsert(item: FamilyShareEntity)
+    @Upsert suspend fun upsertAll(items: List<FamilyShareEntity>)
+    @Query("SELECT * FROM family_shares") suspend fun all(): List<FamilyShareEntity>
+    @Query("SELECT * FROM family_shares WHERE dirty = 1") suspend fun dirty(): List<FamilyShareEntity>
+    @Query("UPDATE family_shares SET dirty = 0 WHERE id IN (:ids)") suspend fun markClean(ids: List<String>)
+    @Query("DELETE FROM family_shares") suspend fun clear()
 }

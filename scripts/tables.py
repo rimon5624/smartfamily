@@ -269,4 +269,37 @@ TABLES = [
         ("userId", "String", None),
         ("choices", "String", '""'),             # comma-separated option indexes
     ], indices=["pollId"]),
+
+    # ---------- 0.9: sharing between families ----------
+    # Table, functions and row-level security are hand-written in 0009_a_sharing.sql (sql=False).
+    dict(name="family_shares", entity="FamilyShareEntity", version=9, policy="admins", sql=False, fields=[
+        ("targetFamilyId", "String", None),
+        ("sourceName", "String", '""'),
+        ("targetName", "String", '""'),
+        ("module", "String", None),              # AppModule key, e.g. recipes, calendar, chat
+        ("itemId", "String", '""'),              # "" = the whole module
+        ("itemTitle", "String", '""'),
+        ("canWrite", "Boolean", "false"),
+        ("status", "String", '"PENDING"'),       # PENDING, ACCEPTED, DECLINED (set by the receiving family's admin)
+        ("createdBy", "String", None),
+        ("decidedBy", "String", '""'),
+    ], indices=["targetFamilyId"]),
 ]
+
+# What another family can be given access to (0.9). table -> (module key or SQL expression, item column or None).
+# Item None: only whole-module shares apply. Chat tables are further limited to the chat's own members.
+SHARE = {
+    "chores": ("'chores'", "id"), "chore_completions": ("'chores'", "chore_id"),
+    "points_entries": ("'chores'", None), "rewards": ("'chores'", None),
+    "family_dates": ("'calendar'", "id"), "events": ("'calendar'", "id"),
+    "recipes": ("'recipes'", "id"), "recipe_ratings": ("'recipes'", "recipe_id"), "meal_plan_entries": ("'recipes'", None),
+    "meal_profiles": ("'packed_meals'", "id"), "packed_meals": ("'packed_meals'", "profile_id"),
+    "appliances": ("'appliances'", "id"), "laundry_presets": ("'appliances'", "appliance_id"),
+    "chats": ("'chat'", "id"), "chat_keys": ("'chat'", "chat_id"), "chat_messages": ("'chat'", "chat_id"),
+    "chat_reactions": ("'chat'", "chat_id"), "chat_reads": ("'chat'", "chat_id"),
+    "trips": ("'travel'", "id"), "trip_items": ("'travel'", "trip_id"),
+    "budget_entries": ("'budget'", None), "budget_limits": ("'budget'", None),
+    "home_entries": ("case when section = 'KNOWLEDGE' then 'knowledge' else 'home_book' end", "id"),
+    "polls": ("'polls'", "id"), "poll_votes": ("'polls'", "poll_id"),
+}
+

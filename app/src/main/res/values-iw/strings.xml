@@ -847,4 +847,32 @@
     <string name="prices_stores_loaded">נטענו %1$s סניפים</string>
     <string name="prices_store_failed">לא הצלחתי להוריד את %1$s</string>
     <string name="prices_updated">המחירים עודכנו</string>
+
+    <!-- 0.9: sharing between families -->
+    <string name="share_title">שיתוף עם משפחות אחרות</string>
+    <string name="help_sharing">משתפים מודול שלם (כל המתכונים, היומן…) או פריט אחד (מתכון, נסיעה, רשימת קניות, צ\'אט) עם משפחה אחרת, לצפייה בלבד או גם לעריכה. שום דבר לא מוצג להם עד שמנהל אצלם מאשר. צ\'אט משותף גלוי רק לאנשים שבו. המשפחה המקבלת רואה את המשפחה שלכם ברשימת המשפחות שלה, רק עם מה ששיתפתם.</string>
+    <string name="share_new">שיתוף</string>
+    <string name="share_my_code">קוד הקישור של המשפחה</string>
+    <string name="share_my_code_body">שלחו אותו למנהל במשפחה השנייה כדי שיוכלו לשתף אתכם.</string>
+    <string name="share_incoming">משותף איתנו</string>
+    <string name="share_outgoing">אנחנו משתפים</string>
+    <string name="share_none">עדיין לא שותף כלום.</string>
+    <string name="share_accept">אישור</string>
+    <string name="share_decline">דחייה</string>
+    <string name="share_stop">הפסקת שיתוף</string>
+    <string name="share_whole">הכול</string>
+    <string name="share_can_edit">אפשר לערוך</string>
+    <string name="share_read_only">צפייה בלבד</string>
+    <string name="share_status_pending">ממתין לאישור</string>
+    <string name="share_status_accepted">פעיל</string>
+    <string name="share_status_declined">נדחה</string>
+    <string name="share_their_code">קוד הקישור של המשפחה השנייה</string>
+    <string name="share_check">בדיקה</string>
+    <string name="share_not_found">אין משפחה עם הקוד הזה</string>
+    <string name="share_what">מה לשתף</string>
+    <string name="share_which_item">הכול או פריט אחד?</string>
+    <string name="share_allow_edit">גם הם יכולים לערוך</string>
+    <string name="share_chat_note">קישור צ\'אט: אנשים משתי המשפחות יכולים לפתוח זה עם זה צ\'אטים קבוצתיים ופרטיים. ההודעות נשארות מוצפנות מקצה לקצה.</string>
+    <string name="share_send">שליחת הצעה</string>
+    <string name="share_sent">ההצעה נשלחה. השיתוף יתחיל אחרי שהמנהל אצלם יאשר.</string>
 </resources>

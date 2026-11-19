@@ -2,9 +2,16 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 0.8.0 — Phase 7 (price comparison)**
+**Current version: 0.9.0 — Phase 8 (sharing between families)**
 
-## What is new in 0.8.0
+## What is new in 0.9.0
+
+- Sharing between families: a family admin offers a whole module or one item (recipe, trip, shopping list, event, chat, poll…), read-only or editable, using the other family's link code. Nothing is visible until the other family's admin accepts.
+- The receiving family sees the sharing family in its family list, with only the shared modules and items.
+- Chat between families: after a chat link is accepted, people from both families can open group and private chats with each other, still end-to-end encrypted; shared chats are visible only to their members.
+- Supabase: `0009_a_sharing.sql` (table, functions, guard trigger) then `0009_z_sharing_policies.sql` (generated row-level security for every table).
+
+## What was new in 0.8.0
 
 - Price comparison across 23 Israeli chains (Shufersal, Rami Levy, Osher Ad, Yohananof, Carrefour, Tiv Taam, Shuk Hayir, Super Sapir, and more), straight from the public price-transparency files: FTP (publishedprices), binaprojects, prices.*.co.il and prices.shufersal.co.il. No server, no key, free.
 - Pick branches, then compare a shopping list: every chain side by side, with a chain filter; barcode matches first, name matches marked ≈.

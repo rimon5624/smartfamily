@@ -126,14 +126,17 @@ private fun chatTitle(chat: ChatEntity, members: List<MemberEntity>, me: String)
 @Composable
 fun ChatListScreen(vm: ChatViewModel, viewer: Viewer, onBack: () -> Unit, onOpen: (String) -> Unit) {
     val members by remember(viewer.familyId) { vm.members(viewer.familyId) }.collectAsState(initial = emptyList())
-    val chats by remember(viewer.familyId) { vm.chats(viewer.familyId) }.collectAsState(initial = emptyList())
+    val people by vm.people.collectAsState(initial = emptyList())
+    val chats by remember(viewer.userId) { vm.chats(viewer.userId) }.collectAsState(initial = emptyList())
     val reads by remember(viewer.familyId, viewer.userId) { vm.myReads(viewer.familyId, viewer.userId) }.collectAsState(initial = emptyList())
     val busy by vm.busy.collectAsState()
     val active = members.filter { it.status == "ACTIVE" }
+    val iAmMember = active.any { it.userId == viewer.userId }
     var creating by remember { mutableStateOf(false) }
 
-    LaunchedEffect(viewer.familyId, active.size) {
-        if (vm.signedIn && active.isNotEmpty()) vm.prepare(viewer.familyId, active.map { it.userId })
+    // In a family that only shares with us we never create its family chat or publish keys there.
+    LaunchedEffect(viewer.familyId, active.size, iAmMember) {
+        if (vm.signedIn && iAmMember) vm.prepare(viewer.familyId, active.map { it.userId })
     }
 
     Scaffold(
@@ -145,7 +148,7 @@ fun ChatListScreen(vm: ChatViewModel, viewer: Viewer, onBack: () -> Unit, onOpen
             )
         },
         floatingActionButton = {
-            if (vm.signedIn) ExtendedFloatingActionButton(onClick = { creating = true }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text(stringResource(R.string.chat_new)) })
+            if (vm.signedIn && iAmMember) ExtendedFloatingActionButton(onClick = { creating = true }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text(stringResource(R.string.chat_new)) })
         },
     ) { inner ->
         Column(Modifier.padding(inner).fillMaxSize()) {
@@ -159,14 +162,14 @@ fun ChatListScreen(vm: ChatViewModel, viewer: Viewer, onBack: () -> Unit, onOpen
                 Spacer(Modifier.size(6.dp))
                 Text(stringResource(R.string.chat_e2e), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            val mine = chats.filter { viewer.userId in it.members.split(',') }
+            val mine = chats
             if (mine.isEmpty()) Text(stringResource(R.string.chat_none), Modifier.padding(24.dp))
             LazyColumn(contentPadding = PaddingValues(bottom = 96.dp)) {
                 items(mine, key = { it.id }) { chat ->
                     val preview by remember(chat.id) { vm.lastPreview(chat.id) }.collectAsState(initial = "")
                     val read = reads.firstOrNull { it.chatId == chat.id }?.lastReadAt ?: 0L
                     val unread = chat.lastMessageAt > read && preview.isNotEmpty()
-                    val title = chatTitle(chat, members, viewer.userId)
+                    val title = chatTitle(chat, people, viewer.userId)
                     Row(
                         Modifier.fillMaxWidth().clickable { onOpen(chat.id) }.padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -186,7 +189,7 @@ fun ChatListScreen(vm: ChatViewModel, viewer: Viewer, onBack: () -> Unit, onOpen
         }
     }
 
-    if (creating) NewChatDialog(active.filter { it.userId != viewer.userId }, onDismiss = { creating = false }) { title, ids, direct ->
+    if (creating) NewChatDialog(people.filter { it.userId != viewer.userId }, onDismiss = { creating = false }) { title, ids, direct ->
         creating = false
         vm.createChat(viewer.familyId, title, ids, direct)
     }
@@ -237,7 +240,7 @@ private fun timeLabel(ms: Long): String {
 fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> Unit) {
     val context = LocalContext.current
     val chat by remember(chatId) { vm.chat(chatId) }.collectAsState(initial = null)
-    val members by remember(viewer.familyId) { vm.members(viewer.familyId) }.collectAsState(initial = emptyList())
+    val members by vm.people.collectAsState(initial = emptyList())
     val messages by remember(chatId) { vm.shown(chatId) }.collectAsState(initial = emptyList())
     val reactions by remember(chatId) { vm.reactions(chatId) }.collectAsState(initial = emptyList())
     val reads by remember(chatId) { vm.reads(chatId) }.collectAsState(initial = emptyList())
@@ -518,7 +521,7 @@ private fun openFile(context: android.content.Context, file: File, mime: String)
 
 @Composable
 private fun ChatInfoDialog(vm: ChatViewModel, chat: ChatEntity, members: List<MemberEntity>, viewer: Viewer, onDismiss: () -> Unit) {
-    val keys by remember(viewer.familyId) { vm.keys(viewer.familyId) }.collectAsState(initial = emptyList())
+    val keys by remember { vm.keys() }.collectAsState(initial = emptyList())
     var picked by remember(chat.members) { mutableStateOf(chat.members.split(',').filter { it.isNotBlank() }.toSet()) }
     val canEdit = chat.kind == "GROUP" && (chat.createdBy == viewer.userId || viewer.canManage)
     AlertDialog(

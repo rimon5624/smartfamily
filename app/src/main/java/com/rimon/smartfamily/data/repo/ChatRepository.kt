@@ -42,14 +42,15 @@ class ChatRepository(
     private fun ctx(chatId: String, epoch: Int) = "smartfamily-chat|$chatId|$epoch"
     private fun aad(m: ChatMessageEntity) = "${m.chatId}|${m.epoch}|${m.senderId}|${m.id}"
 
-    fun observeChats(familyId: String) = db.chats().observeSorted(familyId)
+    fun observeChats(userId: String) = db.chats().observeMine(userId)
     fun observeChat(id: String) = db.chats().observeOne(id)
     fun observeMessages(chatId: String) = db.chatMessages().observeChat(chatId)
     fun observeLast(chatId: String) = db.chatMessages().observeLast(chatId)
     fun observeReactions(chatId: String) = db.chatReactions().observeChat(chatId)
     fun observeReads(chatId: String) = db.chatReads().observeChat(chatId)
     fun observeMyReads(familyId: String, userId: String) = db.chatReads().observeMine(familyId, userId)
-    fun observeKeys(familyId: String) = db.userKeys().observeFamily(familyId)
+    fun observeKeys() = db.userKeys().observeAll()
+    fun observePeople() = db.people().observeAllActive()
     val myDeviceId get() = crypto.deviceId
     fun myFingerprint() = crypto.fingerprint(crypto.publicKeyset())
 
@@ -86,7 +87,7 @@ class ChatRepository(
     /** Seals a chat key to every known device of [members] that does not have it yet. */
     private suspend fun sealFor(chat: ChatEntity, epoch: Int, key: ByteArray, members: List<String>) {
         val have = db.chatKeys().forEpoch(chat.id, epoch).map { it.deviceId }.toSet()
-        db.userKeys().forUsers(chat.familyId, members).filter { it.deviceId !in have }.forEach { k ->
+        db.userKeys().forUsersAny(members).distinctBy { it.deviceId }.filter { it.deviceId !in have }.forEach { k ->
             db.chatKeys().upsert(
                 ChatKeyEntity(
                     id = "${chat.id}|${k.deviceId}|$epoch", familyId = chat.familyId, chatId = chat.id, userId = k.userId,

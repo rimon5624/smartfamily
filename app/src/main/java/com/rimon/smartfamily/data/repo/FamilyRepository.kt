@@ -171,7 +171,16 @@ class FamilyRepository(
         onLocalChange()
     }
 
+    /** 0.9: in a family that only shares with us, the modules are the ones it shared. */
     fun observeModules(familyId: String, userId: String): Flow<List<ModuleState>> =
+        combine(db.members().observeMembership(familyId, userId), db.familyShares().observeSharedToMe(familyId, userId), modulesOf(familyId, userId)) { me, shares, own ->
+            if (me != null || shares.isEmpty()) own
+            else AppModule.entries.map { m -> ModuleState(m, shares.any { it.module == m.key }, true) }
+        }
+
+    fun observeSharedToMe(familyId: String, userId: String) = db.familyShares().observeSharedToMe(familyId, userId)
+
+    private fun modulesOf(familyId: String, userId: String): Flow<List<ModuleState>> =
         db.moduleSettings().observeForFamily(familyId).map { rows ->
             AppModule.entries.map { m ->
                 val fam = rows.firstOrNull { it.userId == "" && it.module == m.key }?.enabled ?: m.defaultOn
