@@ -1161,4 +1161,28 @@
     <string name="chat_video">Video</string>
     <string name="chat_location">Location</string>
     <string name="chat_card">Send an item (list, recipe, trip…)</string>
+    <string name="inv_no_date">Could not read a date from the photo</string>
+    <string name="inv_date_read">Expiry set to %1$s</string>
+    <string name="inv_chametz">Chametz (before Pesach)</string>
+    <string name="inv_what_cook">What can I cook?</string>
+    <string name="inv_frozen_since">frozen since %1$s</string>
+    <string name="inv_no_match">No recipe matches what is at home yet. Add recipes or pantry items.</string>
+    <string name="inv_match">%1$d%% of the ingredients at home</string>
+    <string name="inv_uses_expiring">uses %1$d expiring items</string>
+    <string name="cook_listening">Listening</string>
+    <string name="cook_voice">Voice</string>
+    <string name="cook_converter">Unit converter</string>
+    <string name="cv_flour">Flour</string>
+    <string name="cv_sugar">Sugar</string>
+    <string name="cv_butter">Butter</string>
+    <string name="cv_rice">Rice</string>
+    <string name="cv_oats">Oats</string>
+    <string name="cv_cocoa">Cocoa</string>
+    <string name="cv_water">Water / milk (ml)</string>
+    <string name="cv_oil">Oil</string>
+    <string name="cv_honey">Honey</string>
+    <string name="cv_cups">Cups</string>
+    <string name="cv_result">≈ %1$s g · %2$s tablespoons · %3$s teaspoons</string>
+    <string name="cv_oven_c">Oven °C</string>
+    <string name="cv_oven_result">= %1$s°F · gas mark %2$d</string>
 </resources>

@@ -63,6 +63,16 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
     fun lowStock(familyId: String) = repo.observeLowStock(familyId)
     fun inventory(familyId: String) = repo.observeInventory(familyId)
     fun members(familyId: String) = c.families.observeMembers(familyId)
+    fun recipes(familyId: String) = c.kitchen.observeRecipes(familyId)
+
+    /** INV-3: read the expiry date from a photo of the package (Gemini free tier). */
+    fun expiryFromPhoto(item: InventoryItemEntity, uri: Uri) = launchSafe {
+        val t = c.gemini.askWithImage(getApplication(), uri, "Read the expiry / best-before date printed on this package. Answer only yyyy-MM-dd, or NONE.").trim()
+        val d = Regex("(\\d{4})-(\\d{2})-(\\d{2})").find(t)?.value?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() }
+            ?: return@launchSafe say(R.string.inv_no_date)
+        repo.updateInventory(item.copy(expiresAt = com.rimon.smartfamily.smart.JewishDays.startMs(d) + 12 * 3_600_000L))
+        say(R.string.inv_date_read, "${d.dayOfMonth}/${d.monthValue}/${d.year}")
+    }
 
     /** Keeps an open list close to real time (SHP-9): a quick two-table sync every 8 seconds. */
     suspend fun liveSync() {

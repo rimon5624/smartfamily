@@ -72,6 +72,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -486,12 +487,25 @@ fun CookingScreen(vm: KitchenViewModel, recipeId: String, onBack: () -> Unit) {
         onDispose { view.keepScreenOn = false }
     }
     LaunchedEffect(Unit) { while (true) { delay(1000); now = System.currentTimeMillis() } }
+    var listening by rememberSaveable { mutableStateOf(false) }
+    var converter by remember { mutableStateOf(false) }
+    val micOk = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { ok -> listening = ok }
+    // RCP-13: hands-free – say "next" / "back" (הבא / חזור) while cooking
+    VoiceCommands(listening, onNext = { index = (index + 1).coerceAtMost(steps.lastIndex.coerceAtLeast(0)) }, onBack = { index = (index - 1).coerceAtLeast(0) })
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(recipe.title) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
+                actions = {
+                    TextButton(onClick = {
+                        if (listening) listening = false
+                        else if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) listening = true
+                        else micOk.launch(android.Manifest.permission.RECORD_AUDIO)
+                    }) { Text(if (listening) "🎙️ " + stringResource(R.string.cook_listening) else "🎙️ " + stringResource(R.string.cook_voice)) }
+                    TextButton(onClick = { converter = true }) { Text("⚖️") }
+                },
             )
         },
     ) { inner ->
@@ -547,6 +561,7 @@ fun CookingScreen(vm: KitchenViewModel, recipeId: String, onBack: () -> Unit) {
             }
         }
     }
+    if (converter) UnitConverterDialog(onDismiss = { converter = false })
 }
 
 private val slotsWeekday = listOf("breakfast" to R.string.slot_breakfast, "lunch" to R.string.slot_lunch, "dinner" to R.string.slot_dinner)
@@ -755,3 +770,67 @@ private fun PackedTab(vm: KitchenViewModel, viewer: Viewer) {
 
 @Suppress("unused")
 private fun RecipeEntity.totalMinutes() = prepMinutes + cookMinutes
+
+
+/** Listens continuously for "next" / "back" while the cooking screen is open (RCP-13). */
+@Composable
+private fun VoiceCommands(active: Boolean, onNext: () -> Unit, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val next by androidx.compose.runtime.rememberUpdatedState(onNext)
+    val back by androidx.compose.runtime.rememberUpdatedState(onBack)
+    androidx.compose.runtime.DisposableEffect(active) {
+        if (!active || !android.speech.SpeechRecognizer.isRecognitionAvailable(context)) return@DisposableEffect onDispose { }
+        val sr = android.speech.SpeechRecognizer.createSpeechRecognizer(context)
+        val lang = context.resources.configuration.locales[0].language.let { if (it == "iw" || it == "he") "he-IL" else "en-US" }
+        val intent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, lang)
+        var alive = true
+        fun listen() { if (alive) runCatching { sr.startListening(intent) } }
+        sr.setRecognitionListener(object : android.speech.RecognitionListener {
+            override fun onResults(results: android.os.Bundle) {
+                val words = results.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION).orEmpty().joinToString(" ").lowercase()
+                when {
+                    listOf("הבא", "הלאה", "next", "forward").any { it in words } -> next()
+                    listOf("חזור", "אחורה", "קודם", "back", "previous").any { it in words } -> back()
+                }
+                listen()
+            }
+            override fun onError(error: Int) { android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ listen() }, 600) }
+            override fun onReadyForSpeech(p: android.os.Bundle?) {}
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(v: Float) {}
+            override fun onBufferReceived(b: ByteArray?) {}
+            override fun onEndOfSpeech() {}
+            override fun onPartialResults(p: android.os.Bundle?) {}
+            override fun onEvent(t: Int, p: android.os.Bundle?) {}
+        })
+        listen()
+        onDispose { alive = false; runCatching { sr.destroy() } }
+    }
+}
+
+/** RCP-15: cups, spoons and grams, and oven temperatures. */
+@Composable
+fun UnitConverterDialog(onDismiss: () -> Unit) {
+    val items = listOf("flour" to 125.0, "sugar" to 200.0, "butter" to 227.0, "rice" to 185.0, "oats" to 90.0, "cocoa" to 100.0, "water" to 240.0, "oil" to 220.0, "honey" to 340.0)
+    var what by rememberSaveable { mutableStateOf("flour") }
+    var amount by rememberSaveable { mutableStateOf("1") }
+    var temp by rememberSaveable { mutableStateOf("180") }
+    val a = amount.toDoubleOrNull() ?: 0.0
+    val perCup = items.first { it.first == what }.second
+    androidx.compose.material3.AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.cook_converter)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChoiceIn(null, items.map { it.first to stringResource(when (it.first) {
+                    "flour" -> R.string.cv_flour; "sugar" -> R.string.cv_sugar; "butter" -> R.string.cv_butter; "rice" -> R.string.cv_rice; "oats" -> R.string.cv_oats
+                    "cocoa" -> R.string.cv_cocoa; "water" -> R.string.cv_water; "oil" -> R.string.cv_oil; else -> R.string.cv_honey }) }, what) { what = it }
+                NumIn(stringResource(R.string.cv_cups), amount) { amount = it }
+                Text(stringResource(R.string.cv_result, String.format("%.0f", a * perCup), String.format("%.0f", a * 16), String.format("%.0f", a * 48)), style = MaterialTheme.typography.titleMedium)
+                HorizontalDivider()
+                NumIn(stringResource(R.string.cv_oven_c), temp) { temp = it }
+                val c = temp.toDoubleOrNull() ?: 0.0
+                Text(stringResource(R.string.cv_oven_result, String.format("%.0f", c * 9 / 5 + 32), (((c - 121) / 14).toInt() + 1).coerceIn(1, 9)), style = MaterialTheme.typography.titleMedium)
+            }
+        }, confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } })
+}

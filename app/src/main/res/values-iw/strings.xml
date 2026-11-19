@@ -1157,4 +1157,28 @@
     <string name="chat_video">סרטון</string>
     <string name="chat_location">מיקום</string>
     <string name="chat_card">שליחת פריט (רשימה, מתכון, נסיעה…)</string>
+    <string name="inv_no_date">לא הצלחתי לקרוא תאריך מהתמונה</string>
+    <string name="inv_date_read">התוקף עודכן ל-%1$s</string>
+    <string name="inv_chametz">חמץ (לפני פסח)</string>
+    <string name="inv_what_cook">מה אפשר לבשל?</string>
+    <string name="inv_frozen_since">במקפיא מ-%1$s</string>
+    <string name="inv_no_match">עדיין אין מתכון שמתאים למה שיש בבית. כדאי להוסיף מתכונים או מוצרים למזווה.</string>
+    <string name="inv_match">%1$d%% מהמרכיבים בבית</string>
+    <string name="inv_uses_expiring">משתמש ב-%1$d מוצרים שעומדים לפוג</string>
+    <string name="cook_listening">מקשיב</string>
+    <string name="cook_voice">קולי</string>
+    <string name="cook_converter">ממיר מידות</string>
+    <string name="cv_flour">קמח</string>
+    <string name="cv_sugar">סוכר</string>
+    <string name="cv_butter">חמאה</string>
+    <string name="cv_rice">אורז</string>
+    <string name="cv_oats">שיבולת שועל</string>
+    <string name="cv_cocoa">קקאו</string>
+    <string name="cv_water">מים / חלב (מ״ל)</string>
+    <string name="cv_oil">שמן</string>
+    <string name="cv_honey">דבש</string>
+    <string name="cv_cups">כוסות</string>
+    <string name="cv_result">≈ %1$s גרם · %2$s כפות · %3$s כפיות</string>
+    <string name="cv_oven_c">תנור °C</string>
+    <string name="cv_oven_result">= %1$s°F · דרגת גז %2$d</string>
 </resources>

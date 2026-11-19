@@ -68,6 +68,8 @@ import com.rimon.smartfamily.ui.components.AddBar
 import com.rimon.smartfamily.ui.components.HelpButton
 import java.text.DateFormat
 import java.util.Date
+import java.text.SimpleDateFormat
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,7 +86,11 @@ fun InventoryScreen(vm: ShoppingViewModel, viewer: Viewer, onBack: () -> Unit) {
         if (Build.VERSION.SDK_INT >= 33) permission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
-    val shown = all.filter { location == null || it.location == location }
+    var chametz by rememberSaveable { mutableStateOf(false) }
+    var cookIdeas by remember { mutableStateOf(false) }
+    val chametzWords = listOf("לחם", "פית", "לחמני", "פסטה", "ספגטי", "קמח", "עוגי", "עוגה", "קורנפלקס", "דגני", "בירה", "וויסקי", "ויסקי", "קרקר", "בייגל", "פתיתים", "קוסקוס", "שיבולת", "bread", "pita", "pasta", "flour", "cookie", "cake", "cereal", "beer", "whisky", "cracker", "couscous", "oats")
+    fun isChametz(n: String) = chametzWords.any { n.contains(it, ignoreCase = true) }
+    val shown = all.filter { (location == null || it.location == location) && (!chametz || isChametz(it.name)) }.let { l -> if (chametz) l.sortedByDescending { it.quantity } else l }
 
     Scaffold(
         topBar = {
@@ -112,10 +118,12 @@ fun InventoryScreen(vm: ShoppingViewModel, viewer: Viewer, onBack: () -> Unit) {
                     )
                 }
                 if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 6.dp))
+                if (all.isNotEmpty()) androidx.compose.material3.FilledTonalButton(onClick = { cookIdeas = true }, modifier = Modifier.padding(top = 8.dp)) { Text("🍲 " + stringResource(R.string.inv_what_cook)) }
             }
             item {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(selected = location == null, onClick = { location = null }, label = { Text(stringResource(R.string.inv_all)) })
+                    FilterChip(selected = chametz, onClick = { chametz = !chametz }, label = { Text("🥖 " + stringResource(R.string.inv_chametz)) })
                     StorageLocation.entries.forEach { loc ->
                         val n = all.count { it.location == loc.key }
                         FilterChip(
@@ -140,9 +148,38 @@ fun InventoryScreen(vm: ShoppingViewModel, viewer: Viewer, onBack: () -> Unit) {
         }
     }
 
+    if (cookIdeas) {
+        val recipes by remember(viewer.familyId) { vm.recipes(viewer.familyId) }.collectAsState(initial = emptyList())
+        val soon = System.currentTimeMillis() + 3 * 86_400_000L
+        val have = all.map { it.name.lowercase() }
+        val expiring = all.filter { (it.expiresAt ?: Long.MAX_VALUE) < soon }.map { it.name.lowercase() }
+        val ranked = recipes.map { r ->
+            val ing = com.rimon.smartfamily.smart.RecipeText.ingredientsFromJson(r.ingredients).map { it.name.lowercase() }.filter { it.isNotBlank() }
+            fun match(n: String, pool: List<String>) = pool.any { p -> p.contains(n.split(' ').first()) || n.contains(p.split(' ').first()) }
+            val hit = ing.count { match(it, have) }; val exp = ing.count { match(it, expiring) }
+            Triple(r, if (ing.isEmpty()) 0f else hit / ing.size.toFloat(), exp)
+        }.filter { it.second > 0f }.sortedWith(compareByDescending<Triple<com.rimon.smartfamily.data.db.RecipeEntity, Float, Int>> { it.third }.thenByDescending { it.second }).take(12)
+        androidx.compose.material3.AlertDialog(onDismissRequest = { cookIdeas = false }, title = { Text(stringResource(R.string.inv_what_cook)) },
+            text = {
+                LazyColumn {
+                    if (ranked.isEmpty()) item { Text(stringResource(R.string.inv_no_match)) }
+                    items(ranked, key = { it.first.id }) { (r, f, e) ->
+                        Column(Modifier.padding(vertical = 6.dp)) {
+                            Text(r.title, style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(R.string.inv_match, (f * 100).toInt()) + if (e > 0) " · " + stringResource(R.string.inv_uses_expiring, e) else "", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }, confirmButton = { androidx.compose.material3.TextButton(onClick = { cookIdeas = false }) { Text(stringResource(R.string.ok)) } })
+    }
+    val datePhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        val it0 = editing
+        if (uri != null && it0 != null) { vm.expiryFromPhoto(it0, uri); editing = null }
+    }
     editing?.let { item ->
         InventoryEditDialog(
             item,
+            onReadDate = { datePhoto.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
             onDismiss = { editing = null },
             onSave = { vm.updateInventory(it); editing = null },
             onDelete = { vm.deleteInventory(item.id); editing = null },
@@ -185,6 +222,8 @@ private fun InventoryRow(item: InventoryItemEntity, onPlus: () -> Unit, onMinus:
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     if (low) Text(stringResource(R.string.inv_low), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                    // INV-7 freezer log: how long it has been in the freezer
+                    if (item.location == "freezer") Text(stringResource(R.string.inv_frozen_since, SimpleDateFormat("dd/MM", Locale.getDefault()).format(Date(item.createdAt))), style = MaterialTheme.typography.bodySmall)
                 }
                 ExpiryChip(item.expiresAt)
             }
@@ -201,7 +240,7 @@ private fun InventoryRow(item: InventoryItemEntity, onPlus: () -> Unit, onMinus:
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun InventoryEditDialog(item: InventoryItemEntity, onDismiss: () -> Unit, onSave: (InventoryItemEntity) -> Unit, onDelete: () -> Unit) {
+private fun InventoryEditDialog(item: InventoryItemEntity, onReadDate: () -> Unit = {}, onDismiss: () -> Unit, onSave: (InventoryItemEntity) -> Unit, onDelete: () -> Unit) {
     var name by remember { mutableStateOf(item.name) }
     var quantity by remember { mutableStateOf(item.quantity.qty()) }
     var unit by remember { mutableStateOf(item.unit) }
@@ -244,6 +283,7 @@ private fun InventoryEditDialog(item: InventoryItemEntity, onDismiss: () -> Unit
                             modifier = Modifier.weight(1f),
                         )
                         TextButton(onClick = { picking = true }) { Text(stringResource(R.string.inv_expiry)) }
+                        TextButton(onClick = onReadDate) { Text("📷") }
                         if (expires != null) IconButton(onClick = { expires = null }) { Icon(Icons.Outlined.Remove, null) }
                     }
                 }
