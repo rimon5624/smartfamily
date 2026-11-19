@@ -180,6 +180,7 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
     var editing by remember { mutableStateOf<ListItemEntity?>(null) }
 
     LaunchedEffect(listId) { vm.liveSync() }
+    var party by remember { mutableStateOf<Long?>(null) }
 
     val l = list
     val isTemplate = l?.isTemplate == true
@@ -201,6 +202,7 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
     LaunchedEffect(undo) { if (undo != null) { kotlinx.coroutines.delay(5000); undo = null } }
     fun tick(item: ListItemEntity) {
         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+        if (!item.checked && open.size == 1 && open.first().id == item.id) party = System.currentTimeMillis()
         if (!item.checked && iAmShopping) { aisle.record(item.category); aisleTick++ }
         vm.toggle(item.id)
     }
@@ -396,6 +398,7 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
         }
     }
 
+    com.rimon.smartfamily.ui.components.Celebration(party)
     editing?.let { item ->
         ItemEditDialog(
             item = item,

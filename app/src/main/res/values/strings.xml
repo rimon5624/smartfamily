@@ -1207,4 +1207,9 @@
     <string name="prices_watching">Watching this price – you get a notification when it drops</string>
     <string name="prices_alert_title">Price drop: %1$s</string>
     <string name="prices_alert_body">Now ₪%1$s at %2$s</string>
+    <string name="rem_bill">Tomorrow: %1$s (₪%2$s)</string>
+    <string name="rem_warranty">Warranty / service soon: %1$s</string>
+    <string name="rem_kit">Expires soon: %1$s</string>
+    <string name="rem_weekly">This week: %1$d tasks done, ₪%2$s spent · %3$d events next week</string>
+    <string name="tips_off">Don\'t show intros</string>
 </resources>

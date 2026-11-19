@@ -1203,4 +1203,9 @@
     <string name="prices_watching">במעקב – תגיע התראה כשהמחיר יורד</string>
     <string name="prices_alert_title">ירידת מחיר: %1$s</string>
     <string name="prices_alert_body">עכשיו ₪%1$s ב%2$s</string>
+    <string name="rem_bill">מחר: %1$s (₪%2$s)</string>
+    <string name="rem_warranty">האחריות / השירות מתקרבים: %1$s</string>
+    <string name="rem_kit">פג תוקף בקרוב: %1$s</string>
+    <string name="rem_weekly">השבוע: %1$d משימות בוצעו, ₪%2$s הוצאות · %3$d אירועים בשבוע הבא</string>
+    <string name="tips_off">לא להציג הסברים</string>
 </resources>

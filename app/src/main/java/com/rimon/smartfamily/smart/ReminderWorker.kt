@@ -16,6 +16,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import kotlinx.coroutines.flow.first
 import com.rimon.smartfamily.MainActivity
 import com.rimon.smartfamily.R
 import com.rimon.smartfamily.SmartFamilyApp
@@ -85,6 +86,51 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 if (key !in seen) {
                     val who = c.kitchen.profile(p.profileId)?.personName.orEmpty()
                     fresh += key to applicationContext.getString(R.string.rem_packed, who, p.items.lines().joinToString(", "))
+                }
+            }
+        }
+
+        // 2.0: bills and subscriptions the day before (and roll the next date forward once it passed)
+        val today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jerusalem"))
+        if (hour >= 9) runCatching {
+            c.db.families().all().filter { it.deletedAt == null }.forEach { fam ->
+                c.db.recurringPayments().observeForFamily(fam.id).first().filter { it.active }.forEach { p ->
+                    val next = runCatching { java.time.LocalDate.parse(p.nextDate) }.getOrNull() ?: return@forEach
+                    if (next.isBefore(today)) {
+                        val rolled = generateSequence(next) { d -> when (p.period) { "YEAR" -> d.plusYears(1); "BIMONTH" -> d.plusMonths(2); else -> d.plusMonths(1) } }.first { !it.isBefore(today) }
+                        c.db.recurringPayments().upsert(p.copy(nextDate = rolled.toString(), updatedAt = now, dirty = true))
+                    } else if (!next.isAfter(today.plusDays(1))) {
+                        val key = "bill:${p.id}:${p.nextDate}"
+                        if (key !in seen) fresh += key to applicationContext.getString(R.string.rem_bill, p.title, String.format("%.0f", p.amount))
+                    }
+                }
+                // warranties and kit items expiring within 30 days (HBK-1, emergency kit)
+                c.extras.expiring(30).filter { it.familyId == fam.id }.forEach { e ->
+                    val key = "warranty:${e.id}:${e.expiresAt}"
+                    if (key !in seen) fresh += key to applicationContext.getString(R.string.rem_warranty, e.title)
+                }
+                c.db.kitItems().observeForFamily(fam.id).first().filter { it.expiresAt.isNotBlank() }.forEach { k ->
+                    val d = runCatching { java.time.LocalDate.parse(k.expiresAt) }.getOrNull() ?: return@forEach
+                    if (!d.isAfter(today.plusDays(14))) {
+                        val key = "kit:${k.id}:${k.expiresAt}"
+                        if (key !in seen) fresh += key to applicationContext.getString(R.string.rem_kit, k.title)
+                    }
+                }
+            }
+        }
+
+        // 2.0: a weekly summary on Saturday night after havdalah
+        val dow = today.dayOfWeek
+        if (dow == java.time.DayOfWeek.SATURDAY && hour >= 20) runCatching {
+            val key = "weekly:$today"
+            if (key !in seen) {
+                val weekAgo = now - 7 * 86_400_000L
+                val fam = c.db.families().all().firstOrNull { it.id == s.activeFamilyId } ?: c.db.families().all().firstOrNull()
+                if (fam != null) {
+                    val done = c.db.choreCompletions().observeForFamily(fam.id).first().count { it.doneAt >= weekAgo && it.approved }
+                    val spent = c.db.budgetEntrys().observeForFamily(fam.id).first().filter { it.kind == "EXPENSE" && it.date >= weekAgo && !it.monthly }.sumOf { it.amount }
+                    val nextWeek = c.homeLife.expand(events.filter { it.familyId == fam.id }, now, now + 7 * 86_400_000L).size
+                    fresh += key to applicationContext.getString(R.string.rem_weekly, done, String.format("%.0f", spent), nextWeek)
                 }
             }
         }

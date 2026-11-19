@@ -66,6 +66,12 @@ fun KidsScreen(vm: RecordsViewModel, viewer: Viewer, hebrew: Boolean, onBack: ()
     var editGrowth by remember { mutableStateOf<GrowthEntryEntity?>(null) }
     val haptic = LocalHapticFeedback.current
 
+    val allDoneKey = run {
+        val mine = steps.filter { it.userId == who && it.part == part && (it.days shr dow) and 1 == 1 }
+        val done = mine.count { st -> checks.any { it.stepId == st.id && it.date == today.toString() && it.done && it.deletedAt == null } }
+        if (mine.isNotEmpty() && done == mine.size) "$who|$part|$today" else null
+    }
+    androidx.compose.foundation.layout.Box {
     ModuleScaffold(
         stringResource(R.string.mod_kids), R.string.help_kids, onBack,
         listOf(stringResource(R.string.kids_board), stringResource(R.string.kids_growth), stringResource(R.string.money_pocket)), tab, { if (it == 2) onPocket() else tab = it },
@@ -145,6 +151,8 @@ fun KidsScreen(vm: RecordsViewModel, viewer: Viewer, hebrew: Boolean, onBack: ()
         }
     }
 
+    com.rimon.smartfamily.ui.components.Celebration(allDoneKey)
+    }
     editStep?.let { s ->
         var title by remember { mutableStateOf(s.title) }; var emoji by remember { mutableStateOf(s.emoji) }; var days by remember { mutableIntStateOf(s.days) }
         EditDialog(stringResource(R.string.kids_board), title.isNotBlank(), { editStep = null }, { vm.save(s.copy(title = title.trim(), emoji = emoji.trim().ifBlank { "⭐" }, days = days)); editStep = null },

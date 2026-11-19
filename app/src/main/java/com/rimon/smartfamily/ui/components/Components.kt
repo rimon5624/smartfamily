@@ -42,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -117,7 +118,12 @@ fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 /** UX: every screen has a Help button in its top bar. */
 @Composable
 fun HelpButton(textRes: Int) {
-    var open by remember { mutableStateOf(false) }
+    // UX: the first time a module opens its help shows by itself (a short, skippable intro)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember { context.getSharedPreferences("sf_tips", android.content.Context.MODE_PRIVATE) }
+    val key = remember(textRes) { runCatching { context.resources.getResourceEntryName(textRes) }.getOrDefault(textRes.toString()) }
+    var open by remember { mutableStateOf(!prefs.getBoolean(key, false) && !prefs.getBoolean("off", false)) }
+    androidx.compose.runtime.LaunchedEffect(open) { if (open) prefs.edit().putBoolean(key, true).apply() }
     IconButton(onClick = { open = true }) {
         Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = stringResource(R.string.help))
     }
@@ -125,6 +131,7 @@ fun HelpButton(textRes: Int) {
         AlertDialog(
             onDismissRequest = { open = false },
             confirmButton = { TextButton(onClick = { open = false }) { Text(stringResource(R.string.close)) } },
+            dismissButton = { TextButton(onClick = { prefs.edit().putBoolean("off", true).apply(); open = false }) { Text(stringResource(R.string.tips_off)) } },
             title = { Text(stringResource(R.string.help)) },
             text = { Text(stringResource(textRes)) },
         )
@@ -146,5 +153,25 @@ fun InfoRow(title: String, subtitle: String? = null, leading: @Composable (() ->
             }
         }
         trailing?.invoke()
+    }
+}
+
+
+/** A short confetti burst for finished lists and completed boards (UX-5), drawn on the phone. */
+@Composable
+fun Celebration(trigger: Any?, modifier: Modifier = Modifier) {
+    if (trigger == null) return
+    val anim = remember(trigger) { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(trigger) { anim.snapTo(0f); anim.animateTo(1f, androidx.compose.animation.core.tween(2200)) }
+    if (anim.value >= 1f) return
+    val colors = listOf(Color(0xFFE53935), Color(0xFFFDD835), Color(0xFF43A047), Color(0xFF1E88E5), Color(0xFF8E24AA), Color(0xFFFB8C00))
+    val parts = remember(trigger) { List(80) { Triple(Math.random().toFloat(), Math.random().toFloat() * 0.6f + 0.4f, colors[it % colors.size]) } }
+    androidx.compose.foundation.Canvas(modifier.fillMaxSize()) {
+        val t = anim.value
+        parts.forEachIndexed { i, (x, speed, c) ->
+            val px = size.width * (x + 0.15f * kotlin.math.sin((t * 6 + i).toDouble()).toFloat())
+            val py = size.height * (t * speed * 1.4f) - 40f
+            drawCircle(c.copy(alpha = 1f - t * 0.6f), radius = 9f + (i % 4) * 2f, center = androidx.compose.ui.geometry.Offset(px, py))
+        }
     }
 }
