@@ -8,7 +8,7 @@ import com.rimon.smartfamily.smart.Chain
 import com.rimon.smartfamily.smart.PriceFetcher
 
 /** One shopping-list line priced at one store. */
-data class PricedLine(val item: ListItemEntity, val match: PriceItemEntity?, val exact: Boolean) {
+data class PricedLine(val item: ListItemEntity, val match: PriceItemEntity?, val exact: Boolean, val promo: com.rimon.smartfamily.data.db.PromoEntity? = null) {
     val total get() = (match?.price ?: 0.0) * item.quantity.coerceAtLeast(1.0)
 }
 
@@ -21,6 +21,19 @@ data class StoreBasket(val store: PriceStoreEntity, val lines: List<PricedLine>)
 class PriceRepository(private val db: AppDatabase) {
     private val fetcher = PriceFetcher()
     private val dao get() = db.prices()
+    private val extras get() = db.priceExtras()
+
+    fun watches() = extras.observeWatch()
+    suspend fun watch(code: String, name: String, target: Double) = extras.upsertWatch(com.rimon.smartfamily.data.db.PriceWatchEntity(code, name, target))
+    suspend fun unwatch(code: String) = extras.unwatch(code)
+    suspend fun history(code: String) = extras.history(code)
+    suspend fun promo(chainKey: String, storeId: String, code: String) = extras.promo(chainKey, storeId, code)
+
+    /** Watched products now at or below their target price somewhere (PRC-7). */
+    suspend fun dueAlerts(): List<Pair<com.rimon.smartfamily.data.db.PriceWatchEntity, PriceItemEntity>> = extras.watch().mapNotNull { w ->
+        dao.byCode(w.code).filter { it.price > 0 && it.price <= w.target }.minByOrNull { it.price }?.let { w to it }
+    }
+    suspend fun markAlerted(w: com.rimon.smartfamily.data.db.PriceWatchEntity) = extras.upsertWatch(w.copy(lastAlerted = System.currentTimeMillis()))
 
     fun stores(chainKey: String) = dao.observeStores(chainKey)
     fun selected() = dao.observeSelected()
@@ -46,6 +59,19 @@ class PriceRepository(private val db: AppDatabase) {
         }
         if (batch.isNotEmpty()) dao.upsertItems(batch)
         dao.markFetched(store.chainKey, store.storeId, System.currentTimeMillis(), count)
+        // promotions (best effort; not every chain publishes them the same way)
+        runCatching {
+            extras.clearPromos(store.chainKey, store.storeId)
+            val promos = ArrayList<com.rimon.smartfamily.data.db.PromoEntity>()
+            fetcher.promos(chain, store.storeId) { p -> p.codes.take(200).forEach { promos += com.rimon.smartfamily.data.db.PromoEntity(store.chainKey, store.storeId, it, p.description, p.price, p.minQty, p.until) } }
+            promos.chunked(1000).forEach { kotlinx.coroutines.runBlocking { extras.upsertPromos(it) } }
+        }
+        // PRC-7: today's price of watched products goes into their history
+        val day = java.time.LocalDate.now().toString()
+        val watched = extras.watch()
+        val hist = watched.flatMap { w -> dao.byCode(w.code).filter { it.chainKey == store.chainKey && it.storeId == store.storeId } }
+            .map { com.rimon.smartfamily.data.db.PriceHistoryEntity(it.chainKey, it.storeId, it.code, day, it.price) }
+        if (hist.isNotEmpty()) extras.upsertHistory(hist)
         return count
     }
 
@@ -54,7 +80,8 @@ class PriceRepository(private val db: AppDatabase) {
         StoreBasket(s, items.map { i ->
             val code = i.barcode.trimStart('0')
             val exact = if (code.isNotEmpty()) dao.byCode(code).firstOrNull { it.chainKey == s.chainKey && it.storeId == s.storeId } else null
-            if (exact != null) PricedLine(i, exact, true) else PricedLine(i, bestByName(s, i), false)
+            val m = exact ?: bestByName(s, i)
+            PricedLine(i, m, exact != null, m?.let { extras.promo(s.chainKey, s.storeId, it.code) })
         })
     }
 

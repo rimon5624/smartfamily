@@ -57,6 +57,29 @@ class PriceViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshAll() = launchSafe {
         repo.selected().first().forEach { refreshOne(it) }
         _messages.tryEmit(UiMessage.Res(R.string.prices_updated))
+        notifyAlerts()
+    }
+
+    val watches = repo.watches()
+    fun watch(code: String, name: String, target: Double) = launchSafe { repo.watch(code, name, target); _messages.tryEmit(UiMessage.Res(R.string.prices_watching)) }
+    fun unwatch(code: String) = launchSafe { repo.unwatch(code) }
+    suspend fun history(code: String) = repo.history(code)
+
+    /** PRC-7: a notification when a watched product reaches its target price. */
+    private suspend fun notifyAlerts() {
+        val ctx = getApplication<Application>()
+        val due = repo.dueAlerts().filter { System.currentTimeMillis() - it.first.lastAlerted > 20 * 3_600_000L }
+        if (due.isEmpty()) return
+        val nm = ctx.getSystemService(android.app.NotificationManager::class.java)
+        nm.createNotificationChannel(android.app.NotificationChannel("prices", ctx.getString(R.string.mod_prices), android.app.NotificationManager.IMPORTANCE_DEFAULT))
+        due.forEach { (w, p) ->
+            val chain = com.rimon.smartfamily.smart.Chains.byKey(p.chainKey)
+            val n = androidx.core.app.NotificationCompat.Builder(ctx, "prices").setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(ctx.getString(R.string.prices_alert_title, w.name))
+                .setContentText(ctx.getString(R.string.prices_alert_body, String.format("%.2f", p.price), chain?.he ?: p.chainKey)).setAutoCancel(true).build()
+            runCatching { androidx.core.app.NotificationManagerCompat.from(ctx).notify(("price" + w.code).hashCode(), n) }
+            repo.markAlerted(w)
+        }
     }
 
     fun compare(listId: String) = launchSafe {

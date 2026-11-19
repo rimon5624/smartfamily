@@ -1191,4 +1191,16 @@
     <string name="trip_learn_always">שכחנו – להוסיף תמיד</string>
     <string name="trip_learn_always_done">מעכשיו זה יופיע בכל רשימת אריזה</string>
     <string name="trip_learn_skip_done">זה לא יוצע שוב</string>
+    <string name="prices_until">עד %1$s</string>
+    <string name="prices_split_title">תוכנית פיצול: %1$s</string>
+    <string name="prices_split_saves">חוסך %1$s</string>
+    <string name="prices_now">עכשיו %1$s</string>
+    <string name="prices_unit">%1$s ל%2$s</string>
+    <string name="prices_history">היסטוריית מחיר</string>
+    <string name="prices_alert_below">להתריע במחיר של (₪) או פחות</string>
+    <string name="prices_watch">מעקב מחיר</string>
+    <string name="prices_unwatch">הפסקת מעקב</string>
+    <string name="prices_watching">במעקב – תגיע התראה כשהמחיר יורד</string>
+    <string name="prices_alert_title">ירידת מחיר: %1$s</string>
+    <string name="prices_alert_body">עכשיו ₪%1$s ב%2$s</string>
 </resources>

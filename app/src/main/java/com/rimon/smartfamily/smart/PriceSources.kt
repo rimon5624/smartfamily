@@ -26,7 +26,7 @@ import java.util.zip.ZipInputStream
  * All sources are public and free; nothing goes through our server.
  * Endpoints follow the open-source OpenIsraeliSupermarkets scrapers.
  */
-enum class Engine { CERBERUS, BINA, PUBLISH_PRICE, SHUFERSAL }
+enum class Engine { CERBERUS, BINA, PUBLISH_PRICE, SHUFERSAL, LAIB }
 
 data class Chain(val key: String, val he: String, val en: String, val engine: Engine, val param: String, val chainId: String = "")
 
@@ -55,6 +55,9 @@ object Chains {
         Chain("salach_dabach", "סאלח דבאח", "Salach Dabach", Engine.CERBERUS, "SalachD"),
         Chain("cofix", "סופר קופיקס", "Super Cofix", Engine.CERBERUS, "SuperCofixApp"),
         Chain("quik", "קוויק", "Quik", Engine.PUBLISH_PRICE, "quik"),
+        Chain("victory", "ויקטורי", "Victory", Engine.LAIB, "7290696200003", "7290696200003"),
+        Chain("mahsanei_hashuk", "מחסני השוק", "Mahsanei HaShuk", Engine.LAIB, "7290661400001", "7290661400001"),
+        Chain("het_cohen", "ח. כהן", "H. Cohen", Engine.LAIB, "7290455000004", "7290455000004"),
     )
     fun byKey(k: String) = all.firstOrNull { it.key == k }
 }
@@ -93,8 +96,15 @@ class PriceFetcher {
                     .filter { it.startsWith(kind, true) && (storeId == null || it.contains("-${storeId.padStart(3, '0')}-") || it.contains("-$storeId-")) }
                     .sorted().map { it to (if (path.isBlank()) "$base/$it" else "$base/${path.trim('/')}/$it") }
             }
+            Engine.LAIB -> {
+                val base = "https://laibcatalog.co.il/webapi"
+                val url = "$base/api/getfiles?edi=${chain.param}" + (storeId?.let { "&branchNumber=$it" } ?: "")
+                json.parseToJsonElement(text(url)).jsonArray.mapNotNull { it.jsonObject["fileName"]?.jsonPrimitive?.contentOrNull }
+                    .filter { it.startsWith(kind, true) && (storeId == null || it.contains("-${storeId.padStart(3, '0')}-") || it.contains("-$storeId-")) }
+                    .sorted().map { it to "$base/${chain.param}/$it" }
+            }
             Engine.SHUFERSAL -> {
-                val cat = if (kind == "Stores") 5 else if (kind == "PriceFull") 2 else 1
+                val cat = if (kind == "Stores") 5 else if (kind == "PriceFull") 2 else if (kind == "PromoFull") 4 else 1
                 val page = text(chain.param + "FileObject/UpdateCategory?catID=$cat&storeId=${storeId ?: "0"}")
                 Regex("href=\"(https://[^\"]+?\\.(?:gz|xml)[^\"]*)\"").findAll(page).map { it.groupValues[1].replace("&amp;", "&") }
                     .map { u -> u.substringBefore('?').substringAfterLast('/') to u }
@@ -203,6 +213,36 @@ class PriceFetcher {
                         updated = m["priceupdatedate"].orEmpty(),
                     )
                 )
+            }
+        }
+    }
+
+    data class Promo(val description: String, val price: Double, val minQty: Double, val until: String, val codes: List<String>)
+
+    /** PRC-3: current promotions of one store (PromoFull file); the price is the promotion price for the minimum quantity. */
+    suspend fun promos(chain: Chain, storeId: String, onPromo: (Promo) -> Unit) = withContext(Dispatchers.IO) {
+        val file = list(chain, "PromoFull", storeId).lastOrNull() ?: list(chain, "Promo", storeId).lastOrNull() ?: return@withContext
+        open(download(chain, file)).use { input ->
+            val p = XmlPullParserFactory.newInstance().newPullParser()
+            p.setInput(input, null)
+            var inPromo = false; var tag = ""
+            var desc = ""; var price = 0.0; var minQty = 1.0; var until = ""; val codes = mutableListOf<String>()
+            while (true) {
+                when (p.next()) {
+                    XmlPullParser.START_TAG -> { val n = p.name.lowercase(); if (n == "promotion" || n == "sale") { inPromo = true; desc = ""; price = 0.0; minQty = 1.0; until = ""; codes.clear() } else tag = n }
+                    XmlPullParser.TEXT -> if (inPromo && !p.isWhitespace) {
+                        val t = p.text.trim()
+                        when (tag) {
+                            "promotiondescription" -> desc = t
+                            "discountedprice" -> price = t.toDoubleOrNull() ?: price
+                            "minqty" -> minQty = t.toDoubleOrNull() ?: minQty
+                            "promotionenddate" -> until = t.take(10)
+                            "itemcode" -> codes += t.trimStart('0').ifEmpty { t }
+                        }
+                    }
+                    XmlPullParser.END_TAG -> { val n = p.name.lowercase(); if ((n == "promotion" || n == "sale") && inPromo) { inPromo = false; if (codes.isNotEmpty() && desc.isNotBlank()) onPromo(Promo(desc, price, minQty, until, codes.toList())) }; tag = "" }
+                    XmlPullParser.END_DOCUMENT -> return@withContext
+                }
             }
         }
     }

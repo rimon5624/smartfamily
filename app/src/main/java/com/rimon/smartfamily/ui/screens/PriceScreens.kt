@@ -100,6 +100,7 @@ private fun CompareTab(vm: PriceViewModel, viewer: Viewer, hebrew: Boolean, noSt
     var hidden by rememberSaveable { mutableStateOf("") } // chains not to show, csv
     var open by rememberSaveable { mutableStateOf("") }
     val hiddenSet = hidden.split(',').filter { it.isNotBlank() }.toSet()
+    var watchLine by remember { mutableStateOf<com.rimon.smartfamily.data.repo.PricedLine?>(null) }
     val shown = baskets.filter { it.store.chainKey !in hiddenSet }
     // PRC-4: "comparable total" only over the items every shown store has, so a missing item never looks cheap.
     val common = shown.map { b -> b.lines.filter { it.match != null }.map { it.item.id }.toSet() }.reduceOrNull { a, b -> a intersect b }.orEmpty()
@@ -126,16 +127,18 @@ private fun CompareTab(vm: PriceViewModel, viewer: Viewer, hebrew: Boolean, noSt
             }
         }
         items(shown, key = { it.store.chainKey + it.store.storeId }) { b ->
-            BasketCard(b, hebrew, comparable(b), common.size, best = cheapest != null && comparable(b) == cheapest, expanded = open == b.store.chainKey + b.store.storeId) {
+            BasketCard(b, hebrew, comparable(b), common.size, best = cheapest != null && comparable(b) == cheapest, expanded = open == b.store.chainKey + b.store.storeId, onLine = { watchLine = it }) {
                 open = if (open == b.store.chainKey + b.store.storeId) "" else b.store.chainKey + b.store.storeId
             }
         }
+        if (shown.size >= 2) item { SplitPlan(shown, hebrew) }
         if (baskets.isNotEmpty()) item { Text(stringResource(R.string.prices_disclaimer), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
+    watchLine?.let { l -> WatchDialog(vm, l, onDismiss = { watchLine = null }) }
 }
 
 @Composable
-private fun BasketCard(b: StoreBasket, hebrew: Boolean, comparable: Double, commonCount: Int, best: Boolean, expanded: Boolean, onToggle: () -> Unit) {
+private fun BasketCard(b: StoreBasket, hebrew: Boolean, comparable: Double, commonCount: Int, best: Boolean, expanded: Boolean, onLine: (com.rimon.smartfamily.data.repo.PricedLine) -> Unit = {}, onToggle: () -> Unit) {
     val ch = Chains.byKey(b.store.chainKey)
     Card(
         Modifier.fillMaxWidth().clickable(onClick = onToggle),
@@ -157,7 +160,7 @@ private fun BasketCard(b: StoreBasket, hebrew: Boolean, comparable: Double, comm
             if (expanded) {
                 HorizontalDivider(Modifier.padding(vertical = 6.dp))
                 b.lines.forEach { l ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                    Row(Modifier.fillMaxWidth().clickable(enabled = l.match != null) { onLine(l) }.padding(vertical = 3.dp)) {
                         Column(Modifier.weight(1f)) {
                             Text(l.item.name + if (l.item.quantity > 1) " ×${l.item.quantity.toInt()}" else "")
                             Text(
@@ -165,6 +168,8 @@ private fun BasketCard(b: StoreBasket, hebrew: Boolean, comparable: Double, comm
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (l.match == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            l.promo?.let { p -> Text("🏷 " + p.description + if (p.until.isNotBlank()) " · " + stringResource(R.string.prices_until, p.until.split('-').reversed().joinToString("/")) else "",
+                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary) }
                         }
                         Text(if (l.match != null) shekel(l.total) else "—")
                     }
@@ -217,4 +222,49 @@ private fun StoresTab(vm: PriceViewModel, hebrew: Boolean) {
             }
         }
     }
+}
+
+
+/** PRC-5: buy each item where it is cheapest among the shown stores. Shown as an extra view. */
+@Composable
+private fun SplitPlan(shown: List<StoreBasket>, hebrew: Boolean) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    val ids = shown.first().lines.map { it.item.id }
+    val pick = ids.mapNotNull { id ->
+        shown.mapNotNull { b -> b.lines.firstOrNull { it.item.id == id && it.match != null }?.let { b to it } }.minByOrNull { it.second.total }
+    }
+    val byStore = pick.groupBy { it.first }
+    val splitTotal = pick.sumOf { it.second.total }
+    val common = pick.map { it.second.item.id }.toSet()
+    val bestSingle = shown.filter { b -> common.all { id -> b.lines.any { it.item.id == id && it.match != null } } }.minOfOrNull { b -> b.lines.filter { it.item.id in common }.sumOf { it.total } }
+    if (byStore.size < 2) return
+    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+        Column(Modifier.padding(14.dp).clickable { open = !open }) {
+            Text("✂️ " + stringResource(R.string.prices_split_title, shekel(splitTotal)) + (bestSingle?.let { " · " + stringResource(R.string.prices_split_saves, shekel(it - splitTotal)) } ?: ""), style = MaterialTheme.typography.titleSmall)
+            if (open) byStore.forEach { (b, lines) ->
+                val ch = Chains.byKey(b.store.chainKey)
+                Text((if (hebrew) ch?.he else ch?.en).orEmpty() + " · " + b.store.name + ": " + lines.joinToString(", ") { it.second.item.name }, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchDialog(vm: PriceViewModel, l: com.rimon.smartfamily.data.repo.PricedLine, onDismiss: () -> Unit) {
+    val m = l.match ?: return
+    var target by rememberSaveable { mutableStateOf(String.format(java.util.Locale.US, "%.2f", m.price * 0.9)) }
+    val hist by androidx.compose.runtime.produceState(emptyList<com.rimon.smartfamily.data.db.PriceHistoryEntity>(), m.code) { value = vm.history(m.code) }
+    androidx.compose.material3.AlertDialog(onDismissRequest = onDismiss, title = { Text(m.name) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(stringResource(R.string.prices_now, shekel(m.price)) + if (m.unitPrice > 0) " · " + stringResource(R.string.prices_unit, shekel(m.unitPrice), m.unit) else "")
+                if (hist.isNotEmpty()) {
+                    Text(stringResource(R.string.prices_history), style = MaterialTheme.typography.labelLarge)
+                    hist.groupBy { it.day }.toSortedMap().entries.toList().takeLast(10).forEach { (d, list) -> Text(d.split('-').reversed().take(2).joinToString("/") + "  " + shekel(list.minOf { it.price }), style = MaterialTheme.typography.bodySmall) }
+                }
+                NumIn(stringResource(R.string.prices_alert_below), target) { target = it }
+            }
+        },
+        confirmButton = { TextButton(onClick = { target.toDoubleOrNull()?.let { vm.watch(m.code, m.name, it) }; onDismiss() }) { Text(stringResource(R.string.prices_watch)) } },
+        dismissButton = { TextButton(onClick = { vm.unwatch(m.code); onDismiss() }) { Text(stringResource(R.string.prices_unwatch)) } })
 }

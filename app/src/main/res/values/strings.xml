@@ -1195,4 +1195,16 @@
     <string name="trip_learn_always">We forgot it – always add</string>
     <string name="trip_learn_always_done">It will be on every packing list from now on</string>
     <string name="trip_learn_skip_done">It will not be suggested again</string>
+    <string name="prices_until">until %1$s</string>
+    <string name="prices_split_title">Split plan: %1$s</string>
+    <string name="prices_split_saves">saves %1$s</string>
+    <string name="prices_now">Now %1$s</string>
+    <string name="prices_unit">%1$s per %2$s</string>
+    <string name="prices_history">Price history</string>
+    <string name="prices_alert_below">Alert me at or below (₪)</string>
+    <string name="prices_watch">Watch price</string>
+    <string name="prices_unwatch">Stop watching</string>
+    <string name="prices_watching">Watching this price – you get a notification when it drops</string>
+    <string name="prices_alert_title">Price drop: %1$s</string>
+    <string name="prices_alert_body">Now ₪%1$s at %2$s</string>
 </resources>
