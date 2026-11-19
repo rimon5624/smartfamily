@@ -322,7 +322,10 @@ private fun MainNav(vm: AppViewModel) {
                 if (famId.isNotEmpty()) ChoresScreen(lifeVm, viewer, settings?.zmanimCity ?: "jerusalem", onBack = { nav.popBackStack() })
             }
             composable("calendar") {
-                if (famId.isNotEmpty()) CalendarScreen(lifeVm, viewer, onBack = { nav.popBackStack() })
+                if (famId.isNotEmpty()) {
+                    val trips by remember(famId) { extrasVm.trips(famId) }.collectAsState(initial = emptyList())
+                    CalendarScreen(lifeVm, viewer, settings, trips, onBack = { nav.popBackStack() })
+                }
             }
             composable("kitchen/{tab}") { back ->
                 if (famId.isNotEmpty()) KitchenScreen(

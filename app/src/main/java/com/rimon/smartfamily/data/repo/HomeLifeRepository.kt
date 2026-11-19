@@ -246,6 +246,29 @@ class HomeLifeRepository(
 
     suspend fun allDatesForReminders() = db.familyDates().allActive()
 
+    /** Every yearly occurrence of a family date between two days (both calendars, DAT-2). */
+    fun occurrencesBetween(d: FamilyDateEntity, from: java.time.LocalDate, to: java.time.LocalDate): List<Pair<java.time.LocalDate, Int?>> {
+        val z = com.rimon.smartfamily.smart.JewishDays
+        val out = mutableListOf<Pair<java.time.LocalDate, Int?>>()
+        if (d.drive == "HEBREW" && d.hebrewDay > 0 && d.hebrewMonth > 0) {
+            val y0 = com.kosherjava.zmanim.hebrewcalendar.JewishCalendar(z.noon(from)).jewishYear
+            val y1 = com.kosherjava.zmanim.hebrewcalendar.JewishCalendar(z.noon(to)).jewishYear
+            for (y in y0..y1) {
+                if (d.hebrewYear > 0 && y < d.hebrewYear) continue
+                val on = z.anniversary(d.hebrewDay, d.hebrewMonth, y, yahrzeit = d.type == "YAHRZEIT")
+                if (!on.isBefore(from) && !on.isAfter(to)) out += on to (if (d.hebrewYear > 0) y - d.hebrewYear else null)
+            }
+        } else {
+            val g = d.gregorian.takeIf { it.isNotBlank() }?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() } ?: return out
+            for (y in from.year..to.year) {
+                if (y < g.year) continue
+                val on = runCatching { g.withYear(y) }.getOrNull() ?: java.time.LocalDate.of(y, 2, 28)
+                if (!on.isBefore(from) && !on.isAfter(to)) out += on to (y - g.year)
+            }
+        }
+        return out
+    }
+
     // ---------------- events ----------------
 
     fun observeEvents(familyId: String) = db.events().observeForFamily(familyId)
@@ -266,6 +289,25 @@ class HomeLifeRepository(
         val out = mutableListOf<EventOccurrence>()
         events.forEach { e ->
             val length = (e.endAt - e.startAt).coerceAtLeast(0)
+            if (e.recurrence == "YEARLY_HEBREW" || e.recurrence == "MONTHLY_HEBREW") {
+                // Repeats by the Hebrew date of its first occurrence (e.g. every year on 15 Shevat).
+                val z = com.rimon.smartfamily.smart.JewishDays
+                val first = z.toLocal(e.startAt)
+                val timeOfDay = e.startAt - z.startMs(first)
+                val h = com.kosherjava.zmanim.hebrewcalendar.JewishCalendar(z.noon(first))
+                val fromD = z.toLocal(from); val toD = z.toLocal(to)
+                val yFrom = com.kosherjava.zmanim.hebrewcalendar.JewishCalendar(z.noon(fromD)).jewishYear
+                val yTo = com.kosherjava.zmanim.hebrewcalendar.JewishCalendar(z.noon(toD)).jewishYear
+                for (y in maxOf(yFrom, h.jewishYear)..yTo) {
+                    val months = if (e.recurrence == "YEARLY_HEBREW") listOf(h.jewishMonth) else z.monthsOfYear(y)
+                    months.forEach { m ->
+                        val d = if (e.recurrence == "YEARLY_HEBREW") z.anniversary(h.jewishDayOfMonth, m, y) else z.toGregorian(h.jewishDayOfMonth, m, y)
+                        val s = z.startMs(d) + timeOfDay
+                        if (s >= e.startAt && s + length >= from && s <= to) out += EventOccurrence(e, Date(s), Date(s + length))
+                    }
+                }
+                return@forEach
+            }
             val field = when (e.recurrence) {
                 "WEEKLY" -> Calendar.WEEK_OF_YEAR
                 "MONTHLY" -> Calendar.MONTH

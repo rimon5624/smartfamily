@@ -43,6 +43,11 @@ data class AppSettings(
     val kidMode: String = "AUTO",
     val lastSeenVersion: String = "",
     val updateChecks: Boolean = true,
+    // calendar (2.0)
+    val calHebFirst: Boolean = true,
+    val calBasis: String = "GREG",
+    val calView: String = "MONTH",
+    val calShabbatRow: Boolean = true,
 ) {
     val supabaseConfigured: Boolean get() = supabaseUrl.isNotBlank() && supabaseAnonKey.isNotBlank()
 }
@@ -74,6 +79,10 @@ class SettingsStore(private val context: Context) {
         val kidMode = stringPreferencesKey("kid_mode")
         val lastSeenVersion = stringPreferencesKey("last_seen_version")
         val updateChecks = booleanPreferencesKey("update_checks")
+        val calHebFirst = booleanPreferencesKey("cal_heb_first")
+        val calBasis = stringPreferencesKey("cal_basis")
+        val calView = stringPreferencesKey("cal_view")
+        val calShabbatRow = booleanPreferencesKey("cal_shabbat_row")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p -> p.toSettings() }
@@ -105,7 +114,16 @@ class SettingsStore(private val context: Context) {
         kidMode = this[K.kidMode] ?: "AUTO",
         lastSeenVersion = this[K.lastSeenVersion] ?: "",
         updateChecks = this[K.updateChecks] ?: true,
+        calHebFirst = this[K.calHebFirst] ?: true,
+        calBasis = this[K.calBasis] ?: "GREG",
+        calView = this[K.calView] ?: "MONTH",
+        calShabbatRow = this[K.calShabbatRow] ?: true,
     )
+
+    suspend fun setCalendar(hebFirst: Boolean? = null, basis: String? = null, view: String? = null, shabbatRow: Boolean? = null) = context.dataStore.edit {
+        hebFirst?.let { v -> it[K.calHebFirst] = v }; basis?.let { v -> it[K.calBasis] = v }
+        view?.let { v -> it[K.calView] = v }; shabbatRow?.let { v -> it[K.calShabbatRow] = v }
+    }
 
     suspend fun setAppLock(v: Boolean) = context.dataStore.edit { it[K.appLock] = v }
     suspend fun setLockMinutes(v: Int) = context.dataStore.edit { it[K.lockMinutes] = v }

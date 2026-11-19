@@ -45,6 +45,9 @@ class HomeLifeViewModel(app: Application) : AndroidViewModel(app) {
     fun members(familyId: String) = c.families.observeMembers(familyId)
     fun nextOccurrence(d: FamilyDateEntity) = repo.nextOccurrence(d)
     fun expand(events: List<EventEntity>, from: Long, to: Long) = repo.expand(events, from, to)
+    fun dateOccurrences(d: FamilyDateEntity, from: java.time.LocalDate, to: java.time.LocalDate) = repo.occurrencesBetween(d, from, to)
+    fun setCalendar(hebFirst: Boolean? = null, basis: String? = null, view: String? = null, shabbatRow: Boolean? = null) =
+        viewModelScope.launch { c.settings.setCalendar(hebFirst, basis, view, shabbatRow) }
 
     suspend fun shabbat(cityKey: String): ShabbatTimes = withContext(Dispatchers.Default) { Zmanim.nextShabbat(Cities.byKey(cityKey)) }
 
