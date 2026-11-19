@@ -193,7 +193,7 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
     val aisle = remember(listId) { AisleOrder(context, listId) }
     var aisleTick by remember { mutableStateOf(0) }
     val rank = remember(aisleTick) { aisle.rank() }
-    val grouped = ShopCategory.entries.sortedBy { rank[it.key] ?: (100 + it.ordinal) }.mapNotNull { cat ->
+    val grouped = ShopCategory.entries.sortedBy { c -> rank[c.key] ?: (100f + c.ordinal) }.mapNotNull { cat ->
         open.filter { ShopCategory.fromKey(it.category) == cat }.takeIf { it.isNotEmpty() }?.let { cat to it }
     }
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -288,6 +288,7 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer), modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
                     Column(Modifier.padding(12.dp)) {
                         Text(stringResource(R.string.shop_staples_due), style = MaterialTheme.typography.titleSmall)
+                        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
                         androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             dueStaples.forEach { f ->
                                 androidx.compose.material3.AssistChip(onClick = { vm.addText(listId, f.name, viewer.isChild) },
