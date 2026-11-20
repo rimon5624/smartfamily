@@ -72,7 +72,7 @@ object NavItems {
         "budget" -> "money" to "budget"; "money" -> "money" to when (route.substringAfter('/', "0")) { "1" -> "pocket"; "2" -> "goals"; "3" -> "shared"; else -> "bills" }
         "appliances" -> "home" to "appliances"; "homebook" -> "home" to (if (route.endsWith("/1")) "knowledge" else "documents")
         "homex" -> "home" to when (route.substringAfter('/', "0")) { "1" -> "meters"; "2" -> "kits"; "3" -> "secrets"; else -> "repairs" }
-        "family" -> "family" to "family"
+        "family" -> if (route == "family") "family" to "family" else null  // "family/{id}" is a family's settings page
         else -> null
     }
 }

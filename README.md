@@ -2,9 +2,21 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 2.0.1**
+**Current version: 2.1.0**
 
-## What is new in 2.0.1
+## What is new in 2.1.0
+
+- **Simpler structure**: 17 modules became six areas built around what the family does — Food & shopping (lists, pantry, menu, recipes, school), Calendar (calendar, Shabbat & holidays, trips), Tasks (chores, kids' routines), Money (budget, bills, pocket money, goals, shared costs), Home (appliances, documents, repairs, meters, kits, secrets, know-how) and Family (tree, albums, phone book, growth). Every feature can still be switched off (Settings → Features).
+- **Bottom bar** with Today and the areas; the user sets the order in Settings, the first four show and the rest are under "More" (with families and settings).
+- **Family chat outside the areas**: an icon with unread count on every screen (default) or a fixed bar tab — chosen in Settings. **Polls are chat messages** (📎 → Poll): vote in place, results update live, winner → shopping / menu.
+- **Today** feed instead of a grid of modules; the quick-add card and the Shabbat card no longer overlap.
+- **One checklist behaviour** for trip packing, kits and Shabbat preparation (shopping already had it): tap or swipe right to tick, swipe left to delete with undo, a shared progress bar, "start again", confetti when done.
+- **Price comparison inside the list** ("where is it cheapest") and as an action of the Food area.
+- **Branch lists for every chain**: Victory / Mahsanei HaShuk / H. Cohen branches from laibcatalog's branch list (works at night too), chains without a stores file (e.g. Yellow, Quik) get branches from their price files, a one-minute limit with plain-words errors, and a "check price sources" screen.
+- Cloud screen shows only the account and sync status; the project address and key are under "Advanced", for family owners/admins only.
+- The help icon is no longer mirrored in Hebrew.
+
+## What was new in 2.0.1
 
 - Cloud sync fixed end to end: the server now grants signed-in users access (row-level security still limits each family to its own data); rows the server refused for a configuration reason are no longer marked as sent; a one-time repair re-sends everything and moves leftover pre-sign-in ids to the account in every table.
 - Voice notes, photos and videos upload again (they failed because the family had never reached the cloud).

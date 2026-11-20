@@ -77,4 +77,15 @@ class CoreLogicTest {
         assertEquals(ev.title, back.title); assertEquals(ev.startAt, back.start); assertEquals(ev.endAt, back.end)
         assertEquals("WEEKLY", back.recurrence); assertEquals(ev.note, back.note)
     }
+
+    @Test fun navigationOrderAndOldRoutes() {
+        val o = com.rimon.smartfamily.model.NavItems.ordered("food,today,bogus")
+        assertEquals(listOf("food", "today"), o.take(2)); assertEquals(com.rimon.smartfamily.model.NavItems.defaultOrder.size, o.size)
+        assertEquals("food" to "lists", com.rimon.smartfamily.model.NavItems.areaFor("shopping"))
+        assertEquals("money" to "pocket", com.rimon.smartfamily.model.NavItems.areaFor("money/1"))
+        assertEquals("home" to "kits", com.rimon.smartfamily.model.NavItems.areaFor("homex/2"))
+        assertEquals(null, com.rimon.smartfamily.model.NavItems.areaFor("family/abc"))
+        // every area section belongs to a real module and keys are unique per area
+        com.rimon.smartfamily.model.Hub.entries.forEach { h -> assertEquals(h.sections.size, h.sections.map { it.key }.toSet().size) }
+    }
 }
