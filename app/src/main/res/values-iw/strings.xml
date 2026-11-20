@@ -1539,4 +1539,23 @@
     <string name="dr_dryness">רמת ייבוש</string>
     <string name="dr_size">גודל המטען</string>
     <string name="dr_result">%1$s · חום: %2$s</string>
+    <string name="tr_title">תמלול הודעות קוליות</string>
+    <string name="tr_sub">בענן או אופליין בטלפון</string>
+    <string name="tr_intro">האופליין משתמש באותו מנוע של \"הרימון המתמלל\": ההקלטה לא יוצאת מהטלפון. כל האפשרויות חינם.</string>
+    <string name="tr_auto">אוטומטי</string>
+    <string name="tr_offline">אופליין</string>
+    <string name="tr_cloud">ענן</string>
+    <string name="tr_off">כבוי</string>
+    <string name="tr_auto_body">אופליין כשיש מודל מותקן, אחרת בענן (Gemini).</string>
+    <string name="tr_offline_body">רק בטלפון. קודם מורידים מודל למטה.</string>
+    <string name="tr_cloud_body">Gemini מתמלל (צריך מפתח AI). ההקלטה נשלחת ל-Google רק לשם כך.</string>
+    <string name="tr_off_body">בלי כפתור תמלול בהודעות קוליות.</string>
+    <string name="tr_unsupported">הטלפון הזה לא יכול לתמלל אופליין (צריך טלפון 64 ביט מ-2019 בערך). תמלול בענן עדיין עובד.</string>
+    <string name="tr_wifi_only">להוריד מודלים רק ב-Wi-Fi</string>
+    <string name="tr_download">הורדה (%1$s)</string>
+    <string name="tr_delete">מחיקה ופינוי מקום</string>
+    <string name="tr_no_space">אין מספיק מקום פנוי בטלפון למודל הזה.</string>
+    <string name="tr_dl_failed">ההורדה נכשלה. נסו שוב (ב-Wi-Fi).</string>
+    <string name="tr_offline_not_ready">תמלול אופליין: הורידו מודל בהגדרות ← תמלול הודעות קוליות.</string>
+    <string name="tr_working">מתמלל בטלפון…</string>
 </resources>

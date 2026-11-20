@@ -20,6 +20,12 @@ val hasReleaseKey = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
 android {
     namespace = "com.rimon.smartfamily"
     compileSdk = 34
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
 
     defaultConfig {
         applicationId = "com.rimon.smartfamily"
@@ -29,6 +35,14 @@ android {
         versionName = appVersionName
         vectorDrawables { useSupportLibrary = true }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // 2.2 offline transcription (whisper.cpp, same engine as "הרימון המתמלל"): built for 64-bit ARM phones and
+        // the x86_64 emulator; other phones keep cloud transcription.
+        externalNativeBuild {
+            cmake {
+                arguments += listOf("-DANDROID_STL=c++_static")
+                abiFilters += listOf("arm64-v8a", "x86_64")
+            }
+        }
         // The family's Supabase project. The anon key is public by design: row-level security
         // on the server decides what each signed-in user can read or write.
         buildConfigField("String", "DEFAULT_SUPABASE_URL", "\"https://giqafbtcyimbifyjvpgo.supabase.co\"")

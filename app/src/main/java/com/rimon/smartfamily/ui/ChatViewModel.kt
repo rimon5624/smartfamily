@@ -206,14 +206,29 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** CHT-6/7: cloud transcription with Gemini (free tier); audio leaves the phone only for this. */
+    /**
+     * 2.2: offline (whisper on this phone, the audio never leaves it) when chosen or when a model is ready in "auto";
+     * otherwise cloud transcription with Gemini.
+     */
     fun transcribe(m: ShownMessage) = launchSafe {
         val f = media(m) ?: return@launchSafe
-        val lang = getApplication<Application>().resources.configuration.locales[0].language.let { if (it == "iw" || it == "he") "Hebrew" else "the spoken language" }
-        val text = c.gemini.ask(
-            "Transcribe this voice message word for word in $lang. Answer only JSON: {\"text\":string}",
-            listOf("audio/mp4" to withContext(Dispatchers.IO) { f.readBytes() }),
-        )
-        val t = runCatching { (json.parseToJsonElement(text) as JsonObject)["text"]?.jsonPrimitive?.contentOrNull }.getOrNull() ?: text
+        val ctx = getApplication<Application>()
+        val mode = com.rimon.smartfamily.smart.WhisperModels.mode(ctx)
+        if (mode == "off") return@launchSafe
+        val model = com.rimon.smartfamily.smart.WhisperModels.selected(ctx)
+        val offline = (mode == "offline" || mode == "auto") && model != null && com.rimon.smartfamily.smart.LocalWhisper.unsupported() == null
+        if (mode == "offline" && !offline) { _messages.tryEmit(UiMessage.Res(R.string.tr_offline_not_ready)); return@launchSafe }
+        val t = if (offline) {
+            _messages.tryEmit(UiMessage.Res(R.string.tr_working))
+            withContext(Dispatchers.Default) { com.rimon.smartfamily.smart.LocalWhisper.transcribe(ctx, model!!, f) }
+        } else {
+            val lang = ctx.resources.configuration.locales[0].language.let { if (it == "iw" || it == "he") "Hebrew" else "the spoken language" }
+            val text = c.gemini.ask(
+                "Transcribe this voice message word for word in $lang. Answer only JSON: {\"text\":string}",
+                listOf("audio/mp4" to withContext(Dispatchers.IO) { f.readBytes() }),
+            )
+            runCatching { (json.parseToJsonElement(text) as JsonObject)["text"]?.jsonPrimitive?.contentOrNull }.getOrNull() ?: text
+        }
         if (m.entity.senderId == uid() && m.payload != null) {
             repo.edit(m.entity, m.payload.copy(transcript = t))
         } else {

@@ -1543,4 +1543,23 @@
     <string name="dr_dryness">How dry</string>
     <string name="dr_size">Load size</string>
     <string name="dr_result">%1$s · heat: %2$s</string>
+    <string name="tr_title">Voice message transcription</string>
+    <string name="tr_sub">Cloud or offline on this phone</string>
+    <string name="tr_intro">Offline uses the same engine as \"הרימון המתמלל\": the recording never leaves the phone. All options are free.</string>
+    <string name="tr_auto">Auto</string>
+    <string name="tr_offline">Offline</string>
+    <string name="tr_cloud">Cloud</string>
+    <string name="tr_off">Off</string>
+    <string name="tr_auto_body">Offline when a model is downloaded, otherwise the cloud (Gemini).</string>
+    <string name="tr_offline_body">Only on this phone. Download a model below first.</string>
+    <string name="tr_cloud_body">Gemini transcribes it (needs the AI key). The audio is sent to Google for this only.</string>
+    <string name="tr_off_body">No transcription button on voice messages.</string>
+    <string name="tr_unsupported">This phone cannot transcribe offline (needs a 64-bit phone from about 2019 on). Cloud transcription still works.</string>
+    <string name="tr_wifi_only">Download models on Wi-Fi only</string>
+    <string name="tr_download">Download (%1$s)</string>
+    <string name="tr_delete">Delete to free space</string>
+    <string name="tr_no_space">Not enough free space on the phone for this model.</string>
+    <string name="tr_dl_failed">The download failed. Try again (on Wi-Fi).</string>
+    <string name="tr_offline_not_ready">Offline transcription: download a model in Settings → Voice message transcription.</string>
+    <string name="tr_working">Transcribing on this phone…</string>
 </resources>

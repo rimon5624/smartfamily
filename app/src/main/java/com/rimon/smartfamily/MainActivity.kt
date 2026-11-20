@@ -470,6 +470,7 @@ private fun MainNav(vm: AppViewModel) {
                     onAi = { nav.navigate("ai") },
                     onSmartHome = { nav.navigate("smarthome") },
                     onNotifyCheck = { nav.navigate("notify_check") },
+                    onTranscription = { nav.navigate("transcription") },
                 )
             }
             composable("family/{id}") { back ->
@@ -499,6 +500,7 @@ private fun MainNav(vm: AppViewModel) {
             }
             composable("cloud") { CloudScreen(vm, onBack = { nav.popBackStack() }) }
             composable("backup") { BackupScreen(vm, onBack = { nav.popBackStack() }) }
+            composable("transcription") { com.rimon.smartfamily.ui.screens.TranscriptionScreen(isHebrew(), onBack = { nav.popBackStack() }) }
             composable("notify_check") { com.rimon.smartfamily.ui.screens.NotificationCheckScreen(vm, onBack = { nav.popBackStack() }) }
             composable("ai") {
                 AiSettingsScreen(

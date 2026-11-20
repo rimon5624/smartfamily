@@ -3,6 +3,7 @@ package com.rimon.smartfamily.ui.screens
 import com.rimon.smartfamily.ui.components.SfTopAppBar
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.heightIn
@@ -92,6 +93,7 @@ fun SettingsScreen(
     onAi: () -> Unit,
     onSmartHome: () -> Unit,
     onNotifyCheck: () -> Unit = {},
+    onTranscription: () -> Unit = {},
 ) {
     val s by vm.settings.collectAsStateWithLifecycle()
     val name by vm.displayName.collectAsStateWithLifecycle()
@@ -211,6 +213,7 @@ fun SettingsScreen(
             )
             ClickRow(Icons.Outlined.Sensors, stringResource(R.string.sh_title), stringResource(R.string.sh_hc) + " · " + stringResource(R.string.sh_st), onSmartHome)
             ClickRow(Icons.Outlined.Notifications, stringResource(R.string.nc_title), stringResource(R.string.nc_sub), onNotifyCheck)
+            ClickRow(Icons.Outlined.Mic, stringResource(R.string.tr_title), stringResource(R.string.tr_sub), onTranscription)
             CityRow(settings.zmanimCity, settings.language, settings.favCities.split(',').filter { it.isNotBlank() }, { vm.toggleFavCity(it) }) { vm.setZmanimCity(it) }
             // Home screen cards: size of the greeting and the Shabbat card
             // 2.1: order of the bottom bar and where the chat lives
