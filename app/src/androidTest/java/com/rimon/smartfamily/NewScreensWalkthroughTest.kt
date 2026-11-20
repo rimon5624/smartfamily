@@ -87,10 +87,11 @@ class NewScreensWalkthroughTest {
             runCatching { compose.onAllNodesWithText(str(R.string.apl_tab_wash)).onFirst().performClick() }
             shot("10_dryer")
             // keyboard over the lowest field of a dialog: add appliance → focus the last text field
-            go("appliances"); compose.waitForIdle()
-            runCatching { compose.onAllNodesWithText(str(R.string.apl_add)).onLast().performClick() }
-            compose.waitForIdle()
-            runCatching { compose.onAllNodes(hasSetTextAction()).onLast().performClick(); compose.onAllNodes(hasSetTextAction()).onLast().performTextInput("בדיקה") }
+            go("appliances"); compose.waitUntil(8_000) { hasTag("apl_add_fab") }
+            compose.onNodeWithTag("apl_add_fab").performClick()
+            compose.waitUntil(5_000) { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty() }
+            compose.onAllNodes(hasSetTextAction()).onLast().performClick()
+            compose.onAllNodes(hasSetTextAction()).onLast().performTextInput("בדיקה")
             shot("11_keyboard_dialog")
             // chat with the keyboard open
             val chat = runBlocking { c.chat.ensureFamilyChat(fam, c.settings.current().userId, listOf(c.settings.current().userId), "המשפחה") }

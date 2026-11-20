@@ -1,5 +1,7 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -157,10 +159,11 @@ fun FamilyTreeGraph(
                 }
             },
         ) {
-            Box(Modifier.size(lay.width.dp, lay.height.dp).graphicsLayer {
+            // unbounded: the tree keeps its full size even when it is wider than the screen (the canvas is mirrored by its width)
+            Box(Modifier.wrapContentSize(Alignment.TopStart, unbounded = true).requiredSize(lay.width.dp, lay.height.dp).graphicsLayer {
                 transformOrigin = TransformOrigin(0f, 0f); scaleX = scale; scaleY = scale; translationX = tx; translationY = ty
             }) {
-                Canvas(Modifier.size(lay.width.dp, lay.height.dp)) {
+                Canvas(Modifier.requiredSize(lay.width.dp, lay.height.dp)) {
                     fun pt(id: String, dx: Float, dy: Float): Offset? = lay.pos[id]?.let { (x, y) ->
                         val px = (x + dx).dp.toPx(); Offset(if (rtl) size.width - px else px, (y + dy).dp.toPx())
                     }

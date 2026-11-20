@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.focus.onFocusChanged
@@ -131,6 +132,7 @@ fun AppliancesScreen(vm: ApplianceViewModel, viewer: Viewer, onBack: () -> Unit,
         },
         floatingActionButton = {
             if (!viewer.isChild) ExtendedFloatingActionButton(
+                modifier = Modifier.testTag("apl_add_fab"),
                 onClick = { adding = vm.newAppliance(viewer.familyId, viewer.userId, "washer") },
                 icon = { Icon(Icons.Outlined.Add, null) }, text = { Text(stringResource(R.string.apl_add)) },
             )
