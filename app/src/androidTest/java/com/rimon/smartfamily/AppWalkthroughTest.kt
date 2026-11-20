@@ -45,6 +45,7 @@ class AppWalkthroughTest {
         c.settings.setLastSeenVersion(BuildConfig.VERSION_NAME)
         c.settings.setUpdateChecks(false)
         c.settings.setAppLock(false)
+        c.settings.setSecureScreens(false) // screenshots are blocked when this is on
         if (c.db.families().all().none { it.deletedAt == null }) {
             val f = c.families.createFamily("משפחת בדיקה", AppModule.entries.toSet())
             c.settings.setActiveFamily(f.id)
@@ -56,7 +57,8 @@ class AppWalkthroughTest {
     private fun shot(name: String) {
         compose.waitForIdle()
         Thread.sleep(400) // let animations settle
-        val bmp = compose.onRoot().captureToImage().asAndroidBitmap()
+        // the whole display (sheets and dialogs included), as the user sees it
+        val bmp = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot() ?: return
         File(shots, "%02d_%s.png".format(n++, name)).outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 90, it) }
     }
 
