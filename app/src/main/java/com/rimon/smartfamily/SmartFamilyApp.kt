@@ -21,6 +21,8 @@ import com.rimon.smartfamily.security.KeystoreCrypto
 import com.rimon.smartfamily.sync.SupabaseApi
 import com.rimon.smartfamily.sync.SyncEngine
 import com.rimon.smartfamily.sync.SyncScheduler
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.debounce
 
 /** Manual dependency container: one instance of each service for the whole app. */
 class AppContainer(context: Context) {
@@ -44,6 +46,7 @@ class AppContainer(context: Context) {
     val chatCrypto = ChatCrypto(crypto)
     val chat = ChatRepository(db, chatCrypto, api) { SyncScheduler.requestSoon(appContext) }
     init { sync.afterPull = { me -> chat.maintain(me); runCatching { com.rimon.smartfamily.sync.Push.register(appContext) } } }
+    val realtime = com.rimon.smartfamily.sync.Realtime(api)
     val gemini = GeminiClient(crypto) { settings.current().let { it.geminiModel to it.privacyMode } }
 }
 
@@ -58,5 +61,24 @@ class SmartFamilyApp : Application() {
         SyncScheduler.schedulePeriodic(this)
         ExpiryWorker.schedule(this)
         ReminderWorker.schedule(this)
+        startLive()
+    }
+
+    /** 2.2 live chat: a realtime socket only while the app is on screen; each change pulls the chat tables. */
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
+    private fun startLive() {
+        val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
+        androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
+            override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+                scope.launch { if (container.settings.current().supabaseConfigured) container.realtime.start() }
+            }
+            override fun onStop(owner: androidx.lifecycle.LifecycleOwner) { container.realtime.stop() }
+        })
+        scope.launch {
+            container.realtime.changes.debounce(250).collect {
+                container.sync.syncTables(setOf("chats", "chat_keys", "chat_messages", "chat_reactions", "chat_reads"))
+                runCatching { com.rimon.smartfamily.smart.ChatNotifier.afterSync(this@SmartFamilyApp, container) }
+            }
+        }
     }
 }

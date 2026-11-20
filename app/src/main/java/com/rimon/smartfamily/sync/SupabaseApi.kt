@@ -96,6 +96,10 @@ class SupabaseApi(
         saveSession(null)
     }
 
+    /** For the realtime socket (2.2): project URL, anon key and a fresh access token. */
+    suspend fun realtimeCredentials(): Triple<String, String, String> { val (u, k) = config(); return Triple(u, k, accessToken()) }
+    val socketClient: OkHttpClient get() = http
+
     private suspend fun accessToken(): String {
         val s = session() ?: throw SupabaseException(401, "Not signed in")
         if (System.currentTimeMillis() < s.expiresAt - 60_000) return s.accessToken

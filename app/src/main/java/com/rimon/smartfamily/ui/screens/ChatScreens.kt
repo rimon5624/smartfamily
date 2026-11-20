@@ -91,6 +91,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -132,7 +135,8 @@ private fun chatTitle(chat: ChatEntity, members: List<MemberEntity>, me: String)
 fun ChatListScreen(vm: ChatViewModel, viewer: Viewer, onBack: () -> Unit, onOpen: (String) -> Unit, showBack: Boolean = true) {
     val members by remember(viewer.familyId) { vm.members(viewer.familyId) }.collectAsState(initial = emptyList())
     val people by vm.people.collectAsState(initial = emptyList())
-    LaunchedEffect(Unit) { if (vm.signedIn) vm.liveList() }
+    val listLife = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(Unit) { if (vm.signedIn) listLife.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) { vm.liveList() } }
     val chats by remember(viewer.userId) { vm.chats(viewer.userId) }.collectAsState(initial = emptyList())
     val reads by remember(viewer.familyId, viewer.userId) { vm.myReads(viewer.familyId, viewer.userId) }.collectAsState(initial = emptyList())
     val busy by vm.busy.collectAsState()
@@ -267,7 +271,9 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
     val names = members.associate { it.userId to it.displayName }
     val c = chat ?: return
 
-    LaunchedEffect(c.id) { vm.live(c) }
+    // 2.2: only while the chat is really on screen — notifications come back the moment the app goes to the background
+    val chatLife = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(c.id) { chatLife.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) { vm.live(c) } }
     LaunchedEffect(messages.size) {
         vm.loadTranscripts(messages.filter { it.entity.kind == "voice" }.map { it.entity.id })
         val n = listState.layoutInfo.totalItemsCount
@@ -406,13 +412,14 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
                         DropdownMenuItem(text = { Text("🃏 " + stringResource(R.string.chat_card)) }, onClick = { attach = false; cardPicker = true })
                     }
                 }
+                // 2.2: the field stays editable while recording, so the keyboard does not close and nothing jumps under the finger
                 OutlinedTextField(
-                    value = if (recording) stringResource(R.string.chat_recording) else text,
+                    value = text,
                     onValueChange = { if (!recording) text = it },
-                    placeholder = { Text(stringResource(R.string.chat_type)) },
-                    modifier = Modifier.weight(1f).heightIn(max = 140.dp),
+                    placeholder = { Text(stringResource(if (recording) R.string.chat_recording else R.string.chat_type)) },
+                    modifier = Modifier.weight(1f).heightIn(max = 140.dp).testTag("chat_input"),
                     shape = RoundedCornerShape(24.dp),
-                    readOnly = recording,
+                    leadingIcon = if (recording) ({ Text("🔴", Modifier.padding(start = 6.dp)) }) else null,
                 )
                 Spacer(Modifier.size(6.dp))
                 if (text.isNotBlank() && !recording) {
@@ -431,14 +438,24 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
                     Surface(
                         shape = CircleShape,
                         color = if (recording) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(if (recording) 60.dp else 48.dp).pointerInput(c.id) {
+                        modifier = Modifier.size(48.dp).graphicsLayer { val k = if (recording) 1.25f else 1f; scaleX = k; scaleY = k }.testTag("chat_mic").pointerInput(c.id) {
                             awaitEachGesture {
-                                awaitFirstDown()
+                                val down = awaitFirstDown(requireUnconsumed = false)
+                                down.consume()
                                 val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
                                 if (!granted) { micPermission.launch(Manifest.permission.RECORD_AUDIO); waitForUpOrCancellation(); return@awaitEachGesture }
                                 vm.startRecording()
-                                val up = waitForUpOrCancellation()
-                                vm.stopRecording(c, send = up != null)
+                                // Stops only when the finger is lifted; sliding far sideways cancels (like WhatsApp).
+                                val start = down.position
+                                var cancelled = false
+                                while (true) {
+                                    val ev = awaitPointerEvent()
+                                    val ch = ev.changes.firstOrNull { it.id == down.id } ?: break
+                                    ch.consume()
+                                    if (kotlin.math.abs(ch.position.x - start.x) > 140.dp.toPx()) cancelled = true
+                                    if (!ch.pressed) break
+                                }
+                                vm.stopRecording(c, send = !cancelled)
                             }
                         },
                     ) {

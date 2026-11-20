@@ -700,7 +700,7 @@
     <string name="chat_photo">תמונה</string>
     <string name="chat_new_messages">%1$d הודעות חדשות</string>
     <string name="chat_record">לחיצה ארוכה להקלטה</string>
-    <string name="chat_recording">מקליט… לשחרר כדי לשלוח</string>
+    <string name="chat_recording">מקליט… שחרור שולח, החלקה הצידה מבטלת</string>
     <string name="chat_attach_photo">תמונה</string>
     <string name="chat_attach_file">קובץ</string>
     <string name="chat_transcribe">תמלול</string>

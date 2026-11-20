@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.imePadding
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
@@ -310,10 +311,14 @@ private fun MainNav(vm: AppViewModel) {
             else -> baseDensity
         },
     ) {
+    // 2.2: one keyboard rule for the whole app — content ends above the keyboard and the bar steps aside while typing,
+    // so a field at the bottom of any screen stays visible (scrollable screens bring the focused field into view).
+    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+    val imeVisible = androidx.compose.foundation.layout.WindowInsets.isImeVisible
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (!showBar && sharedView) {
+            if (!imeVisible && !showBar && sharedView) {
                 // SHR: in a family's shared view, always show whose items these are and whether I can edit.
                 Surface(color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.fillMaxWidth()) {
                     Text(
@@ -323,7 +328,7 @@ private fun MainNav(vm: AppViewModel) {
                     )
                 }
             }
-            if (showBar) {
+            if (showBar && !imeVisible) {
                 NavigationBar {
                     barItems.forEach { item ->
                         val selected = currentItem == item
@@ -351,6 +356,7 @@ private fun MainNav(vm: AppViewModel) {
     ) { inner ->
         val barPadding = PaddingValues(bottom = inner.calculateBottomPadding())
         androidx.compose.runtime.CompositionLocalProvider(com.rimon.smartfamily.ui.components.LocalChatEntry provides chatEntry) {
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().imePadding()) {
         NavHost(nav, startDestination = Tab.HOME.route) {
             composable(Tab.HOME.route) {
                 HomeScreen(
@@ -599,6 +605,7 @@ private fun MainNav(vm: AppViewModel) {
             composable("inventory") {
                 if (famId.isNotEmpty()) InventoryScreen(shopVm, viewer, onBack = { nav.popBackStack() })
             }
+        }
         }
     }
     }

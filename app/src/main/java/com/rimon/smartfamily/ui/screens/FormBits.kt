@@ -1,5 +1,7 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.verticalScroll
 import com.rimon.smartfamily.ui.components.SfTopAppBar
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
@@ -86,7 +88,7 @@ fun EditDialog(title: String, canSave: Boolean, onDismiss: () -> Unit, onSave: (
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) { item { content() } } },
+        text = { androidx.compose.foundation.layout.Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()).imePadding(), verticalArrangement = Arrangement.spacedBy(8.dp)) { content() } },
         confirmButton = { TextButton(enabled = canSave, onClick = onSave) { Text(stringResource(R.string.save)) } },
         dismissButton = {
             androidx.compose.foundation.layout.Row {
