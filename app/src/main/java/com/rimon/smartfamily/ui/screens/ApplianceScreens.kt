@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.material3.FilterChip
 import kotlinx.coroutines.delay
 import androidx.lifecycle.repeatOnLifecycle
@@ -161,39 +162,78 @@ fun AppliancesScreen(vm: ApplianceViewModel, viewer: Viewer, onBack: () -> Unit,
     adding?.let { a -> ApplianceEditDialog(vm, a, onDismiss = { adding = null }) { vm.save(it); adding = null; onOpen(it.id) } }
 }
 
+/**
+ * 2.2 add/edit appliance as a short wizard: 1) photo of the model sticker fills the details, 2) type, brand and model
+ * with suggestions (brands offline; models from the family and, with AI, from the brand), 3) more details.
+ * After saving, the appliance opens on its guide where the manual is added and the smart link is offered.
+ */
 @Composable
 private fun ApplianceEditDialog(vm: ApplianceViewModel, a: ApplianceEntity, onDismiss: () -> Unit, onSave: (ApplianceEntity) -> Unit) {
     var cur by remember { mutableStateOf(a) }
     val busy by vm.busy.collectAsStateWithLifecycle()
     val photo = rememberPhotoPicker { uri -> vm.fillFromLabel(cur, uri) { cur = it } }
+    val family by remember { vm.knownBrandsModels() }.collectAsState(initial = emptyList<Pair<String, String>>())
+    val aiModels by vm.modelSuggestions.collectAsStateWithLifecycle()
+    var more by remember { mutableStateOf(a.name.isNotEmpty()) }
+    val isNew = a.name.isEmpty()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(if (a.name.isEmpty()) R.string.apl_add else R.string.apl_tab_info)) },
+        title = { Text(stringResource(if (isNew) R.string.apl_add else R.string.apl_tab_info)) },
         text = {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                item { Text(stringResource(R.string.apl_type), style = MaterialTheme.typography.labelLarge); ChipRow(applianceTypes, cur.type) { cur = cur.copy(type = it) } }
-                item {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (isNew) com.rimon.smartfamily.ui.components.GuideStep(1, stringResource(R.string.aw_step1), stringResource(R.string.aw_step1_body), done = cur.model.isNotBlank()) {
                     OutlinedButton(onClick = photo, enabled = !busy) { Icon(Icons.Outlined.CameraAlt, null); Spacer(Modifier.size(6.dp)); Text(stringResource(R.string.apl_label_photo)) }
                     if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 }
-                item { Field(stringResource(R.string.apl_name), cur.name) { cur = cur.copy(name = it) } }
-                item { Field(stringResource(R.string.apl_brand), cur.brand) { cur = cur.copy(brand = it) } }
-                item { Field(stringResource(R.string.apl_model), cur.model) { cur = cur.copy(model = it) } }
-                item { Field(stringResource(R.string.apl_serial), cur.serial) { cur = cur.copy(serial = it) } }
-                item { Field(stringResource(R.string.apl_purchase), cur.purchaseDate) { cur = cur.copy(purchaseDate = it) } }
-                item { Field(stringResource(R.string.apl_warranty), cur.warrantyEnd) { cur = cur.copy(warrantyEnd = it) } }
-                item { Field(stringResource(R.string.apl_store), cur.store) { cur = cur.copy(store = it) } }
-                item { Field(stringResource(R.string.apl_service), cur.servicePhone) { cur = cur.copy(servicePhone = it) } }
-                item { Field(stringResource(R.string.apl_notes), cur.notes) { cur = cur.copy(notes = it) } }
+                else OutlinedButton(onClick = photo, enabled = !busy) { Icon(Icons.Outlined.CameraAlt, null); Spacer(Modifier.size(6.dp)); Text(stringResource(R.string.apl_label_photo)) }
+                Text(stringResource(R.string.apl_type), style = MaterialTheme.typography.labelLarge)
+                ChipRow(applianceTypes, cur.type) { cur = cur.copy(type = it) }
+                SuggestField(stringResource(R.string.apl_brand), cur.brand,
+                    com.rimon.smartfamily.smart.Brands.suggest(cur.type, cur.brand, family.map { it.first }.filter { it.isNotBlank() }),
+                ) { cur = cur.copy(brand = it) }
+                val familyModels = family.filter { it.first.equals(cur.brand, true) && it.second.isNotBlank() }.map { it.second }
+                SuggestField(stringResource(R.string.apl_model), cur.model,
+                    (familyModels + aiModels).distinct().filter { cur.model.isBlank() || it.contains(cur.model, true) }.take(10),
+                ) { cur = cur.copy(model = it) }
+                if (vm.aiConfigured && cur.brand.isNotBlank()) TextButton(onClick = { vm.suggestModels(cur.type, cur.brand) }) { Text(stringResource(R.string.aw_ai_models)) }
+                Field(stringResource(R.string.apl_name), cur.name) { cur = cur.copy(name = it) }
+                TextButton(onClick = { more = !more }) { Text(stringResource(if (more) R.string.aw_less else R.string.aw_more)) }
+                if (more) {
+                    Field(stringResource(R.string.apl_serial), cur.serial) { cur = cur.copy(serial = it) }
+                    DateIn(stringResource(R.string.apl_purchase), cur.purchaseDate) { cur = cur.copy(purchaseDate = it) }
+                    DateIn(stringResource(R.string.apl_warranty), cur.warrantyEnd) { cur = cur.copy(warrantyEnd = it) }
+                    Field(stringResource(R.string.apl_store), cur.store) { cur = cur.copy(store = it) }
+                    Field(stringResource(R.string.apl_service), cur.servicePhone) { cur = cur.copy(servicePhone = it) }
+                    Field(stringResource(R.string.apl_notes), cur.notes) { cur = cur.copy(notes = it) }
+                }
+                if (isNew) Text(stringResource(R.string.aw_after), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
         confirmButton = {
             TextButton(enabled = cur.name.isNotBlank() || cur.brand.isNotBlank(), onClick = {
-                onSave(cur.copy(name = cur.name.ifBlank { listOf(cur.brand, cur.model).filter { it.isNotBlank() }.joinToString(" ") }.trim()))
+                val brand = com.rimon.smartfamily.smart.Brands.canonical(cur.brand)
+                onSave(cur.copy(brand = brand, name = cur.name.ifBlank { listOf(brand, cur.model).filter { it.isNotBlank() }.joinToString(" ") }.trim()))
             }) { Text(stringResource(R.string.save)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
+}
+
+/** A text field with a suggestion list under it while typing (tap to fill). */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun SuggestField(label: String, value: String, suggestions: List<String>, onChange: (String) -> Unit) {
+    var focused by remember { mutableStateOf(false) }
+    Column {
+        OutlinedTextField(value, onChange, label = { Text(label) }, singleLine = true,
+            modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused })
+        val show = suggestions.filter { !it.equals(value, true) }
+        if (focused && show.isNotEmpty()) {
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                show.forEach { s -> androidx.compose.material3.SuggestionChip(onClick = { onChange(s) }, label = { Text(s) }) }
+            }
+        }
+    }
 }
 
 @Composable

@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui
 
+import kotlinx.coroutines.flow.map
 import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
@@ -25,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -67,6 +69,20 @@ class ApplianceViewModel(app: Application) : AndroidViewModel(app) {
     fun lang(): String = getApplication<Application>().resources.configuration.locales[0].language.let { if (it == "iw" || it == "he") "Hebrew" else "English" }
 
     fun appliances(familyId: String) = repo.observeAll(familyId)
+
+    // ---- 2.2 add-appliance wizard ----
+    val aiConfigured: Boolean get() = c.gemini.isConfigured
+    /** (brand, model) pairs the family already used, for suggestions. */
+    fun knownBrandsModels() = c.db.appliances().observeAllActive().map { l -> l.map { it.brand to it.model }.distinct() }
+    private val _modelSuggestions = MutableStateFlow<List<String>>(emptyList())
+    val modelSuggestions = _modelSuggestions.asStateFlow()
+    fun suggestModels(type: String, brand: String) = launchSafe {
+        val text = c.gemini.ask("List up to 10 common current model numbers of $brand $type appliances sold in Israel, as printed on the model sticker. " +
+            "Answer only JSON: {\"models\":[string]}")
+        _modelSuggestions.value = runCatching {
+            (json.parseToJsonElement(text) as JsonObject)["models"]!!.jsonArray.mapNotNull { it.jsonPrimitive.contentOrNull?.trim()?.takeIf { m -> m.length in 3..30 } }
+        }.getOrDefault(emptyList())
+    }
     fun appliance(id: String) = repo.observeOne(id)
     fun presets(applianceId: String) = repo.observePresets(applianceId)
     fun profileOf(a: ApplianceEntity): ApplianceProfile? = a.profile.takeIf { it.isNotBlank() }?.let { ApplianceProfile.parse(it) }

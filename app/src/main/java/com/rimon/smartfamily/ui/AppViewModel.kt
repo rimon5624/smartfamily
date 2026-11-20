@@ -111,6 +111,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }.getOrElse { e -> if (e is java.net.UnknownHostException) "offline" else "error" }
     }
 
+    /** 2.2 cloud wizard: checks a project address + public key before saving them. */
+    private val _cloudTest = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    val cloudTest = _cloudTest.asStateFlow()
+    fun testCloud(url: String, key: String) = viewModelScope.launch {
+        _cloudTest.value = "…"
+        _cloudTest.value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val u = url.trim().trimEnd('/')
+                if (!u.startsWith("https://")) return@runCatching "url"
+                okhttp3.OkHttpClient().newCall(okhttp3.Request.Builder().url("$u/auth/v1/settings").header("apikey", key.trim()).build()).execute().use { r ->
+                    when { r.isSuccessful -> "ok"; r.code == 401 || r.code == 403 -> "key"; else -> "url" }
+                }
+            }.getOrElse { e -> if (e is java.net.UnknownHostException) "offline" else "url" }
+        }
+    }
+
     private fun launchSafe(block: suspend () -> Unit) = viewModelScope.launch {
         _busy.value = true
         try {
@@ -258,9 +274,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---- backup ----
 
+    /** 2.2: after writing, the backup is opened again with the password, so a broken file is found now, not on the day it is needed. */
+    private val _backupCheck = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    val backupCheck = _backupCheck.asStateFlow()
     fun exportBackup(uri: Uri, password: String) = launchSafe {
+        _backupCheck.value = "…"
         c.backup.export(uri, password, c.settings.current().userId)
-        say(com.rimon.smartfamily.R.string.backup_done)
+        _backupCheck.value = runCatching { val p = c.backup.read(uri, password); "ok:" + p.toString().length }
+            .getOrElse { "err" }.let { if (it.startsWith("ok:")) "ok" else it }
+        say(if (_backupCheck.value == "ok") com.rimon.smartfamily.R.string.backup_verified else com.rimon.smartfamily.R.string.backup_verify_failed)
     }
 
     fun readBackup(uri: Uri, password: String, onRead: (BackupPayload) -> Unit) = launchSafe {

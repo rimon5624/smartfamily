@@ -431,9 +431,12 @@ fun CloudScreen(vm: AppViewModel, onBack: () -> Unit) {
             )
             Spacer(Modifier.height(12.dp))
             val ready = email.contains('@') && password.length >= 6 && !busy
+            // 2.2: a new account needs a strong password (free check on the phone; Supabase's leak check is [PAID])
+            val weak = com.rimon.smartfamily.security.PasswordRules.problem(password, email)
+            if (password.isNotEmpty() && weak != null) Text(stringResource(weak), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { vm.signIn(email, password) }, enabled = ready) { Text(stringResource(R.string.cloud_sign_in)) }
-                OutlinedButton(onClick = { vm.signUp(email, password) }, enabled = ready) { Text(stringResource(R.string.cloud_sign_up)) }
+                OutlinedButton(onClick = { vm.signUp(email, password) }, enabled = ready && weak == null) { Text(stringResource(R.string.cloud_sign_up)) }
             }
         }
         if (settings.lastSyncError.isNotBlank()) {
@@ -451,6 +454,14 @@ fun CloudScreen(vm: AppViewModel, onBack: () -> Unit) {
             if (advanced) {
                 Text(stringResource(R.string.cloud_advanced_warn), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.height(8.dp))
+                // 2.2 wizard for a family with its own cloud project
+                val ref = Regex("https://([a-z0-9]+)\\.supabase\\.co").find(url)?.groupValues?.get(1)
+                com.rimon.smartfamily.ui.components.GuideStep(1, stringResource(R.string.cw_step1), stringResource(R.string.cw_step1_body)) {
+                    com.rimon.smartfamily.ui.components.OpenSiteButton(stringResource(R.string.cw_dashboard),
+                        if (ref != null) "https://supabase.com/dashboard/project/$ref/settings/api" else "https://supabase.com/dashboard/projects")
+                }
+                com.rimon.smartfamily.ui.components.GuideStep(2, stringResource(R.string.cw_step2), stringResource(R.string.cw_step2_body)) {}
+                Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = url, onValueChange = { url = it }, label = { Text(stringResource(R.string.cloud_url)) },
                     placeholder = { Text("https://xxxx.supabase.co") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
@@ -462,9 +473,17 @@ fun CloudScreen(vm: AppViewModel, onBack: () -> Unit) {
                     singleLine = true, modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(8.dp))
-                Button(onClick = { vm.saveConnection(url, key) }, enabled = url.isNotBlank() && key.isNotBlank() && !busy) {
-                    Text(stringResource(R.string.cloud_save))
+                val cloudTest by vm.cloudTest.collectAsStateWithLifecycle()
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { vm.testCloud(url, key) }, enabled = url.isNotBlank() && key.isNotBlank()) { Text(stringResource(R.string.ai_test)) }
+                    Button(onClick = { vm.saveConnection(url, key) }, enabled = url.isNotBlank() && key.isNotBlank() && !busy) {
+                        Text(stringResource(R.string.cloud_save))
+                    }
                 }
+                cloudTest?.let { com.rimon.smartfamily.ui.components.TestResult(if (it == "…") null else it == "ok", stringResource(when (it) {
+                    "…" -> R.string.nc_sending; "ok" -> R.string.cw_ok; "offline" -> R.string.ai_check_offline; "key" -> R.string.cw_bad_key; else -> R.string.cw_bad_url })) }
+                Spacer(Modifier.height(8.dp))
+                if (ref != null) com.rimon.smartfamily.ui.components.OpenSiteButton(stringResource(R.string.cw_firebase), "https://console.firebase.google.com/")
             }
         }
     }
@@ -491,6 +510,12 @@ fun BackupScreen(vm: AppViewModel, onBack: () -> Unit) {
         Text(stringResource(R.string.backup_warning), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
 
         SectionTitle(stringResource(R.string.backup_export))
+        // 2.2 wizard: password → where to save → the app re-opens the file to prove it can be restored
+        val check by vm.backupCheck.collectAsStateWithLifecycle()
+        com.rimon.smartfamily.ui.components.GuideStep(1, stringResource(R.string.bw_step1), stringResource(R.string.bw_step1_body), done = password.length >= 8 && password == confirm) {}
+        com.rimon.smartfamily.ui.components.GuideStep(2, stringResource(R.string.bw_step2), stringResource(R.string.bw_step2_body), done = check == "ok") {
+            check?.let { com.rimon.smartfamily.ui.components.TestResult(if (it == "…") null else it == "ok", stringResource(when (it) { "…" -> R.string.bw_checking; "ok" -> R.string.backup_verified; else -> R.string.backup_verify_failed })) }
+        }
         OutlinedTextField(
             value = password, onValueChange = { password = it }, label = { Text(stringResource(R.string.backup_password)) },
             singleLine = true, modifier = Modifier.fillMaxWidth(), visualTransformation = PasswordVisualTransformation(),

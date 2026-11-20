@@ -98,6 +98,9 @@ interface PackedMealDao : PackedMealDaoBase {
 interface ApplianceDao : ApplianceDaoBase {
     @Query("SELECT * FROM appliances WHERE familyId = :familyId AND deletedAt IS NULL ORDER BY type, name")
     fun observeSorted(familyId: String): Flow<List<ApplianceEntity>>
+
+    @Query("SELECT * FROM appliances WHERE deletedAt IS NULL")
+    fun observeAllActive(): Flow<List<ApplianceEntity>>
 }
 
 @Dao

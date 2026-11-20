@@ -198,9 +198,11 @@ private fun JoinStep(vm: AppViewModel, name: String) {
             }
             item {
                 val ready = email.contains('@') && password.length >= 6 && !busy
+                val weak = com.rimon.smartfamily.security.PasswordRules.problem(password, email)
+                if (password.isNotEmpty() && weak != null) Text(stringResource(weak) + " " + stringResource(R.string.pw_for_new), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(enabled = ready, onClick = { vm.setDisplayName(name); vm.signIn(email, password); refresh++ }) { Text(stringResource(R.string.cloud_sign_in)) }
-                    androidx.compose.material3.OutlinedButton(enabled = ready, onClick = { vm.setDisplayName(name); vm.signUp(email, password); refresh++ }) { Text(stringResource(R.string.cloud_sign_up)) }
+                    androidx.compose.material3.OutlinedButton(enabled = ready && weak == null, onClick = { vm.setDisplayName(name); vm.signUp(email, password); refresh++ }) { Text(stringResource(R.string.cloud_sign_up)) }
                 }
             }
         } else {
