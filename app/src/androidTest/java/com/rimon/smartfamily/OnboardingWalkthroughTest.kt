@@ -29,8 +29,8 @@ class OnboardingWalkthroughTest {
     private val c get() = (target.applicationContext as SmartFamilyApp).container
     private val shots by lazy { File(target.getExternalFilesDir(null), "screens").apply { mkdirs() } }
 
-    @Before fun firstRun() = runBlocking { c.settings.setOnboardingDone(false); c.settings.setSecureScreens(false); c.settings.setAppLock(false) }
-    @After fun done() = runBlocking { c.settings.setOnboardingDone(true) }
+    @Before fun firstRun() = runBlocking<Unit> { c.settings.setOnboardingDone(false); c.settings.setSecureScreens(false); c.settings.setAppLock(false) }
+    @After fun done() = runBlocking<Unit> { c.settings.setOnboardingDone(true) }
 
     private fun shot(name: String) {
         compose.waitForIdle(); Thread.sleep(900)
