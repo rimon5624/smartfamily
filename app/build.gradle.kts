@@ -65,7 +65,9 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // 2.2: shrink + obfuscate (R8, free); the emulator job smoke-tests this exact build
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = if (hasReleaseKey) signingConfigs.getByName("release")
             else signingConfigs.getByName("debug")
         }

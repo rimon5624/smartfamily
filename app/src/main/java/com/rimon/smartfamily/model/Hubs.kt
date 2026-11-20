@@ -66,7 +66,8 @@ enum class Hub(val key: String, @StringRes val title: Int, @StringRes val short:
 object NavItems {
     const val TODAY = "today"
     const val CHAT = "chat"
-    val defaultOrder = listOf(TODAY, "calendar", "food", "tasks", "money", "home", "family", CHAT)
+    // 2.2: the bar shows Home, Food, Money and Tasks by default; Today, Calendar, Family and the chat are under "More"
+    val defaultOrder = listOf("home", "food", "money", "tasks", TODAY, "calendar", "family", CHAT)
     fun route(item: String) = when (item) { TODAY -> "today"; CHAT -> "chat"; "families" -> "families"; "settings" -> "settings"; else -> "hub_$item" }
 
     fun ordered(csv: String): List<String> {

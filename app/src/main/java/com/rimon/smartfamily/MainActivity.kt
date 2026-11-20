@@ -365,7 +365,9 @@ private fun MainNav(vm: AppViewModel) {
         val barPadding = PaddingValues(bottom = inner.calculateBottomPadding())
         androidx.compose.runtime.CompositionLocalProvider(com.rimon.smartfamily.ui.components.LocalChatEntry provides chatEntry) {
         androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().imePadding()) {
-        NavHost(nav, startDestination = Tab.HOME.route) {
+        // 2.2: the app opens on the first tab of the bar (by default "Home")
+        val startRoute = remember { com.rimon.smartfamily.model.NavItems.route(barItems.firstOrNull() ?: com.rimon.smartfamily.model.NavItems.TODAY) }
+        NavHost(nav, startDestination = startRoute) {
             composable(Tab.HOME.route) {
                 HomeScreen(
                     vm, barPadding,

@@ -820,6 +820,8 @@ private fun DateEditDialog(d: FamilyDateEntity, onDismiss: () -> Unit, onSave: (
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         FilterChip(drive == "GREGORIAN", { drive = "GREGORIAN" }, { Text(stringResource(R.string.date_by_gregorian)) })
                         FilterChip(drive == "HEBREW", { drive = "HEBREW" }, { Text(stringResource(R.string.date_by_hebrew)) })
+                        // 2.2: remind on both the Gregorian and the Hebrew date (needs the full date)
+                        if (type != "YAHRZEIT" && (!byHebrew || yearKnown)) FilterChip(drive == "BOTH", { drive = "BOTH" }, { Text(stringResource(R.string.date_by_both)) })
                     }
                 }
                 item {

@@ -31,7 +31,7 @@ data class ChoreTemplate(
 )
 
 /** One upcoming occurrence of a family date. */
-data class DateOccurrence(val date: FamilyDateEntity, val on: Date, val years: Int?, val daysAway: Int)
+data class DateOccurrence(val date: FamilyDateEntity, val on: Date, val years: Int?, val daysAway: Int, val hebrew: Boolean = false)
 
 /** One occurrence of a calendar event (recurrence expanded). */
 data class EventOccurrence(val event: EventEntity, val start: Date, val end: Date)
@@ -217,7 +217,16 @@ class HomeLifeRepository(
     private val ymd = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { timeZone = tz }
 
     /** The next yearly occurrence on or after today, by the calendar the date follows. */
+    /** 2.2: drive "BOTH" — the next Gregorian and the next Hebrew occurrence (one when they fall on the same day). */
+    fun nextOccurrences(d: FamilyDateEntity, today: Calendar = cal()): List<DateOccurrence> {
+        if (d.drive != "BOTH" || d.hebrewDay <= 0 || d.gregorian.isBlank()) return listOfNotNull(nextOccurrence(d, today))
+        val g = nextOccurrence(d.copy(drive = "GREGORIAN"), today)
+        val h = nextOccurrence(d.copy(drive = "HEBREW"), today)?.copy(hebrew = true)
+        return listOfNotNull(g, h).distinctBy { it.daysAway }.map { it.copy(date = d) }
+    }
+
     fun nextOccurrence(d: FamilyDateEntity, today: Calendar = cal()): DateOccurrence? {
+        if (d.drive == "BOTH") return nextOccurrences(d, today).minByOrNull { it.daysAway }
         val start = (today.clone() as Calendar).apply {
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }
@@ -248,6 +257,7 @@ class HomeLifeRepository(
 
     /** Every yearly occurrence of a family date between two days (both calendars, DAT-2). */
     fun occurrencesBetween(d: FamilyDateEntity, from: java.time.LocalDate, to: java.time.LocalDate): List<Pair<java.time.LocalDate, Int?>> {
+        if (d.drive == "BOTH") return (occurrencesBetween(d.copy(drive = "GREGORIAN"), from, to) + occurrencesBetween(d.copy(drive = "HEBREW"), from, to)).distinctBy { it.first }.sortedBy { it.first }
         val z = com.rimon.smartfamily.smart.JewishDays
         val out = mutableListOf<Pair<java.time.LocalDate, Int?>>()
         if (d.drive == "HEBREW" && d.hebrewDay > 0 && d.hebrewMonth > 0) {

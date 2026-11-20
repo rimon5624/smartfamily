@@ -54,17 +54,21 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val hour = Calendar.getInstance(TimeZone.getTimeZone("Asia/Jerusalem")).get(Calendar.HOUR_OF_DAY)
         if (hour >= 9) {
             c.homeLife.allDatesForReminders().forEach { d ->
-                val occ = c.homeLife.nextOccurrence(d) ?: return@forEach
-                val days = d.remindDays.split(',').mapNotNull { it.trim().toIntOrNull() }
-                if (occ.daysAway in days) {
-                    val key = "date:${d.id}:${occ.on.time}:${occ.daysAway}"
-                    if (key !in seen) {
-                        val text = when (occ.daysAway) {
-                            0 -> applicationContext.getString(R.string.rem_date_today, d.title)
-                            1 -> applicationContext.getString(R.string.rem_date_tomorrow, d.title)
-                            else -> applicationContext.getString(R.string.rem_date_in, d.title, occ.daysAway)
+                // 2.2: with "both calendars" there is a reminder for the Gregorian and for the Hebrew date
+                val list = c.homeLife.nextOccurrences(d)
+                list.forEach { occ ->
+                    val days = d.remindDays.split(',').mapNotNull { it.trim().toIntOrNull() }
+                    if (occ.daysAway in days) {
+                        val key = "date:${d.id}:${occ.on.time}:${occ.daysAway}"
+                        if (key !in seen) {
+                            val title = d.title + if (d.drive == "BOTH" && list.size > 1) " (" + applicationContext.getString(if (occ.hebrew) R.string.date_by_hebrew_short else R.string.date_by_greg_short) + ")" else ""
+                            val text = when (occ.daysAway) {
+                                0 -> applicationContext.getString(R.string.rem_date_today, title)
+                                1 -> applicationContext.getString(R.string.rem_date_tomorrow, title)
+                                else -> applicationContext.getString(R.string.rem_date_in, title, occ.daysAway)
+                            }
+                            fresh += key to text
                         }
-                        fresh += key to text
                     }
                 }
             }

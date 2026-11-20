@@ -59,6 +59,8 @@ fun FamilyHubScreen(vm: RecordsViewModel, chat: ChatViewModel, extras: ExtrasVie
     val contacts by remember(viewer.familyId) { extras.section(viewer.familyId, "HOME") }.collectAsState(initial = emptyList())
     val albums = chats.filter { it.kind == "ALBUM" && it.familyId == viewer.familyId }
     var edit by remember { mutableStateOf<TreePersonEntity?>(null) }
+    var treeList by rememberSaveable { mutableStateOf(false) }
+    var pendingChild by remember { mutableStateOf<TreePersonEntity?>(null) } // "add parent": link the new person as this one's parent
     var newAlbum by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val tabs = listOf(stringResource(R.string.fam_tree), stringResource(R.string.fam_album), stringResource(R.string.fam_phones), stringResource(R.string.money_split_gift))
@@ -69,26 +71,46 @@ fun FamilyHubScreen(vm: RecordsViewModel, chat: ChatViewModel, extras: ExtrasVie
         when (tab) {
             0 -> {
                 if (tree.isEmpty()) item { Text(stringResource(R.string.fam_tree_empty)) }
-                val byId = tree.associateBy { it.id }
-                val roots = tree.filter { p -> p.parents.split(',').none { it.isNotBlank() && byId.containsKey(it) } }
-                fun children(id: String) = tree.filter { id in it.parents.split(',') }
-                val shown = mutableSetOf<String>()
-                fun rows(p: TreePersonEntity, depth: Int, out: MutableList<Pair<TreePersonEntity, Int>>) {
-                    if (!shown.add(p.id) || depth > 12) return
-                    out += p to depth
-                    children(p.id).sortedBy { it.birth }.forEach { rows(it, depth + 1, out) }
+                // 2.2: a real tree (lines, zoom, drag) by default; the indented list stays as "list view"
+                if (tree.isNotEmpty()) item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        androidx.compose.material3.FilterChip(!treeList, { treeList = false }, { Text(stringResource(R.string.tree_view_graph)) })
+                        androidx.compose.material3.FilterChip(treeList, { treeList = true }, { Text(stringResource(R.string.tree_view_list)) })
+                    }
                 }
-                val flat = mutableListOf<Pair<TreePersonEntity, Int>>()
-                roots.sortedBy { it.birth }.forEach { if (it.spouse.isBlank() || it.id < it.spouse || !byId.containsKey(it.spouse)) rows(it, 0, flat) }
-                tree.filter { it.id !in shown }.forEach { rows(it, 0, flat) }
-                items(flat, key = { it.first.id }) { (p, depth) ->
-                    val spouse = byId[p.spouse]
-                    Row(Modifier.fillMaxWidth().clickable(enabled = !viewer.isChild) { edit = p }.padding(start = (depth * 20).dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (depth == 0) "🌳 " else "└ ")
-                        Column {
-                            Text(p.name + (spouse?.let { " ❤ " + it.name } ?: ""), fontWeight = FontWeight.SemiBold)
-                            val life = listOfNotNull(p.birth.takeIf { it.isNotBlank() }?.take(4), p.death.takeIf { it.isNotBlank() }?.take(4)?.let { "– $it ז״ל" }).joinToString(" ")
-                            if (life.isNotBlank()) Text(life, style = MaterialTheme.typography.labelSmall)
+                if (tree.isNotEmpty() && !treeList) item {
+                    FamilyTreeGraph(tree, viewer.userId, !viewer.isChild, onOpen = { edit = it }) { p, kind ->
+                        val n = TreePersonEntity(id = vm.id(), familyId = viewer.familyId, name = "")
+                        edit = when (kind) {
+                            "parent" -> { pendingChild = p; n }
+                            "spouse" -> n.copy(spouse = p.id)
+                            else -> n.copy(parents = listOfNotNull(p.id, p.spouse.takeIf { it.isNotBlank() }).joinToString(","))
+                        }
+                    }
+                }
+                if (treeList) {
+                if (tree.isEmpty()) item { Text(stringResource(R.string.fam_tree_empty)) }
+                    val byId = tree.associateBy { it.id }
+                    val roots = tree.filter { p -> p.parents.split(',').none { it.isNotBlank() && byId.containsKey(it) } }
+                    fun children(id: String) = tree.filter { id in it.parents.split(',') }
+                    val shown = mutableSetOf<String>()
+                    fun rows(p: TreePersonEntity, depth: Int, out: MutableList<Pair<TreePersonEntity, Int>>) {
+                        if (!shown.add(p.id) || depth > 12) return
+                        out += p to depth
+                        children(p.id).sortedBy { it.birth }.forEach { rows(it, depth + 1, out) }
+                    }
+                    val flat = mutableListOf<Pair<TreePersonEntity, Int>>()
+                    roots.sortedBy { it.birth }.forEach { if (it.spouse.isBlank() || it.id < it.spouse || !byId.containsKey(it.spouse)) rows(it, 0, flat) }
+                    tree.filter { it.id !in shown }.forEach { rows(it, 0, flat) }
+                    items(flat, key = { it.first.id }) { (p, depth) ->
+                        val spouse = byId[p.spouse]
+                        Row(Modifier.fillMaxWidth().clickable(enabled = !viewer.isChild) { edit = p }.padding(start = (depth * 20).dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (depth == 0) "🌳 " else "└ ")
+                            Column {
+                                Text(p.name + (spouse?.let { " ❤ " + it.name } ?: ""), fontWeight = FontWeight.SemiBold)
+                                val life = listOfNotNull(p.birth.takeIf { it.isNotBlank() }?.take(4), p.death.takeIf { it.isNotBlank() }?.take(4)?.let { "– $it ז״ל" }).joinToString(" ")
+                                if (life.isNotBlank()) Text(life, style = MaterialTheme.typography.labelSmall)
+                            }
                         }
                     }
                 }
@@ -117,9 +139,14 @@ fun FamilyHubScreen(vm: RecordsViewModel, chat: ChatViewModel, extras: ExtrasVie
         var name by remember { mutableStateOf(p.name) }; var parents by remember { mutableStateOf(p.parents.split(',').filter { it.isNotBlank() }.toSet()) }
         var spouse by remember { mutableStateOf(p.spouse) }; var birth by remember { mutableStateOf(p.birth) }; var death by remember { mutableStateOf(p.death) }
         var member by remember { mutableStateOf(p.memberId) }
+        var remindBirth by remember { mutableStateOf(false) }; var remindDeath by remember { mutableStateOf(false) }
         val others = tree.filter { it.id != p.id }
-        EditDialog(stringResource(R.string.fam_tree), name.isNotBlank(), { edit = null }, {
+        EditDialog(stringResource(R.string.fam_tree), name.isNotBlank(), { edit = null; pendingChild = null }, {
             vm.save(p.copy(name = name.trim(), parents = parents.joinToString(","), spouse = spouse, birth = birth, death = death, memberId = member))
+            pendingChild?.let { c -> val ps = (c.parents.split(',').filter { it.isNotBlank() } + p.id).distinct(); vm.save(c.copy(parents = ps.joinToString(","))); pendingChild = null }
+            // 2.2: one tap to remember the birthday (Gregorian + Hebrew) / the yahrzeit (Hebrew)
+            if (remindBirth && birth.isNotBlank() && death.isBlank()) vm.addTreeDate(p.copy(name = name.trim()), birth, yahrzeit = false)
+            if (remindDeath && death.isNotBlank()) vm.addTreeDate(p.copy(name = name.trim()), death, yahrzeit = true)
             // keep the couple linked both ways
             others.firstOrNull { it.id == spouse }?.let { s -> if (s.spouse != p.id) vm.save(s.copy(spouse = p.id)) }
             edit = null
@@ -130,8 +157,10 @@ fun FamilyHubScreen(vm: RecordsViewModel, chat: ChatViewModel, extras: ExtrasVie
                 others.forEach { o -> Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(o.id in parents, { on -> parents = if (on) parents + o.id else parents - o.id }); Text(o.name) } }
                 ChoiceIn(stringResource(R.string.fam_spouse), listOf("" to "—") + others.map { it.id to it.name }, spouse) { spouse = it }
             }
-            DateIn(stringResource(R.string.fam_birth), birth) { birth = it }
-            DateIn(stringResource(R.string.fam_death), death) { death = it }
+            DateIn(stringResource(R.string.fam_birth), birth, allowSunset = true) { birth = it }
+            DateIn(stringResource(R.string.fam_death), death, allowSunset = true) { death = it }
+            if (birth.isNotBlank() && death.isBlank()) Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(remindBirth, { remindBirth = it }); Text(stringResource(R.string.tree_remind_birth)) }
+            if (death.isNotBlank()) Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(remindDeath, { remindDeath = it }); Text(stringResource(R.string.tree_remind_yahrzeit)) }
             if (members.isNotEmpty()) ChoiceIn(stringResource(R.string.fam_is_member), listOf("" to "—") + members.map { it.userId to it.displayName }, member) { member = it }
         }
     }

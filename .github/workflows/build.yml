@@ -131,7 +131,7 @@ jobs:
           if [ -n "$GS" ]; then printf '%s' "$GS" > app/google-services.json; python3 -c "import json;d=json.load(open('app/google-services.json'));print('Firebase project:', d['project_info']['project_id'], '· apps:', [c['client_info']['android_client_info']['package_name'] for c in d['client']])"; else echo "::warning::No GOOGLE_SERVICES_JSON secret: built without instant notifications"; fi
 
       - name: Build app and tests
-        run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
+        run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleRelease
       - name: Run the walkthrough on an emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -155,6 +155,15 @@ jobs:
             mkdir -p screens && adb pull /sdcard/Android/data/com.rimon.smartfamily/files/screens screens/ || true
             adb logcat -d -t 3000 '*:E' > logcat-errors.txt || true
             grep -q "OK (" instrument.txt
+            # 2.2: smoke test of the shrunk/obfuscated release build (same debug key here) over the test data
+            adb logcat -c
+            adb install -r app/build/outputs/apk/release/app-release.apk
+            adb shell am start -W -n com.rimon.smartfamily/.MainActivity
+            sleep 25
+            adb shell screencap -p /sdcard/release.png && adb pull /sdcard/release.png screens/release_smoke.png || true
+            adb logcat -d > release-logcat.txt || true
+            if grep -q "FATAL EXCEPTION" release-logcat.txt; then grep -A30 "FATAL EXCEPTION" release-logcat.txt | head -60; exit 1; fi
+            adb shell pidof com.rimon.smartfamily
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -163,6 +172,7 @@ jobs:
             screens
             instrument.txt
             logcat-errors.txt
+            release-logcat.txt
           retention-days: 7
 
   # Each new version on main becomes a GitHub release with its APK, which the app's update check reads.

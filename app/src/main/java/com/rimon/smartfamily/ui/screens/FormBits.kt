@@ -108,23 +108,88 @@ fun NumIn(label: String, value: String, onChange: (String) -> Unit) =
     OutlinedTextField(value, { v -> onChange(v.filter { it.isDigit() || it == '.' || it == '-' }) }, label = { Text(label) }, singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * 2.2 date field for the whole app: the button shows the date as the user chose (Gregorian, Hebrew or both), and the
+ * picker has a switch between a Gregorian calendar, a Hebrew date (day, month incl. Adar I/II, Hebrew year) and a
+ * Hebrew day/month with a Gregorian year. The value is stored as yyyy-MM-dd; with [allowSunset] a trailing "~" means
+ * "after sunset" (the Hebrew date moves to the next day).
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun DateIn(label: String, value: String, onChange: (String) -> Unit) {
+fun DateIn(label: String, value: String, allowSunset: Boolean = false, onChange: (String) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var open by remember { mutableStateOf(false) }
     OutlinedButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth()) {
-        Text(if (value.isBlank()) label else "$label: " + value.split('-').reversed().joinToString("/"))
+        Text(if (value.isBlank()) label else "$label: " + com.rimon.smartfamily.smart.DateText.format(context, value) +
+            if (com.rimon.smartfamily.smart.DateText.isAfterSunset(value)) " 🌙" else "")
     }
-    if (open) {
-        val initial = runCatching { LocalDate.parse(value) }.getOrNull() ?: LocalDate.now()
-        val st = rememberDatePickerState(initialSelectedDateMillis = initial.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
-        DatePickerDialog(
-            onDismissRequest = { open = false },
-            confirmButton = { TextButton(onClick = { st.selectedDateMillis?.let { onChange(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().toString()) }; open = false }) { Text(stringResource(R.string.ok)) } },
-            dismissButton = { TextButton(onClick = { open = false }) { Text(stringResource(R.string.cancel)) } },
-        ) { DatePicker(st) }
+    if (!open) return
+    val initial = com.rimon.smartfamily.smart.DateText.parse(value) ?: LocalDate.now()
+    var kind by remember { mutableStateOf(if (com.rimon.smartfamily.smart.DateText.mode(context) == "heb") "heb" else "greg") }
+    var sunset by remember { mutableStateOf(com.rimon.smartfamily.smart.DateText.isAfterSunset(value)) }
+    val h0 = remember { com.rimon.smartfamily.smart.DateText.hebrew(initial, sunset) }
+    var hDay by remember { mutableStateOf(h0.day) }
+    var hMonth by remember { mutableStateOf(h0.month) }
+    var hYear by remember { mutableStateOf(h0.year.toString()) }
+    var gYear by remember { mutableStateOf(initial.year.toString()) }
+    val st = rememberDatePickerState(initialSelectedDateMillis = initial.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
+    fun result(): LocalDate? = when (kind) {
+        "greg" -> st.selectedDateMillis?.let { Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate() }
+        "heb" -> hYear.toIntOrNull()?.takeIf { it in 5000..6500 }?.let { y -> com.rimon.smartfamily.smart.JewishDays.toGregorian(hDay, hMonth, y) }
+        else -> gYear.toIntOrNull()?.takeIf { it in 1800..2300 }?.let { gy ->
+            // the Hebrew year in which this day/month falls inside Gregorian year gy
+            val guess = gy + 3760
+            listOf(guess, guess + 1).map { com.rimon.smartfamily.smart.JewishDays.toGregorian(hDay, hMonth, it) }.firstOrNull { it.year == gy }
+                ?: com.rimon.smartfamily.smart.JewishDays.toGregorian(hDay, hMonth, guess)
+        }
+    }?.let { if (kind != "greg" && sunset) it.minusDays(1) else it }
+    fun save() { result()?.let { onChange(it.toString() + if (allowSunset && sunset) "~" else "") }; open = false }
+    androidx.compose.ui.window.Dialog(onDismissRequest = { open = false }, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        androidx.compose.material3.Surface(shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp), modifier = Modifier.padding(16.dp)) {
+            Column(Modifier.padding(16.dp).verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(label, style = MaterialTheme.typography.titleMedium)
+                androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("greg" to R.string.dt_kind_greg, "heb" to R.string.dt_kind_heb, "hebg" to R.string.dt_kind_heb_greg).forEach { (k, l) ->
+                        FilterChip(kind == k, { kind = k }, { Text(stringResource(l)) })
+                    }
+                }
+                if (kind == "greg") DatePicker(st, title = null, headline = null, showModeToggle = true)
+                else {
+                    val yearNum = if (kind == "heb") hYear.toIntOrNull() ?: h0.year else (gYear.toIntOrNull() ?: initial.year) + 3760
+                    val months = com.rimon.smartfamily.smart.JewishDays.monthsOfYear(yearNum.coerceIn(5000, 6500))
+                    Text(stringResource(R.string.dt_month), style = MaterialTheme.typography.labelLarge)
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        months.forEach { m -> FilterChip(hMonth == m || (hMonth == 12 && m == 13 && 12 !in months), { hMonth = m },
+                            { Text(com.rimon.smartfamily.smart.JewishDays.monthName(m, yearNum.coerceIn(5000, 6500))) }) }
+                    }
+                    Text(stringResource(R.string.dt_day), style = MaterialTheme.typography.labelLarge)
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        (1..30).forEach { d -> FilterChip(hDay == d, { hDay = d }, { Text(com.rimon.smartfamily.smart.JewishDays.dayLetters(d)) }) }
+                    }
+                    if (kind == "heb") OutlinedTextField(hYear, { v -> hYear = v.filter { it.isDigit() }.take(4) }, label = { Text(stringResource(R.string.dt_heb_year) +
+                        (hYear.toIntOrNull()?.takeIf { it in 5000..6500 }?.let { " · " + com.rimon.smartfamily.smart.JewishDays.yearLetters(it) } ?: "")) },
+                        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                    else OutlinedTextField(gYear, { v -> gYear = v.filter { it.isDigit() }.take(4) }, label = { Text(stringResource(R.string.dt_greg_year)) },
+                        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                }
+                if (allowSunset) androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    androidx.compose.material3.Checkbox(sunset, { sunset = it }); Text(stringResource(R.string.dt_after_sunset), style = MaterialTheme.typography.bodyMedium)
+                }
+                result()?.let { r -> Text("= " + com.rimon.smartfamily.smart.DateText.gregText(r) + " · " + com.rimon.smartfamily.smart.DateText.hebrewText(r, allowSunset && sunset),
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary) }
+                androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    if (value.isNotBlank()) TextButton(onClick = { onChange(""); open = false }) { Text(stringResource(R.string.delete)) }
+                    TextButton(onClick = { open = false }) { Text(stringResource(R.string.cancel)) }
+                    TextButton(enabled = result() != null, onClick = { save() }) { Text(stringResource(R.string.ok)) }
+                }
+            }
+        }
     }
 }
+
+/** A stored date as text, in the user's display mode (Gregorian / Hebrew / both). */
+@Composable
+fun dateText(v: String): String = com.rimon.smartfamily.smart.DateText.format(androidx.compose.ui.platform.LocalContext.current, v)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

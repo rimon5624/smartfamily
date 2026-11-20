@@ -34,6 +34,19 @@ class RecordsViewModel(app: Application) : AndroidViewModel(app) {
     val messages = _messages.asSharedFlow()
     private fun now() = System.currentTimeMillis()
     fun id() = UUID.randomUUID().toString()
+
+    /** 2.2: a birthday (both calendars) or a yahrzeit (Hebrew) from a person in the family tree. */
+    fun addTreeDate(p: com.rimon.smartfamily.data.db.TreePersonEntity, date: String, yahrzeit: Boolean) = viewModelScope.launch {
+        val d = com.rimon.smartfamily.smart.DateText.parse(date) ?: return@launch
+        val h = com.rimon.smartfamily.smart.DateText.hebrew(d, com.rimon.smartfamily.smart.DateText.isAfterSunset(date))
+        val exists = c.homeLife.allDatesForReminders().any { it.familyId == p.familyId && it.personName == p.name && it.type == (if (yahrzeit) "YAHRZEIT" else "BIRTHDAY") }
+        if (exists) return@launch
+        c.homeLife.saveDate(com.rimon.smartfamily.data.db.FamilyDateEntity(
+            id = id(), familyId = p.familyId, title = p.name, personName = p.name, type = if (yahrzeit) "YAHRZEIT" else "BIRTHDAY",
+            gregorian = d.toString(), hebrewDay = h.day, hebrewMonth = h.month, hebrewYear = h.year,
+            drive = if (yahrzeit) "HEBREW" else "BOTH", afterSunset = com.rimon.smartfamily.smart.DateText.isAfterSunset(date),
+        ))
+    }
     private fun changed() = SyncScheduler.requestSoon(getApplication())
     private fun go(block: suspend () -> Unit) = viewModelScope.launch {
         try { block(); changed() } catch (e: Exception) { _messages.tryEmit(UiMessage.Text(e.message ?: e.javaClass.simpleName)) }

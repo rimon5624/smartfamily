@@ -115,7 +115,7 @@ fun HomeExtrasScreen(vm: RecordsViewModel, extras: ExtrasViewModel, viewer: View
                                 if (r.cost > 0) Text(shekels(r.cost), fontWeight = FontWeight.Bold)
                             }
                             Text(listOfNotNull(r.item.takeIf { it.isNotBlank() }, r.fixedBy.takeIf { it.isNotBlank() }?.let { "🔧 $it" + if (r.rating > 0) " " + "★".repeat(r.rating) else "" },
-                                r.date.split('-').reversed().joinToString("/"),
+                                dateText(r.date),
                                 warranty?.let { stringResource(if (it.isBefore(LocalDate.now())) R.string.hx_warranty_over else R.string.hx_warranty_until, "${it.dayOfMonth}/${it.monthValue}/${it.year}") }).joinToString(" · "),
                                 style = MaterialTheme.typography.bodySmall)
                             if (r.phone.isNotBlank()) TextButton(onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + r.phone))) } }) { Text("📞 " + r.phone) }
@@ -152,7 +152,7 @@ fun HomeExtrasScreen(vm: RecordsViewModel, extras: ExtrasViewModel, viewer: View
                 }
                 items(list.reversed(), key = { it.id }) { m ->
                     Row(Modifier.fillMaxWidth().clickable(enabled = canEdit) { editMeter = m }.padding(vertical = 6.dp)) {
-                        Text(m.date.split('-').reversed().joinToString("/"), Modifier.weight(1f))
+                        Text(dateText(m.date), Modifier.weight(1f))
                         Text(String.format("%.1f", m.value), fontWeight = FontWeight.Bold)
                     }
                 }
@@ -168,7 +168,7 @@ fun HomeExtrasScreen(vm: RecordsViewModel, extras: ExtrasViewModel, viewer: View
                     val expired = runCatching { LocalDate.parse(k.expiresAt) }.getOrNull()?.isBefore(LocalDate.now().plusDays(30)) == true
                     com.rimon.smartfamily.ui.components.ChecklistRow(
                         k.title + if (k.qty > 1) " ×${k.qty}" else "", k.checked, { vm.save(k.copy(checked = !k.checked)) },
-                        subtitle = if (k.expiresAt.isNotBlank()) stringResource(R.string.hb_expires, k.expiresAt.split('-').reversed().joinToString("/")) else null,
+                        subtitle = if (k.expiresAt.isNotBlank()) stringResource(R.string.hb_expires, dateText(k.expiresAt)) else null,
                         subtitleIsWarning = expired, onDelete = if (canEdit) ({ vm.delete(k) }) else null,
                     ) { if (canEdit) TextButton(onClick = { editKit = k }) { Text(stringResource(R.string.chat_edit)) } }
                 }

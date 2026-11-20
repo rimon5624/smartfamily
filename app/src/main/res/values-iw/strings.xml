@@ -1563,4 +1563,26 @@
     <string name="sec_hides">יוסתר לבד בעוד 30 שניות</string>
     <string name="sec_qr_only">QR בלבד</string>
     <string name="sec_copied">הועתק. יימחק מהלוח בעוד דקה</string>
+    <string name="dt_kind_greg">לועזי</string>
+    <string name="dt_kind_heb">עברי</string>
+    <string name="dt_kind_heb_greg">עברי + שנה לועזית</string>
+    <string name="dt_both">שניהם</string>
+    <string name="dt_display">תצוגת תאריכים</string>
+    <string name="dt_month">חודש</string>
+    <string name="dt_day">יום</string>
+    <string name="dt_heb_year">שנה עברית (למשל 5787)</string>
+    <string name="dt_greg_year">שנה לועזית</string>
+    <string name="dt_after_sunset">אחרי השקיעה (התאריך העברי הוא של היום הבא)</string>
+    <string name="date_by_both">שניהם</string>
+    <string name="date_by_hebrew_short">תאריך עברי</string>
+    <string name="date_by_greg_short">תאריך לועזי</string>
+    <string name="tree_view_graph">עץ</string>
+    <string name="tree_view_list">רשימה</string>
+    <string name="tree_fit">התאם למסך</string>
+    <string name="tree_find_me">מצא אותי</string>
+    <string name="tree_add_parent">הוספת הורה</string>
+    <string name="tree_add_spouse">הוספת בן/בת זוג</string>
+    <string name="tree_add_child">הוספת ילד/ה</string>
+    <string name="tree_remind_birth">תזכורת יום הולדת (לועזי + עברי)</string>
+    <string name="tree_remind_yahrzeit">תזכורת אזכרה (לפי התאריך העברי)</string>
 </resources>

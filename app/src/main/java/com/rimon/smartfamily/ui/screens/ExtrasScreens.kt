@@ -113,19 +113,9 @@ private fun ScreenScaffold(title: String, help: Int, onBack: () -> Unit, busy: B
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DateField(label: String, value: String, onPick: (String) -> Unit, modifier: Modifier = Modifier) {
-    var open by remember { mutableStateOf(false) }
-    OutlinedButton(onClick = { open = true }, modifier = modifier) { Text(if (value.isBlank()) label else "$label: " + value.split('-').reversed().joinToString("/")) }
-    if (open) {
-        val state = rememberDatePickerState(initialSelectedDateMillis = runCatching { ymd.parse(value)!!.time }.getOrNull() ?: System.currentTimeMillis())
-        DatePickerDialog(
-            onDismissRequest = { open = false },
-            confirmButton = { TextButton(onClick = { state.selectedDateMillis?.let { onPick(ymd.format(Date(it))) }; open = false }) { Text(stringResource(R.string.save)) } },
-            dismissButton = { TextButton(onClick = { open = false }) { Text(stringResource(R.string.cancel)) } },
-        ) { DatePicker(state) }
-    }
+    androidx.compose.foundation.layout.Box(modifier) { DateIn(label, value) { onPick(it) } } // 2.2: Hebrew / Gregorian picker
 }
 
 // =================== Travel ===================
@@ -150,7 +140,7 @@ fun TravelScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit, onOpen
                     Column(Modifier.padding(16.dp)) {
                         Text(t.title, style = MaterialTheme.typography.titleMedium)
                         if (t.destination.isNotBlank()) Text("📍 " + t.destination, style = MaterialTheme.typography.bodyMedium)
-                        Text(listOf(t.startDate, t.endDate).filter { it.isNotBlank() }.joinToString(" – ") { it.split('-').reversed().joinToString("/") }, style = MaterialTheme.typography.labelMedium)
+                        Text(listOf(t.startDate, t.endDate).filter { it.isNotBlank() }.map { dateText(it) }.joinToString(" – "), style = MaterialTheme.typography.labelMedium)
                         if (t.weather.isNotBlank()) Text("🌤 " + t.weather, style = MaterialTheme.typography.labelMedium)
                     }
                 }

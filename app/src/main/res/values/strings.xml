@@ -1567,4 +1567,26 @@
     <string name="sec_hides">Hides itself in 30 seconds</string>
     <string name="sec_qr_only">QR only</string>
     <string name="sec_copied">Copied — cleared from the clipboard in a minute</string>
+    <string name="dt_kind_greg">Gregorian</string>
+    <string name="dt_kind_heb">Hebrew</string>
+    <string name="dt_kind_heb_greg">Hebrew + Gregorian year</string>
+    <string name="dt_both">Both</string>
+    <string name="dt_display">Show dates as</string>
+    <string name="dt_month">Month</string>
+    <string name="dt_day">Day</string>
+    <string name="dt_heb_year">Hebrew year (e.g. 5787)</string>
+    <string name="dt_greg_year">Gregorian year</string>
+    <string name="dt_after_sunset">After sunset (the Hebrew date is the next day)</string>
+    <string name="date_by_both">Both</string>
+    <string name="date_by_hebrew_short">Hebrew date</string>
+    <string name="date_by_greg_short">Gregorian date</string>
+    <string name="tree_view_graph">Tree</string>
+    <string name="tree_view_list">List</string>
+    <string name="tree_fit">Fit to screen</string>
+    <string name="tree_find_me">Find me</string>
+    <string name="tree_add_parent">Add a parent</string>
+    <string name="tree_add_spouse">Add a spouse</string>
+    <string name="tree_add_child">Add a child</string>
+    <string name="tree_remind_birth">Birthday reminder (Gregorian + Hebrew)</string>
+    <string name="tree_remind_yahrzeit">Yahrzeit reminder (Hebrew date)</string>
 </resources>

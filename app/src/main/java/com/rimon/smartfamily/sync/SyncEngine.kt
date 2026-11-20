@@ -211,13 +211,16 @@ class SyncEngine(
 
     /** Joins a family with an invite code; the membership waits for admin approval (FAM-2). */
     suspend fun joinWithCode(code: String, displayName: String): Result<Unit> = runCatching {
-        api.rpc(
+        val r = api.rpc(
             "join_family",
             buildJsonObject {
                 put("p_code", code.trim().uppercase())
                 put("p_display_name", displayName)
             },
-        )
+        ).trim().trim('"')
+        // 2.2: the server limits wrong codes (5 per 15 minutes) and answers instead of failing
+        if (r == "ERR:too_many") throw java.io.IOException("Too many wrong codes. Try again in 15 minutes.")
+        if (r == "ERR:not_found") throw java.io.IOException("Invite code not found")
         syncNow().getOrThrow()
     }
 }

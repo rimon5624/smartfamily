@@ -280,7 +280,10 @@ private fun ChoreRow(ch: ChoreEntity, now: Long, names: Map<String, String>, vie
         Row(Modifier.fillMaxWidth().padding(start = 14.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(ch.title, style = MaterialTheme.typography.titleSmall)
-                val whenText = if (overdue) stringResource(R.string.chores_overdue, f.format(Date(ch.nextDue))) else f.format(Date(ch.nextDue))
+                // 2.2: the date part in the user's display mode (Gregorian / Hebrew / both), plus the time
+                val dueDay = java.time.Instant.ofEpochMilli(ch.nextDue).atZone(java.time.ZoneId.of("Asia/Jerusalem")).toLocalDate().toString()
+                val dueText = dateText(dueDay) + " " + DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(ch.nextDue))
+                val whenText = if (overdue) stringResource(R.string.chores_overdue, dueText) else dueText
                 val who = names[ch.assignee] ?: if (ch.assignee.isEmpty()) stringResource(R.string.chores_anyone) else "?"
                 Text("$whenText · $who" + if (ch.points > 0) " · ⭐${ch.points}" else "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 ch.lastDoneBy?.let { b -> Text(stringResource(R.string.chores_done_by, names[b] ?: "?"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }

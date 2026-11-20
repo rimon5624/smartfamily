@@ -145,7 +145,7 @@ fun KidsScreen(vm: RecordsViewModel, viewer: Viewer, hebrew: Boolean, onBack: ()
             }
             items(mine, key = { it.id }) { g ->
                 Row(Modifier.fillMaxWidth().clickable(enabled = !viewer.isChild) { editGrowth = g }.padding(vertical = 6.dp)) {
-                    Text(g.date.split('-').reversed().joinToString("/"), Modifier.weight(1f))
+                    Text(dateText(g.date), Modifier.weight(1f))
                     Text(listOfNotNull(g.heightCm.takeIf { it > 0 }?.let { "${it.toInt()}cm" }, g.weightKg.takeIf { it > 0 }?.let { "${it}kg" }, g.shoeSize.takeIf { it.isNotBlank() }, g.clothesSize.takeIf { it.isNotBlank() }).joinToString(" · "))
                 }
             }

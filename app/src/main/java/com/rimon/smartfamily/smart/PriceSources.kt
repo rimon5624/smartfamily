@@ -138,9 +138,17 @@ class PriceFetcher {
         r.body!!.string()
     }
 
+    /** 2.2: files are capped (a price file is a few MB) so a broken or hostile server cannot fill the phone. */
     private fun bytes(url: String): ByteArray = http.newCall(Request.Builder().url(url).header("User-Agent", UA).build()).execute().use { r ->
         if (!r.isSuccessful) throw IOException("HTTP ${r.code}")
-        r.body!!.bytes()
+        val len = r.body!!.contentLength()
+        if (len > MAX_FILE) throw IOException("file too large")
+        val out = java.io.ByteArrayOutputStream()
+        r.body!!.byteStream().use { input ->
+            val buf = ByteArray(64 * 1024); var total = 0L
+            while (true) { val n = input.read(buf); if (n < 0) break; total += n; if (total > MAX_FILE) throw IOException("file too large"); out.write(buf, 0, n) }
+        }
+        out.toByteArray()
     }
 
     /**
@@ -172,7 +180,13 @@ class PriceFetcher {
 
     // ---------------- parsing (tag names vary between chains, so match case-insensitively) ----------------
 
-    private fun parse(input: InputStream, record: Set<String>, onRecord: (Map<String, String>) -> Unit) {
+    private fun parse(input: InputStream, record: Set<String>, onRecord: (Map<String, String>) -> Unit) = try {
+        parseRaw(input, record, onRecord)
+    } catch (e: org.xmlpull.v1.XmlPullParserException) {
+        throw IOException("The chain's file is damaged (${e.message?.take(60)})")
+    }
+
+    private fun parseRaw(input: InputStream, record: Set<String>, onRecord: (Map<String, String>) -> Unit) {
         val p = XmlPullParserFactory.newInstance().newPullParser()
         p.setInput(input, null)
         var current: MutableMap<String, String>? = null
@@ -261,7 +275,8 @@ class PriceFetcher {
         open(download(chain, file)).use { input ->
             parse(input, setOf("item", "product")) { m ->
                 val code = m["itemcode"] ?: return@parse
-                val price = (m["itemprice"] ?: m["price"])?.toDoubleOrNull() ?: return@parse
+                val price = (m["itemprice"] ?: m["price"])?.toDoubleOrNull()?.takeIf { plausible(it) } ?: return@parse
+                if (code.length > 30 || code.isBlank()) return@parse
                 onRow(
                     PriceRow(
                         code = code.trimStart('0').ifEmpty { code }, name = m["itemname"] ?: m["itemnm"] ?: m["manufactureritemdescription"] ?: code,
@@ -304,5 +319,10 @@ class PriceFetcher {
         }
     }
 
-    companion object { private const val UA = "Mozilla/5.0 (Android) SmartFamily" }
+    companion object {
+        private const val UA = "Mozilla/5.0 (Android) SmartFamily"
+        private const val MAX_FILE = 120L * 1024 * 1024
+        /** 2.2 sanity limits for a price row (files over plain HTTP could be altered on the way). */
+        fun plausible(price: Double) = price > 0.0 && price < 100_000.0
+    }
 }

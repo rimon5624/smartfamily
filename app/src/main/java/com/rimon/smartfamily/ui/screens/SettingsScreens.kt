@@ -214,6 +214,13 @@ fun SettingsScreen(
             ClickRow(Icons.Outlined.Sensors, stringResource(R.string.sh_title), stringResource(R.string.sh_hc) + " · " + stringResource(R.string.sh_st), onSmartHome)
             ClickRow(Icons.Outlined.Notifications, stringResource(R.string.nc_title), stringResource(R.string.nc_sub), onNotifyCheck)
             ClickRow(Icons.Outlined.Mic, stringResource(R.string.tr_title), stringResource(R.string.tr_sub), onTranscription)
+            // 2.2: how dates are shown everywhere
+            val dctx = androidx.compose.ui.platform.LocalContext.current
+            var dmode by remember { mutableStateOf(com.rimon.smartfamily.smart.DateText.mode(dctx)) }
+            ChoiceIn(stringResource(R.string.dt_display), listOf(
+                "both" to stringResource(R.string.dt_both), "greg" to stringResource(R.string.dt_kind_greg),
+                "heb" to stringResource(R.string.dt_kind_heb), "heb_greg" to stringResource(R.string.dt_kind_heb_greg),
+            ), dmode) { dmode = it; com.rimon.smartfamily.smart.DateText.setMode(dctx, it) }
             CityRow(settings.zmanimCity, settings.language, settings.favCities.split(',').filter { it.isNotBlank() }, { vm.toggleFavCity(it) }) { vm.setZmanimCity(it) }
             // Home screen cards: size of the greeting and the Shabbat card
             // 2.1: order of the bottom bar and where the chat lives
