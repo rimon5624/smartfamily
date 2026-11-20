@@ -387,22 +387,7 @@ fun CloudScreen(vm: AppViewModel, onBack: () -> Unit) {
 
     SubScreen(stringResource(R.string.cloud_title), onBack, busy) {
         Text(stringResource(R.string.cloud_intro), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(16.dp))
-        OutlinedTextField(
-            value = url, onValueChange = { url = it }, label = { Text(stringResource(R.string.cloud_url)) },
-            placeholder = { Text("https://xxxx.supabase.co") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-        )
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = key, onValueChange = { key = it }, label = { Text(stringResource(R.string.cloud_key)) },
-            singleLine = true, modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
-        Button(onClick = { vm.saveConnection(url, key) }, enabled = url.isNotBlank() && key.isNotBlank() && !busy) {
-            Text(stringResource(R.string.cloud_save))
-        }
-
         HorizontalDivider(Modifier.padding(vertical = 20.dp))
         SectionTitle(stringResource(R.string.cloud_account))
         if (signedIn) {
@@ -441,6 +426,37 @@ fun CloudScreen(vm: AppViewModel, onBack: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { vm.signIn(email, password) }, enabled = ready) { Text(stringResource(R.string.cloud_sign_in)) }
                 OutlinedButton(onClick = { vm.signUp(email, password) }, enabled = ready) { Text(stringResource(R.string.cloud_sign_up)) }
+            }
+        }
+        if (settings.lastSyncError.isNotBlank()) {
+            Spacer(Modifier.height(8.dp))
+            Text(stringResource(R.string.cloud_last_error, settings.lastSyncError), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        }
+
+        // The project address and public key are built into the app. Only family owners/admins can open them,
+        // and only under "Advanced", so nobody changes them by mistake.
+        val canSee by vm.canSeeCloudDetails.collectAsStateWithLifecycle(initialValue = false)
+        if (canSee) {
+            var advanced by remember { mutableStateOf(false) }
+            HorizontalDivider(Modifier.padding(vertical = 20.dp))
+            TextButton(onClick = { advanced = !advanced }) { Text(stringResource(if (advanced) R.string.cloud_advanced_hide else R.string.cloud_advanced)) }
+            if (advanced) {
+                Text(stringResource(R.string.cloud_advanced_warn), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = url, onValueChange = { url = it }, label = { Text(stringResource(R.string.cloud_url)) },
+                    placeholder = { Text("https://xxxx.supabase.co") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = key, onValueChange = { key = it }, label = { Text(stringResource(R.string.cloud_key)) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(onClick = { vm.saveConnection(url, key) }, enabled = url.isNotBlank() && key.isNotBlank() && !busy) {
+                    Text(stringResource(R.string.cloud_save))
+                }
             }
         }
     }

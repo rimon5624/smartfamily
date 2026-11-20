@@ -65,6 +65,11 @@ object Chains {
 data class StoreInfo(val id: String, val name: String, val city: String, val address: String)
 data class PriceRow(val code: String, val name: String, val price: Double, val unitPrice: Double, val unit: String, val manufacturer: String, val updated: String)
 
+/** A source problem the app can explain in plain words. */
+class PriceSourceException(val why: Why) : IOException(why.name) {
+    enum class Why { NO_FILES, OVERNIGHT, TIMEOUT }
+}
+
 class PriceFetcher {
     private val http = OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS).readTimeout(90, TimeUnit.SECONDS).build()
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
@@ -75,16 +80,15 @@ class PriceFetcher {
     private suspend fun list(chain: Chain, kind: String, storeId: String?): List<Pair<String, String>> = withContext(Dispatchers.IO) {
         when (chain.engine) {
             Engine.CERBERUS -> ftp(chain.param) { c ->
-                c.listNames().orEmpty().filter { n ->
-                    n.lowercase().startsWith(kind.lowercase()) && (storeId == null || n.contains("-${storeId.padStart(3, '0')}-") || n.contains("-$storeId-"))
-                }.sorted().map { it to it }
+                c.listNames().orEmpty().filter { n -> kindMatches(n, kind) && (storeId == null || n.contains("-${storeId.padStart(3, '0')}-") || n.contains("-$storeId-")) }
+                    .sorted().map { it to it }
             }
             Engine.BINA -> {
                 val type = when (kind) { "Stores" -> 1; "PriceFull" -> 4; else -> 2 }
                 val url = "http://${chain.param}.binaprojects.com/MainIO_Hok.aspx?_=${chain.chainId}&wReshet=" +
                     URLEncoder.encode("הכל", "UTF-8") + "&WFileType=$type&WDate=&WStore=${storeId.orEmpty()}"
                 json.parseToJsonElement(text(url)).jsonArray.mapNotNull { it.jsonObject["FileNm"]?.jsonPrimitive?.contentOrNull }
-                    .filter { it.startsWith(kind, ignoreCase = true) }.sorted()
+                    .filter { kindMatches(it, kind) }.sorted()
                     .map { it to "http://${chain.param}.binaprojects.com/Download.aspx?FileNm=$it" }
             }
             Engine.PUBLISH_PRICE -> {
@@ -93,14 +97,14 @@ class PriceFetcher {
                 val path = Regex("const path = ['\"]([^'\"]*)['\"]").find(page)?.groupValues?.get(1).orEmpty()
                 val files = Regex("const files = (\\[.*?]);?\\s*\n").find(page)?.groupValues?.get(1) ?: "[]"
                 json.parseToJsonElement(files).jsonArray.mapNotNull { it.jsonObject["name"]?.jsonPrimitive?.contentOrNull }
-                    .filter { it.startsWith(kind, true) && (storeId == null || it.contains("-${storeId.padStart(3, '0')}-") || it.contains("-$storeId-")) }
+                    .filter { kindMatches(it, kind) && (storeId == null || it.contains("-${storeId.padStart(3, '0')}-") || it.contains("-$storeId-")) }
                     .sorted().map { it to (if (path.isBlank()) "$base/$it" else "$base/${path.trim('/')}/$it") }
             }
             Engine.LAIB -> {
                 val base = "https://laibcatalog.co.il/webapi"
                 val url = "$base/api/getfiles?edi=${chain.param}" + (storeId?.let { "&branchNumber=$it" } ?: "")
                 json.parseToJsonElement(text(url)).jsonArray.mapNotNull { it.jsonObject["fileName"]?.jsonPrimitive?.contentOrNull }
-                    .filter { it.startsWith(kind, true) && (storeId == null || it.contains("-${storeId.padStart(3, '0')}-") || it.contains("-$storeId-")) }
+                    .filter { kindMatches(it, kind) && (storeId == null || it.contains("-${storeId.padStart(3, '0')}-") || it.contains("-$storeId-")) }
                     .sorted().map { it to "$base/${chain.param}/$it" }
             }
             Engine.SHUFERSAL -> {
@@ -108,7 +112,7 @@ class PriceFetcher {
                 val page = text(chain.param + "FileObject/UpdateCategory?catID=$cat&storeId=${storeId ?: "0"}")
                 Regex("href=\"(https://[^\"]+?\\.(?:gz|xml)[^\"]*)\"").findAll(page).map { it.groupValues[1].replace("&amp;", "&") }
                     .map { u -> u.substringBefore('?').substringAfterLast('/') to u }
-                    .filter { it.first.startsWith(kind, true) }.toList().sortedBy { it.first }
+                    .filter { kindMatches(it.first, kind) }.toList().sortedBy { it.first }
             }
         }
     }
@@ -185,16 +189,64 @@ class PriceFetcher {
         }
     }
 
+    /** File kinds: "Stores" matches any name with "store" (Stores, StoresFull, Store…); price/promo kinds match by prefix. */
+    private fun kindMatches(name: String, kind: String): Boolean {
+        val n = name.lowercase(); val k = kind.lowercase()
+        return if (k == "stores") "store" in n else n.startsWith(k)
+    }
+
+    /**
+     * The chain's branches, from the best source available:
+     * 1. laibcatalog's branch list (Victory, Mahsanei HaShuk, H. Cohen) — available day and night;
+     * 2. the chain's Stores file;
+     * 3. store numbers taken from the price-file names (chains that publish no Stores file, e.g. Yellow, Quik).
+     */
     suspend fun stores(chain: Chain): List<StoreInfo> = withContext(Dispatchers.IO) {
-        val file = list(chain, "Stores", null).lastOrNull() ?: throw IOException("No stores file for ${chain.en}")
-        val out = LinkedHashMap<String, StoreInfo>()
-        open(download(chain, file)).use { input ->
-            parse(input, setOf("store", "branch", "sub_store")) { m ->
-                val id = (m["storeid"] ?: m["store_id"] ?: m["storeidentifier"])?.trimStart('0')?.ifEmpty { "0" } ?: return@parse
-                out[id] = StoreInfo(id, m["storename"] ?: m["store_name"] ?: m["name"] ?: id, m["city"].orEmpty(), m["address"].orEmpty())
+        if (chain.engine == Engine.LAIB) runCatching { laibBranches(chain) }.getOrNull()?.takeIf { it.isNotEmpty() }?.let { return@withContext it }
+        val file = runCatching { list(chain, "Stores", null).lastOrNull() }.getOrNull()
+        if (file != null) {
+            val out = LinkedHashMap<String, StoreInfo>()
+            runCatching {
+                open(download(chain, file)).use { input ->
+                    parse(input, setOf("store", "branch", "sub_store")) { m ->
+                        val id = (m["storeid"] ?: m["store_id"] ?: m["storeidentifier"] ?: m["branchid"])?.trimStart('0')?.ifEmpty { "0" } ?: return@parse
+                        out[id] = StoreInfo(id, m["storename"] ?: m["store_name"] ?: m["name"] ?: m["branchname"] ?: id, m["city"].orEmpty(), m["address"].orEmpty())
+                    }
+                }
             }
+            if (out.isNotEmpty()) return@withContext out.values.toList()
         }
-        out.values.toList()
+        val fromNames = (list(chain, "PriceFull", null) + list(chain, "Price", null)).mapNotNull { storeIdFromName(it.first) }.distinct()
+        if (fromNames.isNotEmpty()) return@withContext fromNames.sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }.map { StoreInfo(it, "#$it", "", "") }
+        throw PriceSourceException(if (chain.engine == Engine.LAIB && quietHours()) PriceSourceException.Why.OVERNIGHT else PriceSourceException.Why.NO_FILES)
+    }
+
+    /** PriceFull7290058140886-001-202611200500.gz → "1" */
+    private fun storeIdFromName(n: String): String? =
+        Regex("^[A-Za-z]+\\d{13}-(\\d{1,4})-", RegexOption.IGNORE_CASE).find(n)?.groupValues?.get(1)?.trimStart('0')?.ifEmpty { "0" }
+
+    /** laibcatalog clears its file list from midnight until ~08:00 (and Mahsanei HaShuk on Saturday). */
+    private fun quietHours(): Boolean {
+        val now = java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Jerusalem"))
+        return now.hour < 8 || now.dayOfWeek == java.time.DayOfWeek.SATURDAY
+    }
+
+    private fun laibBranches(chain: Chain): List<StoreInfo> {
+        val arr = json.parseToJsonElement(text("https://laibcatalog.co.il/webapi/api/getbranches?edi=${chain.param}")).jsonArray
+        return arr.mapNotNull { e ->
+            val o = e.jsonObject.mapKeys { it.key.lowercase() }
+            fun pick(vararg keys: String) = keys.firstNotNullOfOrNull { k -> o.entries.firstOrNull { it.key.contains(k) }?.value?.jsonPrimitive?.contentOrNull }
+            val id = pick("branchnumber", "storeid", "number", "id")?.trimStart('0')?.ifEmpty { "0" } ?: return@mapNotNull null
+            StoreInfo(id, pick("branchname", "storename", "name") ?: "#$id", pick("city").orEmpty(), pick("address").orEmpty())
+        }
+    }
+
+    /** Quick health check of a chain's source (listing only, nothing large is downloaded). */
+    suspend fun check(chain: Chain): Int = withContext(Dispatchers.IO) {
+        if (chain.engine == Engine.LAIB) runCatching { laibBranches(chain).size }.getOrNull()?.takeIf { it > 0 }?.let { return@withContext it }
+        val n = list(chain, "PriceFull", null).size + list(chain, "Stores", null).size
+        if (n == 0) throw PriceSourceException(if (chain.engine == Engine.LAIB && quietHours()) PriceSourceException.Why.OVERNIGHT else PriceSourceException.Why.NO_FILES)
+        n
     }
 
     /** Full price list of one store (PriceFull, falling back to the latest Price file). */

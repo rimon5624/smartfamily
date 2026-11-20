@@ -26,7 +26,36 @@ class PriceViewModel(app: Application) : AndroidViewModel(app) {
     val baskets = _baskets.asStateFlow()
 
     private fun launchSafe(block: suspend () -> Unit) = viewModelScope.launch {
-        try { block() } catch (e: Exception) { _messages.tryEmit(UiMessage.Text(e.message ?: e.javaClass.simpleName)) } finally { _progress.value = null }
+        try { block() } catch (e: Exception) { _messages.tryEmit(explain(e)) } finally { _progress.value = null }
+    }
+
+    /** Plain-words reasons instead of raw network errors. */
+    private fun explain(e: Throwable): UiMessage = when {
+        e is kotlinx.coroutines.TimeoutCancellationException -> UiMessage.Res(R.string.prices_err_timeout)
+        e is com.rimon.smartfamily.smart.PriceSourceException -> UiMessage.Res(when (e.why) {
+            com.rimon.smartfamily.smart.PriceSourceException.Why.OVERNIGHT -> R.string.prices_err_overnight
+            com.rimon.smartfamily.smart.PriceSourceException.Why.TIMEOUT -> R.string.prices_err_timeout
+            else -> R.string.prices_err_nofiles
+        })
+        e is java.net.UnknownHostException || e is java.net.ConnectException || e is java.net.SocketTimeoutException -> UiMessage.Res(R.string.prices_err_network)
+        else -> UiMessage.Text(e.message ?: e.javaClass.simpleName)
+    }
+
+    /** Source check: every chain, listing only. Key → null while running, "" ok-with-count text, or the reason. */
+    val checks = MutableStateFlow<Map<String, Pair<Boolean, String>?>>(emptyMap())
+    fun checkSources() = viewModelScope.launch {
+        checks.value = Chains.all.associate { it.key to null }
+        Chains.all.map { ch ->
+            launch {
+                val r = try {
+                    val n = kotlinx.coroutines.withTimeout(40_000) { repo.check(ch) }
+                    true to getApplication<Application>().getString(R.string.prices_check_ok, n)
+                } catch (e: Exception) {
+                    false to explain(e).let { m -> if (m is UiMessage.Res) getApplication<Application>().getString(m.id) else (m as UiMessage.Text).text }
+                }
+                checks.value = checks.value + (ch.key to r)
+            }
+        }
     }
 
     fun lists(familyId: String) = c.shopping.observeLists(familyId)
@@ -36,7 +65,7 @@ class PriceViewModel(app: Application) : AndroidViewModel(app) {
     fun loadStores(chainKey: String) = launchSafe {
         val chain = Chains.byKey(chainKey) ?: return@launchSafe
         _progress.value = chain.he
-        val n = repo.loadStores(chain)
+        val n = kotlinx.coroutines.withTimeout(60_000) { repo.loadStores(chain) }
         _messages.tryEmit(UiMessage.Res(R.string.prices_stores_loaded, n.toString()))
     }
 

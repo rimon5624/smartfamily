@@ -39,6 +39,8 @@ class PriceRepository(private val db: AppDatabase) {
     fun selected() = dao.observeSelected()
     suspend fun hasStores(chainKey: String) = dao.storeCount(chainKey) > 0
 
+    suspend fun check(chain: Chain) = fetcher.check(chain)
+
     suspend fun loadStores(chain: Chain): Int {
         val list = fetcher.stores(chain)
         dao.upsertStores(list.map { PriceStoreEntity(chain.key, it.id, it.name, it.city, it.address) })

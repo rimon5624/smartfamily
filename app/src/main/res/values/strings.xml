@@ -157,7 +157,7 @@
 
     <!-- Cloud -->
     <string name="cloud_title">Cloud sync</string>
-    <string name="cloud_intro">SmartFamily syncs through your own Supabase project (free plan). Run the file supabase/migrations/0001_init.sql once in the Supabase SQL editor, then paste the project URL and the anon public key here.</string>
+    <string name="cloud_intro">Sign in with the same account on every family phone. On the phone everything is stored encrypted; chat and secrets are also end-to-end encrypted in the cloud, and each family sees only its own data.</string>
     <string name="cloud_url">Project URL</string>
     <string name="cloud_key">Anon public key</string>
     <string name="cloud_save">Save connection</string>
@@ -1286,4 +1286,14 @@
     <string name="city_favs">Favourite places</string>
     <string name="city_fav_toggle">Favourite</string>
     <string name="city_change">Place: %1$s · change</string>
+    <string name="cloud_advanced">Advanced (cloud project)</string>
+    <string name="cloud_advanced_hide">Hide advanced</string>
+    <string name="cloud_advanced_warn">Built into the app. Change only if you run your own server; a wrong value disconnects the family.</string>
+    <string name="cloud_last_error">Last sync problem: %1$s</string>
+    <string name="prices_err_timeout">The chain\'s server did not answer within a minute. Try again later or on Wi-Fi.</string>
+    <string name="prices_err_overnight">This chain republishes its files every morning (around 8:00; Mahsanei HaShuk not on Shabbat). Try again then.</string>
+    <string name="prices_err_nofiles">The chain published no files right now. Try again later.</string>
+    <string name="prices_err_network">No connection to the chain\'s server. Check the internet connection.</string>
+    <string name="prices_check">Check price sources</string>
+    <string name="prices_check_ok">Working (%1$d)</string>
 </resources>

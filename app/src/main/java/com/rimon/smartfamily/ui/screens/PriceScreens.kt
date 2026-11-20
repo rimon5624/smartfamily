@@ -1,5 +1,9 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.outlined.NetworkCheck
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -67,12 +71,37 @@ fun PricesScreen(vm: PriceViewModel, viewer: Viewer, onBack: () -> Unit) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val progress by vm.progress.collectAsState()
     val selected by vm.selected.collectAsState(initial = emptyList())
+    var checking by remember { mutableStateOf(false) }
+    if (checking) {
+        val results by vm.checks.collectAsState()
+        AlertDialog(
+            onDismissRequest = { checking = false },
+            title = { Text(stringResource(R.string.prices_check)) },
+            text = {
+                androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 460.dp)) {
+                    items(com.rimon.smartfamily.smart.Chains.all.size) { i ->
+                        val ch = com.rimon.smartfamily.smart.Chains.all[i]
+                        val r = results[ch.key]
+                        Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(when { r == null -> "⏳"; r.first -> "✅"; else -> "⚠️" }, Modifier.width(28.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(if (hebrew) ch.he else ch.en, style = MaterialTheme.typography.bodyMedium)
+                                if (r != null) Text(r.second, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { checking = false }) { Text(stringResource(R.string.close)) } },
+        )
+    }
     Scaffold(topBar = {
         TopAppBar(
             title = { Text(stringResource(R.string.mod_prices)) },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
             actions = {
                 IconButton(enabled = progress == null && selected.isNotEmpty(), onClick = { vm.refreshAll() }) { Icon(Icons.Outlined.Refresh, stringResource(R.string.prices_refresh)) }
+                IconButton(onClick = { checking = true; vm.checkSources() }) { Icon(Icons.Outlined.NetworkCheck, stringResource(R.string.prices_check)) }
                 HelpButton(R.string.help_prices)
             },
         )

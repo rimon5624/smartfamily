@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui
 
+import kotlinx.coroutines.flow.combine
 import android.app.Application
 import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate
@@ -165,6 +166,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setLockMinutes(v: Int) = launchSafe { c.settings.setLockMinutes(v) }
     fun setSecureScreens(v: Boolean) = launchSafe { c.settings.setSecureScreens(v) }
     fun setKidMode(v: String) = launchSafe { c.settings.setKidMode(v) }
+    /** Owner or admin in at least one family (or no family yet): may see the cloud project details. */
+    val canSeeCloudDetails = combine(c.db.people().observeAllActive(), c.settings.settings) { m, st ->
+        m.none { it.userId == st.userId } || m.any { it.userId == st.userId && (it.role == "OWNER" || it.role == "ADMIN") }
+    }
     fun toggleFavCity(key: String) = viewModelScope.launch {
         val cur = c.settings.current().favCities.split(',').filter { it.isNotBlank() }
         c.settings.setFavCities((if (key in cur) cur - key else cur + key).joinToString(","))

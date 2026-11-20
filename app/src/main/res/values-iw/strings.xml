@@ -153,7 +153,7 @@
 
     <!-- Cloud -->
     <string name="cloud_title">סנכרון ענן</string>
-    <string name="cloud_intro">‏SmartFamily מסתנכרנת דרך פרויקט Supabase שלך (תוכנית חינמית). הריצו פעם אחת את הקובץ supabase/migrations/0001_init.sql בעורך ה-SQL של Supabase, ואז הדביקו כאן את כתובת הפרויקט ואת מפתח ה-anon הציבורי.</string>
+    <string name="cloud_intro">התחברו עם אותו חשבון בכל טלפון במשפחה. בטלפון הכול נשמר מוצפן; הצ\'אט והסודות מוצפנים מקצה לקצה גם בענן, וכל משפחה רואה רק את הנתונים שלה.</string>
     <string name="cloud_url">כתובת הפרויקט</string>
     <string name="cloud_key">מפתח anon ציבורי</string>
     <string name="cloud_save">שמירת החיבור</string>
@@ -1282,4 +1282,14 @@
     <string name="city_favs">מקומות מועדפים</string>
     <string name="city_fav_toggle">מועדף</string>
     <string name="city_change">מקום: %1$s · החלפה</string>
+    <string name="cloud_advanced">מתקדם (פרויקט הענן)</string>
+    <string name="cloud_advanced_hide">הסתרת מתקדם</string>
+    <string name="cloud_advanced_warn">מוגדר מראש באפליקציה. לשנות רק אם יש לכם שרת משלכם; ערך שגוי מנתק את המשפחה מהענן.</string>
+    <string name="cloud_last_error">בעיה בסנכרון האחרון: %1$s</string>
+    <string name="prices_err_timeout">שרת הרשת לא ענה תוך דקה. נסו שוב מאוחר יותר או ב-Wi-Fi.</string>
+    <string name="prices_err_overnight">הרשת מפרסמת מחדש את הקבצים כל בוקר (בסביבות 8:00; מחסני השוק לא בשבת). נסו שוב אז.</string>
+    <string name="prices_err_nofiles">הרשת לא פרסמה קבצים כרגע. נסו שוב מאוחר יותר.</string>
+    <string name="prices_err_network">אין חיבור לשרת של הרשת. בדקו את החיבור לאינטרנט.</string>
+    <string name="prices_check">בדיקת מקורות המחירים</string>
+    <string name="prices_check_ok">עובד (%1$d)</string>
 </resources>

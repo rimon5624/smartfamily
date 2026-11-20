@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
@@ -125,7 +125,7 @@ fun HelpButton(textRes: Int) {
     var open by remember { mutableStateOf(!prefs.getBoolean(key, false) && !prefs.getBoolean("off", false)) }
     androidx.compose.runtime.LaunchedEffect(open) { if (open) prefs.edit().putBoolean(key, true).apply() }
     IconButton(onClick = { open = true }) {
-        Icon(Icons.AutoMirrored.Outlined.HelpOutline, contentDescription = stringResource(R.string.help))
+        Icon(Icons.Outlined.HelpOutline, contentDescription = stringResource(R.string.help))
     }
     if (open) {
         AlertDialog(
