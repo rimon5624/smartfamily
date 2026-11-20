@@ -212,7 +212,7 @@ private fun MainNav(vm: AppViewModel) {
     val context = LocalContext.current
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
-    val currentHub = if (route == "hub/{key}") entry?.arguments?.getString("key") else null
+    val currentHub = route?.takeIf { it.startsWith("hub_") }?.removePrefix("hub_")
 
     // ---- 2.1 navigation: areas in a bottom bar the user orders; the rest under "More" ----
     val on = modules.filter { it.effective }.map { it.module }.toSet()
@@ -223,17 +223,15 @@ private fun MainNav(vm: AppViewModel) {
         when (item) {
             com.rimon.smartfamily.model.NavItems.TODAY -> true
             com.rimon.smartfamily.model.NavItems.CHAT -> chatTab
-            else -> famId.isNotEmpty() && com.rimon.smartfamily.model.Hub.byKey(item)?.visibleSections(on)?.isNotEmpty() == true
+            // every area is always there (2.1.1); an area with everything off offers its switches inside
+            else -> famId.isNotEmpty() && com.rimon.smartfamily.model.Hub.byKey(item) != null
         }
     }
     val barItems = visibleNav.take(4)
     val moreItems = visibleNav.drop(4)
     var moreOpen by remember { mutableStateOf(false) }
     val hubSection = remember { androidx.compose.runtime.mutableStateMapOf<String, String>() }
-    fun routeOf(item: String) = when (item) {
-        com.rimon.smartfamily.model.NavItems.TODAY -> "today"; com.rimon.smartfamily.model.NavItems.CHAT -> "chat"
-        "families" -> "families"; "settings" -> "settings"; else -> "hub/$item"
-    }
+    fun routeOf(item: String) = com.rimon.smartfamily.model.NavItems.route(item)
     fun goItem(item: String) = nav.navigate(routeOf(item)) {
         popUpTo(nav.graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
@@ -324,7 +322,7 @@ private fun MainNav(vm: AppViewModel) {
                                 if (item == com.rimon.smartfamily.model.NavItems.CHAT && unread > 0) androidx.compose.material3.BadgedBox(badge = { androidx.compose.material3.Badge { Text(unread.toString()) } }) { Icon(com.rimon.smartfamily.ui.screens.navIcon(item), null) }
                                 else Icon(com.rimon.smartfamily.ui.screens.navIcon(item), null)
                             },
-                            label = { Text(stringResource(com.rimon.smartfamily.ui.screens.navLabel(item)), maxLines = 1) },
+                            label = { Text(stringResource(com.rimon.smartfamily.ui.screens.navLabel(item)), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
                         )
                     }
                     NavigationBarItem(
@@ -389,14 +387,17 @@ private fun MainNav(vm: AppViewModel) {
                     },
                 )
             }
-            composable("hub/{key}") { back ->
-                val hub = com.rimon.smartfamily.model.Hub.byKey(back.arguments?.getString("key").orEmpty()) ?: com.rimon.smartfamily.model.Hub.FOOD
+            // one destination per area: they used to share "hub/{key}", so only the first area opened (2.1.0 bug)
+            com.rimon.smartfamily.model.Hub.entries.forEach { hub -> composable("hub_${hub.key}") {
                 val sections = hub.visibleSections(on)
                 val toToday = { goItem(com.rimon.smartfamily.model.NavItems.TODAY) }
                 fun select(area: String, sec: String) { hubSection[area] = sec; if (area != hub.key) goItem(area) }
                 com.rimon.smartfamily.ui.screens.HubScreen(
                     hub, sections, hubSection[hub.key], barPadding,
                     onSelect = { hubSection[hub.key] = it }, onSearch = { nav.navigate("search") }, onQuickAdd = { quickAdd = true },
+                    empty = {
+                        com.rimon.smartfamily.ui.screens.EmptyArea(hub, modules, role?.canManage == true) { m, en, mine -> vm.setModule(famId, m, en, if (mine) uid else null) }
+                    },
                     actions = {
                         if (hub == com.rimon.smartfamily.model.Hub.FOOD && AppModule.PRICES in on) IconButton(onClick = { nav.navigate("prices") }) {
                             Icon(Icons.Outlined.Sell, stringResource(R.string.prices_cheapest))
@@ -430,7 +431,7 @@ private fun MainNav(vm: AppViewModel) {
                             onOpenAlbum = { nav.navigate("chat/$it") }, onGifts = { select("money", "shared") })
                     }
                 }
-            }
+            } }
             composable(Tab.FAMILIES.route) {
                 FamiliesScreen(vm, barPadding, onOpen = { nav.navigate("family/$it") })
             }
@@ -462,7 +463,12 @@ private fun MainNav(vm: AppViewModel) {
                 com.rimon.smartfamily.ui.screens.SharingScreen(shareVm, id, isAdmin = mine?.let { Role.parse(it.role).canManage } == true, onBack = { nav.popBackStack() })
             }
             composable("modules/{id}") { back ->
-                ModulesScreen(vm, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
+                val fid = back.arguments?.getString("id").orEmpty()
+                val states by remember(fid, uid) { vm.modules(fid, uid) }.collectAsState(initial = emptyList())
+                val mine by remember(fid, uid) { vm.myMembership(fid, uid) }.collectAsState(initial = null)
+                com.rimon.smartfamily.ui.screens.FeaturesScreen(states, mine?.let { Role.parse(it.role).canManage } == true, onBack = { nav.popBackStack() }) { m, en, me ->
+                    vm.setModule(fid, m, en, if (me) uid else null)
+                }
             }
             composable("cloud") { CloudScreen(vm, onBack = { nav.popBackStack() }) }
             composable("backup") { BackupScreen(vm, onBack = { nav.popBackStack() }) }
@@ -527,7 +533,7 @@ private fun MainNav(vm: AppViewModel) {
                 SmartHomeScreen(applianceVm, settings?.homeConnectClientId.orEmpty(), onBack = { nav.popBackStack() })
             }
             composable("chat") {
-                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatListScreen(chatVm, viewer, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("chat/$it") })
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatListScreen(chatVm, viewer, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("chat/$it") }, showBack = !chatTab)
             }
             composable("chat/{id}") { back ->
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatScreen(chatVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }, onOpenRoute = { open(it) })

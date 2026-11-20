@@ -1337,4 +1337,15 @@
     <string name="search">חיפוש</string>
     <string name="prices_cheapest">איפה הכי זול</string>
     <string name="list_deleted">%1$s נמחק</string>
+    <string name="nav_food">אוכל</string>
+    <string name="nav_calendar">יומן</string>
+    <string name="nav_tasks">משימות</string>
+    <string name="nav_money">כסף</string>
+    <string name="nav_home_area">בית</string>
+    <string name="nav_family">משפחה</string>
+    <string name="feature_also_in">גם ב: %1$s</string>
+    <string name="area_off_title">%1$s כבוי</string>
+    <string name="area_off_body">הפעילו את מה שהמשפחה צריכה — לכולם (\"משפחה\") או רק לכם (\"בשבילי\").</string>
+    <string name="area_off_body_member">מנהל/ת המשפחה יכולים להפעיל את אלה לכולם. אתם יכולים להסתיר דברים רק לעצמכם.</string>
+    <string name="features_intro">הכול מסודר כמו באפליקציה. אפשר להפעיל או לכבות כל תכונה לכל המשפחה, או רק לעצמכם.</string>
 </resources>

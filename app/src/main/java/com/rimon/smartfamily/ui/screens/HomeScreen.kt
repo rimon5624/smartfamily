@@ -91,7 +91,7 @@ fun HomeScreen(
         modifier = Modifier.padding(padding),
         topBar = {
             SfTopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                title = { Text(stringResource(R.string.nav_today)) },
                 actions = { HelpButton(R.string.help_home) },
             )
         },

@@ -67,7 +67,7 @@ fun navIcon(item: String): ImageVector = when (item) {
 
 fun navLabel(item: String): Int = when (item) {
     NavItems.TODAY -> R.string.nav_today; NavItems.CHAT -> R.string.mod_chat; "families" -> R.string.nav_families; "settings" -> R.string.nav_settings
-    else -> Hub.byKey(item)?.title ?: R.string.nav_more
+    else -> Hub.byKey(item)?.short ?: R.string.nav_more
 }
 
 /**
@@ -80,6 +80,7 @@ fun HubScreen(
     hub: Hub, sections: List<HubSection>, selectedKey: String?, padding: PaddingValues,
     onSelect: (String) -> Unit, onSearch: () -> Unit, onQuickAdd: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
+    empty: @Composable () -> Unit = { Text(stringResource(R.string.hub_empty)) },
     content: @Composable (HubSection) -> Unit,
 ) {
     val sel = sections.firstOrNull { it.key == selectedKey } ?: sections.firstOrNull()
@@ -106,7 +107,7 @@ fun HubScreen(
     ) { inner ->
         Box(Modifier.padding(inner).consumeWindowInsets(inner).fillMaxSize()) {
             if (sel == null) {
-                Text(stringResource(R.string.hub_empty), Modifier.padding(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                androidx.compose.foundation.lazy.LazyColumn(contentPadding = PaddingValues(16.dp)) { item { empty() } }
             } else key(sel.key) {
                 CompositionLocalProvider(LocalEmbedded provides true, LocalFixedTab provides sel.tab) { content(sel) }
             }
@@ -160,4 +161,89 @@ private fun swap(order: List<String>, a: String, b: String): List<String> {
     val l = order.toMutableList(); val i = l.indexOf(a); val j = l.indexOf(b)
     if (i >= 0 && j >= 0) { l[i] = b; l[j] = a }
     return l
+}
+
+
+/**
+ * The features of one area with their switches: the family switch (admins) and "for me" (anyone).
+ * Used in Settings → Features and inside an area whose features are all off.
+ */
+@Composable
+fun AreaFeatures(
+    hub: Hub, states: List<com.rimon.smartfamily.data.repo.ModuleState>, canManage: Boolean,
+    onSet: (com.rimon.smartfamily.model.AppModule, Boolean, Boolean) -> Unit, // module, enabled, forMeOnly
+) {
+    Column(Modifier.fillMaxWidth()) {
+        hub.features.forEach { m ->
+            val st = states.firstOrNull { it.module == m } ?: return@forEach
+            val here = hub.sectionsOf(m)
+            val name = if (here.isEmpty()) stringResource(m.title) else here.map { stringResource(it.title) }.joinToString(" · ")
+            val elsewhere = Hub.entries.filter { it != hub && it.sectionsOf(m).isNotEmpty() }.map { stringResource(it.title) }
+            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(name, style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(m.subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (elsewhere.isNotEmpty()) Text(stringResource(R.string.feature_also_in, elsewhere.joinToString(", ")), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(stringResource(R.string.modules_family_level), style = MaterialTheme.typography.labelSmall)
+                    androidx.compose.material3.Switch(checked = st.familyEnabled, enabled = canManage, onCheckedChange = { onSet(m, it, false) })
+                }
+                Spacer(Modifier.size(8.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(stringResource(R.string.modules_my_level), style = MaterialTheme.typography.labelSmall)
+                    androidx.compose.material3.Switch(checked = st.effective, enabled = st.familyEnabled, onCheckedChange = { onSet(m, it, true) })
+                }
+            }
+        }
+    }
+}
+
+/** Shown in an area whose features are all off: what it is for, and the switches right here. */
+@Composable
+fun EmptyArea(hub: Hub, states: List<com.rimon.smartfamily.data.repo.ModuleState>, canManage: Boolean,
+              onSet: (com.rimon.smartfamily.model.AppModule, Boolean, Boolean) -> Unit) {
+    androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column(Modifier.padding(16.dp)) {
+            Text(stringResource(R.string.area_off_title, stringResource(hub.title)), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(if (canManage) R.string.area_off_body else R.string.area_off_body_member), style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
+            AreaFeatures(hub, states, canManage, onSet)
+        }
+    }
+}
+
+/** Settings → Features, organised by the same areas the app shows. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FeaturesScreen(states: List<com.rimon.smartfamily.data.repo.ModuleState>, canManage: Boolean, onBack: () -> Unit,
+                   onSet: (com.rimon.smartfamily.model.AppModule, Boolean, Boolean) -> Unit) {
+    Scaffold(topBar = {
+        com.rimon.smartfamily.ui.components.SfTopAppBar(
+            title = { Text(stringResource(R.string.modules_title)) },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
+            actions = { HelpButton(R.string.help_modules) },
+        )
+    }) { inner ->
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.padding(inner), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item {
+                Text(stringResource(if (canManage) R.string.features_intro else R.string.modules_admin_only), style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Hub.entries.forEach { hub ->
+                item(key = hub.key) {
+                    androidx.compose.material3.Card(colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                        Column(Modifier.padding(14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(navIcon(hub.key), null)
+                                Spacer(Modifier.size(10.dp))
+                                Text(stringResource(hub.title), style = MaterialTheme.typography.titleMedium)
+                            }
+                            AreaFeatures(hub, states, canManage, onSet)
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

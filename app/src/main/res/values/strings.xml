@@ -1341,4 +1341,15 @@
     <string name="search">Search</string>
     <string name="prices_cheapest">Where is it cheapest</string>
     <string name="list_deleted">%1$s deleted</string>
+    <string name="nav_food">Food</string>
+    <string name="nav_calendar">Calendar</string>
+    <string name="nav_tasks">Tasks</string>
+    <string name="nav_money">Money</string>
+    <string name="nav_home_area">Home</string>
+    <string name="nav_family">Family</string>
+    <string name="feature_also_in">Also in: %1$s</string>
+    <string name="area_off_title">%1$s is switched off</string>
+    <string name="area_off_body">Turn on what your family needs — for everyone (\"Family\") or just for you (\"For me\").</string>
+    <string name="area_off_body_member">A family admin can turn these on for everyone. You can hide things just for yourself.</string>
+    <string name="features_intro">Everything is grouped like the app. Turn a feature on or off for the whole family, or only for yourself.</string>
 </resources>

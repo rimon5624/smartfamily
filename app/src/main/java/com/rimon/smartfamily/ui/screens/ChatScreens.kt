@@ -129,7 +129,7 @@ private fun chatTitle(chat: ChatEntity, members: List<MemberEntity>, me: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatListScreen(vm: ChatViewModel, viewer: Viewer, onBack: () -> Unit, onOpen: (String) -> Unit) {
+fun ChatListScreen(vm: ChatViewModel, viewer: Viewer, onBack: () -> Unit, onOpen: (String) -> Unit, showBack: Boolean = true) {
     val members by remember(viewer.familyId) { vm.members(viewer.familyId) }.collectAsState(initial = emptyList())
     val people by vm.people.collectAsState(initial = emptyList())
     val chats by remember(viewer.userId) { vm.chats(viewer.userId) }.collectAsState(initial = emptyList())
@@ -148,7 +148,7 @@ fun ChatListScreen(vm: ChatViewModel, viewer: Viewer, onBack: () -> Unit, onOpen
         topBar = {
             SfTopAppBar(
                 title = { Text(stringResource(R.string.chat_title)) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
+                navigationIcon = { if (showBack) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = { HelpButton(R.string.help_chat) },
             )
         },

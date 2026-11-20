@@ -9,31 +9,31 @@ import com.rimon.smartfamily.R
  */
 data class HubSection(val key: String, @StringRes val title: Int, val modules: Set<AppModule>, val tab: Int? = null)
 
-enum class Hub(val key: String, @StringRes val title: Int, val sections: List<HubSection>) {
-    FOOD("food", R.string.hub_food, listOf(
+enum class Hub(val key: String, @StringRes val title: Int, @StringRes val short: Int, val sections: List<HubSection>, val extras: List<AppModule> = emptyList()) {
+    FOOD("food", R.string.hub_food, R.string.nav_food, listOf(
         HubSection("lists", R.string.sec_lists, setOf(AppModule.SHOPPING)),
         HubSection("pantry", R.string.sec_pantry, setOf(AppModule.INVENTORY)),
         HubSection("menu", R.string.sec_menu, setOf(AppModule.RECIPES), tab = 1),
         HubSection("recipes", R.string.sec_recipes, setOf(AppModule.RECIPES), tab = 0),
         HubSection("school", R.string.sec_school, setOf(AppModule.PACKED_MEALS), tab = 2),
-    )),
-    CALENDAR("calendar", R.string.hub_calendar, listOf(
+    ), extras = listOf(AppModule.PRICES)),
+    CALENDAR("calendar", R.string.hub_calendar, R.string.nav_calendar, listOf(
         HubSection("calendar", R.string.sec_calendar, setOf(AppModule.CALENDAR)),
         HubSection("shabbat", R.string.sec_shabbat, setOf(AppModule.SHABBAT)),
         HubSection("trips", R.string.sec_trips, setOf(AppModule.TRAVEL)),
     )),
-    TASKS("tasks", R.string.hub_tasks, listOf(
+    TASKS("tasks", R.string.hub_tasks, R.string.nav_tasks, listOf(
         HubSection("chores", R.string.sec_chores, setOf(AppModule.CHORES)),
         HubSection("routines", R.string.sec_routines, setOf(AppModule.KIDS), tab = 0),
     )),
-    MONEY("money", R.string.hub_money, listOf(
+    MONEY("money", R.string.hub_money, R.string.nav_money, listOf(
         HubSection("budget", R.string.sec_budget, setOf(AppModule.BUDGET)),
         HubSection("bills", R.string.sec_bills, setOf(AppModule.BUDGET), tab = 0),
         HubSection("pocket", R.string.sec_pocket, setOf(AppModule.BUDGET, AppModule.KIDS), tab = 1),
         HubSection("goals", R.string.sec_goals, setOf(AppModule.BUDGET), tab = 2),
         HubSection("shared", R.string.sec_shared_costs, setOf(AppModule.BUDGET), tab = 3),
     )),
-    HOME("home", R.string.hub_home, listOf(
+    HOME("home", R.string.hub_home, R.string.nav_home_area, listOf(
         HubSection("appliances", R.string.sec_appliances, setOf(AppModule.APPLIANCES)),
         HubSection("documents", R.string.sec_documents, setOf(AppModule.HOME_BOOK), tab = 0),
         HubSection("repairs", R.string.sec_repairs, setOf(AppModule.HOME_BOOK), tab = 0),
@@ -42,12 +42,16 @@ enum class Hub(val key: String, @StringRes val title: Int, val sections: List<Hu
         HubSection("secrets", R.string.sec_secrets, setOf(AppModule.HOME_BOOK), tab = 3),
         HubSection("knowledge", R.string.sec_knowledge, setOf(AppModule.KNOWLEDGE), tab = 1),
     )),
-    FAMILY("family", R.string.hub_family, listOf(
+    FAMILY("family", R.string.hub_family, R.string.nav_family, listOf(
         HubSection("family", R.string.sec_family, setOf(AppModule.FAMILY)),
         HubSection("growth", R.string.sec_growth, setOf(AppModule.KIDS), tab = 1),
-    ));
+    ), extras = listOf(AppModule.CHAT, AppModule.POLLS));
 
     fun visibleSections(on: Set<AppModule>) = sections.filter { s -> s.modules.any { it in on } }
+
+    /** The switchable features of this area: each module once, named after the sections it opens here. */
+    val features: List<AppModule> get() = (sections.flatMap { it.modules } + extras).distinct()
+    fun sectionsOf(m: AppModule) = sections.filter { m in it.modules }
 
     companion object {
         fun byKey(k: String) = entries.firstOrNull { it.key == k }
@@ -59,6 +63,8 @@ object NavItems {
     const val TODAY = "today"
     const val CHAT = "chat"
     val defaultOrder = listOf(TODAY, "calendar", "food", "tasks", "money", "home", "family", CHAT)
+    fun route(item: String) = when (item) { TODAY -> "today"; CHAT -> "chat"; "families" -> "families"; "settings" -> "settings"; else -> "hub_$item" }
+
     fun ordered(csv: String): List<String> {
         val saved = csv.split(',').map { it.trim() }.filter { it in defaultOrder }.distinct()
         return saved + defaultOrder.filter { it !in saved }
