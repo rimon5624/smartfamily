@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.ArrowUpward
@@ -221,7 +222,7 @@ fun FeaturesScreen(states: List<com.rimon.smartfamily.data.repo.ModuleState>, ca
     Scaffold(topBar = {
         com.rimon.smartfamily.ui.components.SfTopAppBar(
             title = { Text(stringResource(R.string.modules_title)) },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
             actions = { HelpButton(R.string.help_modules) },
         )
     }) { inner ->
