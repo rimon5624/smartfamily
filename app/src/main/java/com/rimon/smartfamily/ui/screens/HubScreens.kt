@@ -92,7 +92,7 @@ fun HubScreen(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text(stringResource(hub.title), Modifier.testTag("area_${hub.key}")) },
+                    title = { Text(stringResource(hub.title), Modifier.testTag("area_${hub.key}"), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                     actions = {
                         actions()
                         IconButton(onClick = onSearch) { Icon(Icons.Outlined.Search, stringResource(R.string.search)) }

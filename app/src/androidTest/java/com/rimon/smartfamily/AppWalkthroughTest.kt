@@ -50,8 +50,8 @@ class AppWalkthroughTest {
             val f = c.families.createFamily("משפחת בדיקה", AppModule.entries.toSet())
             c.settings.setActiveFamily(f.id)
         }
-        c.settings.setLanguage("iw")
-        withContext(Dispatchers.Main) { AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("iw")) }
+        c.settings.setLanguage("he")
+        withContext(Dispatchers.Main) { AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("he")) }
     }
 
     private fun shot(name: String) {
