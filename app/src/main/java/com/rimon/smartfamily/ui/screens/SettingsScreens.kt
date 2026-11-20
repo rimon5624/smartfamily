@@ -90,6 +90,7 @@ fun SettingsScreen(
     onModules: (String) -> Unit,
     onAi: () -> Unit,
     onSmartHome: () -> Unit,
+    onNotifyCheck: () -> Unit = {},
 ) {
     val s by vm.settings.collectAsStateWithLifecycle()
     val name by vm.displayName.collectAsStateWithLifecycle()
@@ -208,6 +209,7 @@ fun SettingsScreen(
                 onAi,
             )
             ClickRow(Icons.Outlined.Sensors, stringResource(R.string.sh_title), stringResource(R.string.sh_hc) + " · " + stringResource(R.string.sh_st), onSmartHome)
+            ClickRow(Icons.Outlined.Notifications, stringResource(R.string.nc_title), stringResource(R.string.nc_sub), onNotifyCheck)
             CityRow(settings.zmanimCity, settings.language, settings.favCities.split(',').filter { it.isNotBlank() }, { vm.toggleFavCity(it) }) { vm.setZmanimCity(it) }
             // Home screen cards: size of the greeting and the Shabbat card
             // 2.1: order of the bottom bar and where the chat lives

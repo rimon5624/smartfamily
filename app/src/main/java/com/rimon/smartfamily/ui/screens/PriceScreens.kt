@@ -212,37 +212,78 @@ private fun BasketCard(b: StoreBasket, hebrew: Boolean, comparable: Double, comm
     }
 }
 
+/**
+ * 2.2 branch wizard: 1) your city → 2) the app loads every chain's branch list and shows only chains with a branch
+ * there → 3) tick branches; each one is test-downloaded at once and shows how many prices arrived (or why not).
+ */
 @Composable
 private fun StoresTab(vm: PriceViewModel, hebrew: Boolean) {
     var open by rememberSaveable { mutableStateOf("") }
     var city by rememberSaveable { mutableStateOf("") }
-    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+    var showAll by rememberSaveable { mutableStateOf(false) }
+    val load by vm.storeLoad.collectAsState()
+    val fetch by vm.storeFetch.collectAsState()
+    val allStores = Chains.all.associate { ch -> ch.key to (remember(ch.key) { vm.stores(ch.key) }.collectAsState(initial = emptyList()).value) }
+    fun matches(st: com.rimon.smartfamily.data.db.PriceStoreEntity) =
+        city.isBlank() || st.city.contains(city.trim(), true) || st.name.contains(city.trim(), true) || st.address.contains(city.trim(), true)
+    val loading = load.values.count { it == "…" }
+    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item {
-            Text(stringResource(R.string.prices_stores_intro), style = MaterialTheme.typography.bodyMedium)
-            OutlinedTextField(city, { city = it }, label = { Text(stringResource(R.string.prices_city_filter)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
-            Text(stringResource(R.string.prices_shira_note), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            com.rimon.smartfamily.ui.components.GuideStep(1, stringResource(R.string.pw_step1), stringResource(R.string.pw_step1_body), done = city.isNotBlank()) {
+                OutlinedTextField(city, { city = it }, label = { Text(stringResource(R.string.prices_city_filter)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            }
         }
+        item {
+            com.rimon.smartfamily.ui.components.GuideStep(2, stringResource(R.string.pw_step2), stringResource(R.string.pw_step2_body), done = loading == 0 && load.isNotEmpty()) {
+                FilledTonalButton(enabled = loading == 0, onClick = { vm.loadAllStores() }) { Text(stringResource(R.string.pw_load_all)) }
+                if (loading > 0) Text(stringResource(R.string.pw_loading, loading), style = MaterialTheme.typography.bodySmall)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(showAll, { showAll = it }); Text(stringResource(R.string.pw_show_all), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+        item { Text(stringResource(R.string.pw_step3), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp)) }
         Chains.all.forEach { chain ->
+            val stores = allStores[chain.key].orEmpty()
+            val here = stores.filter { matches(it) }
+            val state = load[chain.key]
+            if (!showAll && city.isNotBlank() && stores.isNotEmpty() && here.isEmpty()) return@forEach
             item(key = chain.key) {
-                val stores by remember(chain.key) { vm.stores(chain.key) }.collectAsState(initial = emptyList())
                 val chosen = stores.count { it.selected }
                 Column {
                     Row(Modifier.fillMaxWidth().clickable {
                         open = if (open == chain.key) "" else chain.key
                         if (open == chain.key && stores.isEmpty()) vm.loadStores(chain.key)
-                    }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text((if (hebrew) chain.he else chain.en) + if (chosen > 0) "  ($chosen)" else "", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                    }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text((if (hebrew) chain.he else chain.en) + if (chosen > 0) "  ($chosen ✓)" else "", style = MaterialTheme.typography.titleMedium)
+                            val sub = when {
+                                state == "…" -> stringResource(R.string.pw_chain_loading)
+                                state?.startsWith("err:") == true -> "✗ " + state.removePrefix("err:")
+                                stores.isNotEmpty() && city.isNotBlank() -> stringResource(R.string.pw_chain_here, here.size, stores.size)
+                                stores.isNotEmpty() -> stringResource(R.string.pw_chain_count, stores.size)
+                                else -> ""
+                            }
+                            if (sub.isNotBlank()) Text(sub, style = MaterialTheme.typography.labelSmall,
+                                color = if (state?.startsWith("err:") == true) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                         Icon(if (open == chain.key) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null)
                     }
                     if (open == chain.key) {
-                        if (stores.isEmpty()) TextButton(onClick = { vm.loadStores(chain.key) }) { Text(stringResource(R.string.prices_load_stores)) }
-                        stores.filter { city.isBlank() || it.city.contains(city, true) || it.name.contains(city, true) || it.address.contains(city, true) }.take(80).forEach { s ->
-                            Row(Modifier.fillMaxWidth().clickable { vm.toggle(s) }, verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(s.selected, { vm.toggle(s) })
+                        if (stores.isEmpty() && state != "…") TextButton(onClick = { vm.loadStores(chain.key) }) { Text(stringResource(R.string.prices_load_stores)) }
+                        here.take(80).forEach { st ->
+                            val f = fetch["${st.chainKey}:${st.storeId}"]
+                            Row(Modifier.fillMaxWidth().clickable { vm.toggle(st) }, verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(st.selected, { vm.toggle(st) })
                                 Column(Modifier.weight(1f)) {
-                                    Text(s.name)
-                                    Text(listOf(s.city, s.address).filter { it.isNotBlank() }.joinToString(" · ") +
-                                        if (s.itemCount > 0) " · " + stringResource(R.string.prices_items, s.itemCount) else "", style = MaterialTheme.typography.labelSmall)
+                                    Text(st.name)
+                                    Text(listOf(st.city, st.address).filter { it.isNotBlank() }.joinToString(" · ") +
+                                        if (st.itemCount > 0) " · " + stringResource(R.string.prices_items, st.itemCount) else "", style = MaterialTheme.typography.labelSmall)
+                                    when {
+                                        f == "…" -> Text(stringResource(R.string.pw_fetching), style = MaterialTheme.typography.labelSmall)
+                                        f?.startsWith("ok:") == true -> Text(stringResource(R.string.pw_fetched, f.removePrefix("ok:")), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                                        f?.startsWith("err:") == true -> Text("✗ " + f.removePrefix("err:"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                                    }
                                 }
                             }
                         }
@@ -251,6 +292,7 @@ private fun StoresTab(vm: PriceViewModel, hebrew: Boolean) {
                 }
             }
         }
+        item { Text(stringResource(R.string.prices_shira_note), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }
 

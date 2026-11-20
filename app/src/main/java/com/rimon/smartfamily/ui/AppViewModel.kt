@@ -99,6 +99,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }.getOrDefault(emptyList())
 
+    /** 2.2 notification check: asks the server to send a test wake-up to my phones; returns how many it reached. */
+    private val _pushTest = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    val pushTest = _pushTest.asStateFlow()
+    fun sendTestPush() = viewModelScope.launch {
+        _pushTest.value = "…"
+        _pushTest.value = runCatching {
+            runCatching { com.rimon.smartfamily.sync.Push.register(getApplication()) }
+            val o = c.api.json.parseToJsonElement(c.api.function("notify", "selftest=1")) as kotlinx.serialization.json.JsonObject
+            (o["sent"]?.toString() ?: "0") + "/" + (o["of"]?.toString() ?: "0")
+        }.getOrElse { e -> if (e is java.net.UnknownHostException) "offline" else "error" }
+    }
+
     private fun launchSafe(block: suspend () -> Unit) = viewModelScope.launch {
         _busy.value = true
         try {

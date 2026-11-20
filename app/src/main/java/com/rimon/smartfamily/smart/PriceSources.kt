@@ -143,13 +143,18 @@ class PriceFetcher {
         r.body!!.bytes()
     }
 
+    /**
+     * 2.2 fix: the Cerberus server (Rami Levy, Osher Ad, Yohananof, Tiv Taam, Keshet…) now accepts only explicit
+     * FTP over TLS for the login (like the OpenIsraeliSupermarkets scraper's FTP_TLS); plain FTP was refused, so
+     * these chains' branches never downloaded. The data channel stays as the server offers it.
+     */
     private fun <T> ftp(user: String, block: (FTPClient) -> T): T {
-        val c = FTPClient()
+        val c: FTPClient = org.apache.commons.net.ftp.FTPSClient(false)
         c.connectTimeout = 20_000
         c.controlEncoding = "UTF-8"
         try {
             c.connect("url.retail.publishedprices.co.il")
-            if (!c.login(user, "")) throw IOException("FTP login refused for $user")
+            if (!c.login(user, "")) throw IOException("FTP login refused for $user: ${c.replyString?.trim()}")
             c.enterLocalPassiveMode()
             c.setDataTimeout(java.time.Duration.ofSeconds(90))
             return block(c)

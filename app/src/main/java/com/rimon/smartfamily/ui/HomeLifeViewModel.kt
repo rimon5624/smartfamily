@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui
 
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -76,6 +77,23 @@ class HomeLifeViewModel(app: Application) : AndroidViewModel(app) {
         parsed.filter { (it.title to it.start) !in existing }.forEach { repo.saveEvent(com.rimon.smartfamily.smart.Ics.toEntity(it, familyId, owner)); n++ }
         _messages.tryEmit(UiMessage.Res(R.string.ics_imported, n.toString()))
     }
+
+    // ---- 2.2 calendar import wizard: a secret iCal address from Google / Outlook, tested, then kept up to date ----
+    private val _icsTest = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    val icsTest = _icsTest.asStateFlow()
+    fun testIcsUrl(url: String) = viewModelScope.launch {
+        _icsTest.value = "…"
+        _icsTest.value = runCatching { "ok:" + com.rimon.smartfamily.smart.IcsSubscriptions.fetch(url).size }
+            .getOrElse { e -> "err:" + (if (e is java.net.UnknownHostException) "offline" else (e.message ?: "error")) }
+    }
+    fun subscribeIcs(url: String, familyId: String, owner: String, everyHours: Int) = launchSafe {
+        val subs = com.rimon.smartfamily.smart.IcsSubscriptions
+        subs.add(c.crypto, url, familyId, owner, everyHours)
+        val n = subs.refreshOne(c, subs.list(c.crypto).last())
+        _messages.tryEmit(UiMessage.Res(R.string.ics_imported, n.toString()))
+    }
+    fun icsSubscriptions() = com.rimon.smartfamily.smart.IcsSubscriptions.list(c.crypto)
+    fun removeIcs(url: String) = com.rimon.smartfamily.smart.IcsSubscriptions.remove(c.crypto, url)
 
     fun setCalendar(hebFirst: Boolean? = null, basis: String? = null, view: String? = null, shabbatRow: Boolean? = null) =
         viewModelScope.launch { c.settings.setCalendar(hebFirst, basis, view, shabbatRow) }

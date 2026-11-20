@@ -23,6 +23,7 @@ class PushService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
+        if (message.data["type"] == "test") { Push.onTestArrived(applicationContext); return }
         if (message.data["type"] != "chat") return
         val app = applicationContext as SmartFamilyApp
         runBlocking {
@@ -35,6 +36,14 @@ class PushService : FirebaseMessagingService() {
 }
 
 object Push {
+    /** 2.2 notification check: the server's test wake-up reached this phone — show a real notification. */
+    fun onTestArrived(context: Context) {
+        context.getSharedPreferences("sf_push", Context.MODE_PRIVATE).edit().putLong("test_at", System.currentTimeMillis()).apply()
+        com.rimon.smartfamily.smart.ChatNotifier.showText(context, context.getString(com.rimon.smartfamily.R.string.nc_test_title), context.getString(com.rimon.smartfamily.R.string.nc_test_body))
+    }
+    fun lastTestAt(context: Context): Long = context.getSharedPreferences("sf_push", Context.MODE_PRIVATE).getLong("test_at", 0)
+    fun registered(context: Context): Boolean = context.getSharedPreferences("sf_push", Context.MODE_PRIVATE).getString("sent", null) != null
+
     /** True when this build includes the Firebase setup (google-services.json was present at build time). */
     fun available(context: Context): Boolean = runCatching { com.google.firebase.FirebaseApp.getInstance() }.isSuccess ||
         runCatching { com.google.firebase.FirebaseApp.initializeApp(context) != null }.getOrDefault(false)

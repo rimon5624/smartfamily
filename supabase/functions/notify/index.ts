@@ -54,6 +54,15 @@ Deno.serve(async (req) => {
     const { count } = await db.from("push_tokens").select("id", { count: "exact", head: true }).is("deleted_at", null);
     return Response.json({ fcm_key: sa ? "present" : "missing", firebase_project: sa?.project_id ?? null, oauth, phones: count ?? 0 });
   }
+  // 2.2 notification check: a signed-in user asks for a test wake-up to their own phones only
+  if (url.searchParams.get("selftest") === "1") {
+    const jwt = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+    const { data: u } = await db.auth.getUser(jwt);
+    if (!u?.user) return new Response("unauthorized", { status: 401 });
+    if (!sa) return Response.json({ sent: 0, reason: "FCM_SERVICE_ACCOUNT missing" });
+    const { data: tokens } = await db.from("push_tokens").select("id,token").eq("user_id", u.user.id).is("deleted_at", null);
+    return Response.json(await sendTo(sa, tokens ?? [], { type: "test" }));
+  }
   // only the database trigger may call: it sends the shared hook secret kept in the database
   const hook = req.headers.get("x-sf-hook") ?? "";
   const { data: ok } = await db.rpc("sf_hook_ok", { secret: hook });
@@ -67,21 +76,25 @@ Deno.serve(async (req) => {
   const members = String(chat.members ?? "").split(",").filter((m: string) => m && m !== sender);
   if (members.length === 0) return Response.json({ sent: 0 });
   const { data: tokens } = await db.from("push_tokens").select("id,token").in("user_id", members).is("deleted_at", null);
+  return Response.json(await sendTo(sa, tokens ?? [], { type: "chat", chat_id: chatId }));
+});
+
+// Sends one data message to each token; tokens of uninstalled apps are retired.
+async function sendTo(sa: { project_id: string; client_email: string; private_key: string }, tokens: { id: string; token: string }[], data: Record<string, string>) {
   const at = await accessToken(sa);
   let sent = 0;
-  for (const t of tokens ?? []) {
+  for (const t of tokens) {
     const r = await fetch(`https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`, {
       method: "POST", headers: { Authorization: `Bearer ${at}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ message: { token: t.token, data: { type: "chat", chat_id: chatId }, android: { priority: "HIGH" } } }),
+      body: JSON.stringify({ message: { token: t.token, data, android: { priority: "HIGH" } } }),
     });
     if (r.ok) sent++;
     else {
       const err = await r.text();
-      // the phone uninstalled the app or the token expired: stop sending to it
       if (err.includes("UNREGISTERED") || err.includes("registration-token-not-registered")) {
         await db.from("push_tokens").update({ deleted_at: Date.now() }).eq("id", t.id);
       }
     }
   }
-  return Response.json({ sent, of: tokens?.length ?? 0 });
-});
+  return { sent, of: tokens.length };
+}

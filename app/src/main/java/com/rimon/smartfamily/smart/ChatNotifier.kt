@@ -63,6 +63,24 @@ object ChatNotifier {
         show(context, lines, incoming.size)
     }
 
+    /** A single plain notification on the chat channel (used by the notification check). */
+    fun showText(context: Context, title: String, text: String) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
+        val nm = context.getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(NotificationChannel(CHANNEL, context.getString(R.string.chat_title), NotificationManager.IMPORTANCE_HIGH))
+        val open = PendingIntent.getActivity(context, 4, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val n = NotificationCompat.Builder(context, CHANNEL).setSmallIcon(R.drawable.ic_notification).setContentTitle(title).setContentText(text)
+            .setContentIntent(open).setAutoCancel(true).build()
+        runCatching { NotificationManagerCompat.from(context).notify(3002, n) }
+    }
+    /** Whether the chat channel was turned off by the user in the system settings. */
+    fun channelBlocked(context: Context): Boolean {
+        val nm = context.getSystemService(NotificationManager::class.java)
+        return !nm.areNotificationsEnabled() || nm.getNotificationChannel(CHANNEL)?.importance == NotificationManager.IMPORTANCE_NONE
+    }
+
     private fun show(context: Context, lines: List<String>, count: Int) {
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED

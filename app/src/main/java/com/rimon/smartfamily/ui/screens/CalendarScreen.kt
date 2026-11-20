@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -208,6 +209,7 @@ fun CalendarScreen(vm: HomeLifeViewModel, viewer: Viewer, settings: AppSettings?
     var editEvent by remember { mutableStateOf<EventEntity?>(null) }
     var jump by remember { mutableStateOf(false) }
     var converter by remember { mutableStateOf(false) }
+    var icsWizard by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     var fab by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -298,7 +300,7 @@ fun CalendarScreen(vm: HomeLifeViewModel, viewer: Viewer, settings: AppSettings?
                                 scope.launch { runCatching { context.startActivity(vm.exportIcs(viewer.familyId, events, dates)) } }
                             })
                             if (!viewer.isChild) DropdownMenuItem(text = { Text(stringResource(R.string.ics_import)) }, leadingIcon = { Icon(Icons.Outlined.FileOpen, null) }, onClick = {
-                                menu = false; icsPicker.launch(arrayOf("text/calendar", "text/*", "application/octet-stream"))
+                                menu = false; icsWizard = true
                             })
                         }
                     }
@@ -351,6 +353,7 @@ fun CalendarScreen(vm: HomeLifeViewModel, viewer: Viewer, settings: AppSettings?
         }
     }
     if (jump) HebrewOrGregorianPicker(stringResource(R.string.cal_jump), sel, onDismiss = { jump = false }) { jump = false; goTo(it) }
+    if (icsWizard) IcsImportWizard(vm, viewer, onFile = { icsWizard = false; icsPicker.launch(arrayOf("text/calendar", "text/*", "application/octet-stream")) }, onDismiss = { icsWizard = false })
     if (converter) ConverterDialog(onDismiss = { converter = false }, onGo = { converter = false; goTo(it) })
     editDate?.let { d -> DateEditDialog(d, onDismiss = { editDate = null }, onSave = { vm.saveDate(it); editDate = null }, onDelete = { vm.deleteDate(d.id); editDate = null }) }
     editEvent?.let { e -> EventEditDialog(e, onDismiss = { editEvent = null }, onSave = { vm.saveEvent(it); editEvent = null }, onDelete = { vm.deleteEvent(e.id); editEvent = null }) }
@@ -946,4 +949,63 @@ private fun EventEditDialog(e: EventEntity, onDismiss: () -> Unit, onSave: (Even
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
     if (picking) HebrewOrGregorianPicker(stringResource(R.string.date_pick), day, onDismiss = { picking = false }) { day = it; picking = false }
+}
+
+
+/** 2.2 calendar import wizard: from a file, or from a secret iCal address that stays up to date. */
+@Composable
+private fun IcsImportWizard(vm: com.rimon.smartfamily.ui.HomeLifeViewModel, viewer: Viewer, onFile: () -> Unit, onDismiss: () -> Unit) {
+    var url by remember { mutableStateOf("") }
+    var every by remember { mutableStateOf(24) }
+    var source by remember { mutableStateOf("google") }
+    val test by vm.icsTest.collectAsState()
+    var subs by remember { mutableStateOf(vm.icsSubscriptions()) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.ics_import)) },
+        text = {
+            Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onFile, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.icsw_from_file)) }
+                Text(stringResource(R.string.icsw_or_link), style = MaterialTheme.typography.titleSmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("google" to "Google", "outlook" to "Outlook", "other" to stringResource(R.string.icsw_other)).forEach { (k, l) ->
+                        androidx.compose.material3.FilterChip(selected = source == k, onClick = { source = k }, label = { Text(l) })
+                    }
+                }
+                Text(stringResource(when (source) { "google" -> R.string.icsw_google; "outlook" -> R.string.icsw_outlook; else -> R.string.icsw_other_body }), style = MaterialTheme.typography.bodySmall)
+                when (source) {
+                    "google" -> com.rimon.smartfamily.ui.components.OpenSiteButton(stringResource(R.string.icsw_open_settings), "https://calendar.google.com/calendar/r/settings")
+                    "outlook" -> com.rimon.smartfamily.ui.components.OpenSiteButton(stringResource(R.string.icsw_open_settings), "https://outlook.live.com/calendar/0/options/calendar/SharedCalendars")
+                }
+                OutlinedTextField(url, { url = it.trim() }, label = { Text(stringResource(R.string.icsw_address)) }, modifier = Modifier.fillMaxWidth())
+                OutlinedButton(enabled = url.length > 10, onClick = { vm.testIcsUrl(url) }) { Text(stringResource(R.string.ai_test)) }
+                when {
+                    test == "…" -> com.rimon.smartfamily.ui.components.TestResult(null, stringResource(R.string.nc_sending))
+                    test?.startsWith("ok:") == true -> com.rimon.smartfamily.ui.components.TestResult(true, stringResource(R.string.icsw_ok, test!!.removePrefix("ok:")))
+                    test == "err:offline" -> com.rimon.smartfamily.ui.components.TestResult(false, stringResource(R.string.ai_check_offline))
+                    test == "err:https" -> com.rimon.smartfamily.ui.components.TestResult(false, stringResource(R.string.icsw_https))
+                    test?.startsWith("err:") == true -> com.rimon.smartfamily.ui.components.TestResult(false, stringResource(R.string.icsw_bad))
+                }
+                Text(stringResource(R.string.icsw_every), style = MaterialTheme.typography.bodySmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(6, 24, 168).forEach { h ->
+                        androidx.compose.material3.FilterChip(selected = every == h, onClick = { every = h }, label = { Text(stringResource(when (h) { 6 -> R.string.icsw_6h; 24 -> R.string.icsw_day; else -> R.string.icsw_week })) })
+                    }
+                }
+                if (subs.isNotEmpty()) {
+                    Text(stringResource(R.string.icsw_current), style = MaterialTheme.typography.titleSmall)
+                    subs.forEach { sub ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(runCatching { android.net.Uri.parse(sub.url).host.orEmpty() }.getOrDefault("") + " · …" + sub.url.takeLast(6), Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = { vm.removeIcs(sub.url); subs = vm.icsSubscriptions() }) { Text(stringResource(R.string.delete)) }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = test?.startsWith("ok:") == true, onClick = { vm.subscribeIcs(url, viewer.familyId, viewer.userId, every); onDismiss() }) { Text(stringResource(R.string.icsw_import)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }

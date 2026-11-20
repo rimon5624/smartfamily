@@ -123,6 +123,9 @@ class SupabaseApi(
     suspend fun changedSince(table: String, since: Long, limit: Int = 500): String =
         call("GET", "/rest/v1/$table?select=*&updated_at=gt.$since&order=updated_at.asc&limit=$limit", null)
 
+    /** 2.2: calls an Edge Function as the signed-in user. */
+    suspend fun function(name: String, query: String = ): String = call("POST", "/functions/v1/$name" + (if (query.isBlank()) "" else "?$query"), "{}")
+
     suspend fun rpc(function: String, args: JsonElement): String =
         call("POST", "/rest/v1/rpc/$function", args.toString())
 

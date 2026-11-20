@@ -34,6 +34,7 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
         val c = (applicationContext as SmartFamilyApp).container
         val s = c.settings.current()
         runCatching { com.rimon.smartfamily.widget.Widgets.refresh(applicationContext) }
+        runCatching { IcsSubscriptions.refreshDue(c) } // 2.2 subscribed calendars
         if (!s.choreReminders) return Result.success()
         val city = Cities.byKey(s.zmanimCity)
         if (runCatching { Zmanim.isHolyTime(city) }.getOrDefault(false)) return Result.success()

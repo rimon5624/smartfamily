@@ -62,24 +62,41 @@ class PriceViewModel(app: Application) : AndroidViewModel(app) {
     fun stores(chainKey: String) = repo.stores(chainKey)
     val selected = repo.selected()
 
-    fun loadStores(chainKey: String) = launchSafe {
-        val chain = Chains.byKey(chainKey) ?: return@launchSafe
-        _progress.value = chain.he
-        val n = kotlinx.coroutines.withTimeout(60_000) { repo.loadStores(chain) }
-        _messages.tryEmit(UiMessage.Res(R.string.prices_stores_loaded, n.toString()))
+    /** 2.2 store wizard: per chain "…" (loading), "ok:N" or "err:<reason>"; per branch the same for the test download. */
+    val storeLoad = MutableStateFlow<Map<String, String>>(emptyMap())
+    val storeFetch = MutableStateFlow<Map<String, String>>(emptyMap())
+    private fun reason(e: Throwable): String = explain(e).let { m -> if (m is UiMessage.Res) getApplication<Application>().getString(m.id) else (m as UiMessage.Text).text }
+
+    fun loadStores(chainKey: String) = viewModelScope.launch { loadStoresNow(chainKey) }
+    private suspend fun loadStoresNow(chainKey: String) {
+        val chain = Chains.byKey(chainKey) ?: return
+        storeLoad.value = storeLoad.value + (chainKey to "…")
+        val r = try { "ok:" + kotlinx.coroutines.withTimeout(60_000) { repo.loadStores(chain) } } catch (e: Exception) { "err:" + reason(e) }
+        storeLoad.value = storeLoad.value + (chainKey to r)
+    }
+    /** Loads the branch lists of all chains (3 at a time), so the wizard can show only chains with a branch in your city. */
+    fun loadAllStores() = viewModelScope.launch {
+        val gate = kotlinx.coroutines.sync.Semaphore(3)
+        Chains.all.filter { !repo.hasStores(it.key) }.map { ch -> launch { gate.acquire(); try { loadStoresNow(ch.key) } finally { gate.release() } } }
     }
 
-    fun toggle(store: PriceStoreEntity) = launchSafe {
+    fun toggle(store: PriceStoreEntity) = viewModelScope.launch {
         repo.select(store, !store.selected)
         if (!store.selected && store.lastFetched == 0L) refreshOne(store)
     }
 
     private suspend fun refreshOne(s: PriceStoreEntity) {
         val chain = Chains.byKey(s.chainKey) ?: return
+        val k = "${s.chainKey}:${s.storeId}"
         _progress.value = "${chain.he} · ${s.name}"
-        runCatching { repo.refresh(chain, s) }.onFailure {
-            _messages.tryEmit(UiMessage.Res(R.string.prices_store_failed, "${chain.he} ${s.name}: ${it.message}"))
-        }
+        storeFetch.value = storeFetch.value + (k to "…")
+        runCatching { repo.refresh(chain, s) }
+            .onSuccess { n -> storeFetch.value = storeFetch.value + (k to "ok:$n") }
+            .onFailure {
+                storeFetch.value = storeFetch.value + (k to "err:" + reason(it))
+                _messages.tryEmit(UiMessage.Res(R.string.prices_store_failed, "${chain.he} ${s.name}: ${reason(it)}"))
+            }
+        _progress.value = null
     }
 
     /** Downloads today's prices for every selected store (free, a few MB per store). */
