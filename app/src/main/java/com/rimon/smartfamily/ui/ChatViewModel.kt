@@ -228,10 +228,8 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
 
     @android.annotation.SuppressLint("MissingPermission")
     fun sendLocation(chat: ChatEntity) = launchSafe {
-        val lm = getApplication<Application>().getSystemService(android.location.LocationManager::class.java)
-        val loc = listOf(android.location.LocationManager.GPS_PROVIDER, android.location.LocationManager.NETWORK_PROVIDER, android.location.LocationManager.PASSIVE_PROVIDER)
-            .mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time }
-            ?: return@launchSafe say(R.string.chat_no_location)
+        say(R.string.chat_locating)
+        val loc = com.rimon.smartfamily.smart.OneShotLocation.get(getApplication()) ?: return@launchSafe say(R.string.chat_no_location)
         repo.send(chat, uid(), MessagePayload(text = getApplication<Application>().getString(R.string.chat_my_location), lat = loc.latitude, lon = loc.longitude), "location")
     }
 

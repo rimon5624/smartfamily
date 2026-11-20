@@ -13,7 +13,8 @@ import java.util.TimeZone
 data class ZmanimCity(val key: String, val he: String, val en: String, val lat: Double, val lon: Double, val elevation: Double, val candleOffset: Double)
 
 object Cities {
-    val all = listOf(
+    /** Hand-checked cities with their local candle-lighting custom (Jerusalem 40, Haifa and Safed 30). Keys never change. */
+    private val curated = listOf(
         ZmanimCity("jerusalem", "ירושלים", "Jerusalem", 31.778, 35.235, 754.0, 40.0),
         ZmanimCity("tel_aviv", "תל אביב", "Tel Aviv", 32.085, 34.782, 20.0, 20.0),
         ZmanimCity("haifa", "חיפה", "Haifa", 32.794, 34.990, 100.0, 30.0),
@@ -35,7 +36,38 @@ object Cities {
         ZmanimCity("afula", "עפולה", "Afula", 32.607, 35.290, 60.0, 20.0),
         ZmanimCity("ariel", "אריאל", "Ariel", 32.105, 35.187, 600.0, 20.0),
     )
-    fun byKey(key: String) = all.firstOrNull { it.key == key } ?: all.first { it.key == "jerusalem" }
+
+    /** Every Israeli city, town, moshav and kibbutz (about 1,250), read once from il_localities.tsv in the APK. */
+    val all: List<ZmanimCity> by lazy {
+        val more = runCatching {
+            Cities::class.java.getResourceAsStream("/il_localities.tsv")!!.bufferedReader(Charsets.UTF_8).useLines { lines ->
+                lines.filter { it.isNotBlank() && !it.startsWith("#") }.mapNotNull { l ->
+                    val f = l.split('\t')
+                    if (f.size < 6) null else ZmanimCity(f[0], f[1], f[2], f[3].toDouble(), f[4].toDouble(), f[5].toDoubleOrNull() ?: 0.0,
+                        if (f[1].startsWith("ירושלים") || f[1] == "מעלה אדומים" || f[1] == "ביתר עילית") 40.0 else 20.0)
+                }.toList()
+            }
+        }.getOrDefault(emptyList())
+        // a hand-checked city replaces the same place from the big list (same place = within 2.5 km)
+        val extra = more.filter { m -> curated.none { c -> kotlin.math.abs(c.lat - m.lat) < 0.022 && kotlin.math.abs(c.lon - m.lon) < 0.027 && norm(c.he).take(3) == norm(m.he).take(3) } }
+        (curated + extra).sortedBy { it.he }
+    }
+
+    fun byKey(key: String) = curated.firstOrNull { it.key == key } ?: all.firstOrNull { it.key == key } ?: curated.first()
+
+    /** Spelling-tolerant: קריית/קרית, hyphens, quotes, double letters; Hebrew or English. */
+    fun norm(s: String) = s.lowercase().replace("קריית", "קרית").replace("יי", "י").replace("וו", "ו")
+        .filter { it.isLetterOrDigit() }
+
+    fun search(q: String): List<ZmanimCity> {
+        val n = norm(q)
+        if (n.isEmpty()) return all
+        return all.filter { norm(it.he).contains(n) || norm(it.en).contains(n) }
+            .sortedWith(compareBy({ !(norm(it.he).startsWith(n) || norm(it.en).startsWith(n)) }, { it.he.length }))
+    }
+
+    /** The closest locality to a point (for "use my location"). */
+    fun nearest(lat: Double, lon: Double) = all.minBy { (it.lat - lat) * (it.lat - lat) + (it.lon - lon) * (it.lon - lon) * 0.72 }
 }
 
 data class ShabbatTimes(val candleLighting: Date, val havdalah: Date, val parasha: String, val holiday: String)

@@ -215,15 +215,8 @@ class FamilyRepository(
             settings.setUserId(newId)
             return
         }
-        db.withTransaction {
-            if (db.profiles().get(newId) == null) db.profiles().reassign(old, newId)
-            db.families().reassignOwner(old, newId)
-            db.members().reassign(old, newId)
-            db.invites().reassign(old, newId)
-            db.listItems().reassign(old, newId)
-            db.purchases().reassign(old, newId)
-            db.inventory().reassign(old, newId)
-        }
+        // 2.0.1: every table (not only the first few), so chores, chats, events, polls… follow the account too
+        LocalRepairHolder.replace(db, old, newId)
         settings.setUserId(newId)
         onLocalChange()
     }
@@ -240,4 +233,9 @@ class FamilyRepository(
         val rnd = SecureRandom()
         return (1..8).map { alphabet[rnd.nextInt(alphabet.length)] }.joinToString("")
     }
+}
+
+private object LocalRepairHolder {
+    fun replace(db: AppDatabase, old: String, new: String) =
+        com.rimon.smartfamily.data.db.LocalRepair.replaceUserId(db.openHelper.writableDatabase, old, new)
 }

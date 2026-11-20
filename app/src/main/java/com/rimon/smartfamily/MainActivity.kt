@@ -293,7 +293,13 @@ private fun MainNav(vm: AppViewModel) {
                         val shabbat by produceState<com.rimon.smartfamily.smart.ShabbatTimes?>(null, city) {
                             value = runCatching { lifeVm.shabbat(city) }.getOrNull()
                         }
-                        com.rimon.smartfamily.ui.screens.ShabbatCard(shabbat, System.currentTimeMillis(), emptyList())
+                        var cityPick by remember { mutableStateOf(false) }
+                        val he = isHebrew()
+                        com.rimon.smartfamily.ui.screens.ShabbatCardAuto(settings?.homeShabbat ?: "AUTO", shabbat, System.currentTimeMillis(), emptyList(),
+                            onMode = { vm.setHomeCards(shabbat = it) },
+                            cityName = com.rimon.smartfamily.smart.Cities.byKey(city).let { if (he) it.he else it.en }, onCity = { cityPick = true })
+                        if (cityPick) com.rimon.smartfamily.ui.screens.CityPickerDialog(he, city, settings?.favCities.orEmpty().split(',').filter { it.isNotBlank() },
+                            onFav = { vm.toggleFavCity(it) }, onDismiss = { cityPick = false }, onPick = { vm.setZmanimCity(it); cityPick = false })
                     },
                     onOpenModule = { m ->
                         when (m) {
@@ -371,7 +377,8 @@ private fun MainNav(vm: AppViewModel) {
                 ShoppingListScreen(shopVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
             }
             composable("chores") {
-                if (famId.isNotEmpty()) ChoresScreen(lifeVm, viewer, settings?.zmanimCity ?: "jerusalem", onBack = { nav.popBackStack() })
+                if (famId.isNotEmpty()) ChoresScreen(lifeVm, viewer, settings?.zmanimCity ?: "jerusalem", onBack = { nav.popBackStack() },
+                    shabbatMode = settings?.homeShabbat ?: "AUTO", onShabbatMode = { vm.setHomeCards(shabbat = it) })
             }
             composable("calendar") {
                 if (famId.isNotEmpty()) {

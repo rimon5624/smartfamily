@@ -31,6 +31,9 @@ jobs:
           python3 scripts/gen_tables.py
           git diff --exit-code -- app/src supabase || (echo "::error::Run python3 scripts/gen_tables.py and commit the result" && exit 1)
 
+      - name: Check Hebrew and English strings match
+        run: python3 scripts/check_strings.py
+
       - name: Read version
         id: ver
         run: echo "name=$(grep '^APP_VERSION_NAME=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
@@ -74,7 +77,7 @@ jobs:
           SIGNING_KEYSTORE_PASSWORD: ${{ secrets.SIGNING_KEYSTORE_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
-        run: gradle --no-daemon :app:assembleRelease
+        run: gradle --no-daemon :app:testReleaseUnitTest :app:assembleRelease
 
       - name: Verify database migrations match the Room schema
         run: python3 scripts/verify_migrations.py

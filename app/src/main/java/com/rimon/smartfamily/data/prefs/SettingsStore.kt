@@ -48,6 +48,12 @@ data class AppSettings(
     val calBasis: String = "GREG",
     val calView: String = "MONTH",
     val calShabbatRow: Boolean = true,
+    /** Home cards: greeting FULL/COMPACT/HIDE; Shabbat AUTO (big only on Friday and holiday eves)/COMPACT/FULL/HIDE. */
+    val homeGreeting: String = "COMPACT",
+    val homeShabbat: String = "AUTO",
+    /** Favourite places for zmanim (keys, comma separated) — quick switching when travelling. */
+    val favCities: String = "",
+    val repairedV201: Boolean = false,
 ) {
     val supabaseConfigured: Boolean get() = supabaseUrl.isNotBlank() && supabaseAnonKey.isNotBlank()
 }
@@ -83,6 +89,10 @@ class SettingsStore(private val context: Context) {
         val calBasis = stringPreferencesKey("cal_basis")
         val calView = stringPreferencesKey("cal_view")
         val calShabbatRow = booleanPreferencesKey("cal_shabbat_row")
+        val homeGreeting = stringPreferencesKey("home_greeting")
+        val homeShabbat = stringPreferencesKey("home_shabbat")
+        val favCities = stringPreferencesKey("fav_cities")
+        val repairedV201 = booleanPreferencesKey("repaired_v201")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p -> p.toSettings() }
@@ -118,7 +128,19 @@ class SettingsStore(private val context: Context) {
         calBasis = this[K.calBasis] ?: "GREG",
         calView = this[K.calView] ?: "MONTH",
         calShabbatRow = this[K.calShabbatRow] ?: true,
+        homeGreeting = this[K.homeGreeting] ?: "COMPACT",
+        homeShabbat = this[K.homeShabbat] ?: "AUTO",
+        favCities = this[K.favCities] ?: "",
+        repairedV201 = this[K.repairedV201] ?: false,
     )
+
+    suspend fun setRepairedV201() = context.dataStore.edit { it[K.repairedV201] = true }
+
+    suspend fun setFavCities(v: String) = context.dataStore.edit { it[K.favCities] = v }
+
+    suspend fun setHomeCards(greeting: String? = null, shabbat: String? = null) = context.dataStore.edit {
+        greeting?.let { v -> it[K.homeGreeting] = v }; shabbat?.let { v -> it[K.homeShabbat] = v }
+    }
 
     suspend fun setCalendar(hebFirst: Boolean? = null, basis: String? = null, view: String? = null, shabbatRow: Boolean? = null) = context.dataStore.edit {
         hebFirst?.let { v -> it[K.calHebFirst] = v }; basis?.let { v -> it[K.calBasis] = v }

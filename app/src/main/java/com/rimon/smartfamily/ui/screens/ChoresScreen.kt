@@ -84,7 +84,7 @@ import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChoresScreen(vm: HomeLifeViewModel, viewer: Viewer, cityKey: String, onBack: () -> Unit) {
+fun ChoresScreen(vm: HomeLifeViewModel, viewer: Viewer, cityKey: String, onBack: () -> Unit, shabbatMode: String = "AUTO", onShabbatMode: (String) -> Unit = {}) {
     val chores by remember(viewer.familyId) { vm.chores(viewer.familyId) }.collectAsState(initial = emptyList())
     val members by remember(viewer.familyId) { vm.members(viewer.familyId) }.collectAsState(initial = emptyList())
     val pending by remember(viewer.familyId) { vm.pending(viewer.familyId) }.collectAsState(initial = emptyList())
@@ -126,7 +126,7 @@ fun ChoresScreen(vm: HomeLifeViewModel, viewer: Viewer, cityKey: String, onBack:
                 val due = chores.filter { it.nextDue in 1..now }
                 val upcoming = chores.filter { it.nextDue > now }
                 LazyColumn(contentPadding = PaddingValues(16.dp, 12.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item { ShabbatCard(shabbat, now, chores.filter { it.schedule == Schedule.BEFORE_SHABBAT.name }) }
+                    item { ShabbatCardAuto(shabbatMode, shabbat, now, chores.filter { it.schedule == Schedule.BEFORE_SHABBAT.name }, onMode = onShabbatMode) }
                     if (viewer.canManage && pending.isNotEmpty()) {
                         item { SectionTitle(stringResource(R.string.chores_approvals)) }
                         items(pending, key = { it.id }) { p ->
@@ -561,3 +561,46 @@ private fun PointsTab(vm: HomeLifeViewModel, viewer: Viewer, members: List<Membe
 fun startOfDay(ms: Long = System.currentTimeMillis()): Long = Calendar.getInstance().apply {
     timeInMillis = ms; set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
 }.timeInMillis
+
+/**
+ * Shabbat card sized by the user's choice: AUTO = one slim line until Friday (or a holiday eve), the full card then;
+ * COMPACT = always one line; FULL = always the full card; HIDE = nothing. A small menu on the card changes it.
+ */
+@Composable
+fun ShabbatCardAuto(mode: String, s: ShabbatTimes?, now: Long, prep: List<ChoreEntity>, onMode: (String) -> Unit, cityName: String = "", onCity: (() -> Unit)? = null) {
+    if (mode == "HIDE") return
+    val left = s?.let { it.candleLighting.time - now } ?: Long.MAX_VALUE
+    val inShabbat = s != null && now >= s.candleLighting.time && now < s.havdalah.time
+    val big = when (mode) { "FULL" -> true; "COMPACT" -> false; else -> inShabbat || left in 0..(30 * 3_600_000L) }
+    var menu by remember { mutableStateOf(false) }
+    Box {
+        if (big) ShabbatCard(s, now, prep) else ShabbatLine(s, now)
+        Box(Modifier.align(Alignment.TopEnd)) {
+            IconButton(onClick = { menu = true }, modifier = Modifier.size(36.dp)) { Icon(Icons.Outlined.MoreVert, stringResource(R.string.card_size), Modifier.size(18.dp)) }
+            DropdownMenu(menu, { menu = false }) {
+                if (onCity != null) DropdownMenuItem(text = { Text(stringResource(R.string.city_change, cityName)) }, onClick = { menu = false; onCity() })
+                listOf("AUTO" to R.string.card_auto, "COMPACT" to R.string.card_compact, "FULL" to R.string.card_full, "HIDE" to R.string.card_hide).forEach { (k, l) ->
+                    DropdownMenuItem(text = { Text((if (k == mode) "✓ " else "") + stringResource(l)) }, onClick = { menu = false; onMode(k) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShabbatLine(s: ShabbatTimes?, now: Long) {
+    val time = DateFormat.getTimeInstance(DateFormat.SHORT)
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f))
+            .padding(start = 12.dp, end = 40.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.WbTwilight, null, Modifier.size(18.dp))
+        Spacer(Modifier.size(8.dp))
+        if (s == null) { Text(stringResource(R.string.shabbat_title), style = MaterialTheme.typography.bodyMedium); return@Row }
+        Text(
+            listOf(s.holiday.ifBlank { s.parasha }, "🕯 " + time.format(s.candleLighting), "✨ " + time.format(s.havdalah)).filter { it.isNotBlank() }.joinToString("  ·  "),
+            style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
+    }
+}

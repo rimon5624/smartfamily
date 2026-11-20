@@ -1,5 +1,12 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import kotlinx.coroutines.launch
+import androidx.compose.material.icons.outlined.MyLocation
+import androidx.compose.material.icons.outlined.Search
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -200,7 +207,21 @@ fun SettingsScreen(
                 onAi,
             )
             ClickRow(Icons.Outlined.Sensors, stringResource(R.string.sh_title), stringResource(R.string.sh_hc) + " · " + stringResource(R.string.sh_st), onSmartHome)
-            CityRow(settings.zmanimCity, settings.language) { vm.setZmanimCity(it) }
+            CityRow(settings.zmanimCity, settings.language, settings.favCities.split(',').filter { it.isNotBlank() }, { vm.toggleFavCity(it) }) { vm.setZmanimCity(it) }
+            // Home screen cards: size of the greeting and the Shabbat card
+            InfoRow(title = stringResource(R.string.home_cards), subtitle = stringResource(R.string.home_cards_sub), leading = { Spacer(Modifier.size(24.dp)) })
+            Text(stringResource(R.string.home_card_greeting), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 40.dp))
+            androidx.compose.foundation.layout.FlowRow(Modifier.padding(start = 40.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("FULL" to R.string.card_full, "COMPACT" to R.string.card_compact, "HIDE" to R.string.card_hide).forEach { (k, l) ->
+                    FilterChip(selected = settings.homeGreeting == k, onClick = { vm.setHomeCards(greeting = k) }, label = { Text(stringResource(l)) })
+                }
+            }
+            Text(stringResource(R.string.home_card_shabbat), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 40.dp))
+            androidx.compose.foundation.layout.FlowRow(Modifier.padding(start = 40.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("AUTO" to R.string.card_auto, "COMPACT" to R.string.card_compact, "FULL" to R.string.card_full, "HIDE" to R.string.card_hide).forEach { (k, l) ->
+                    FilterChip(selected = settings.homeShabbat == k, onClick = { vm.setHomeCards(shabbat = k) }, label = { Text(stringResource(l)) })
+                }
+            }
             InfoRow(
                 title = stringResource(R.string.settings_reminders),
                 subtitle = stringResource(R.string.settings_reminders_sub),
@@ -236,18 +257,80 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun CityRow(current: String, language: String, onPick: (String) -> Unit) {
+private fun CityRow(current: String, language: String, favs: List<String> = emptyList(), onFav: (String) -> Unit = {}, onPick: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
     val city = com.rimon.smartfamily.smart.Cities.byKey(current)
     val he = language != "en"
-    androidx.compose.foundation.layout.Box {
-        ClickRow(Icons.Outlined.LocationCity, stringResource(R.string.shabbat_city), if (he) city.he else city.en) { open = true }
-        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            com.rimon.smartfamily.smart.Cities.all.forEach { c ->
-                androidx.compose.material3.DropdownMenuItem(text = { Text(if (he) c.he else c.en) }, onClick = { open = false; onPick(c.key) })
-            }
+    ClickRow(Icons.Outlined.LocationCity, stringResource(R.string.shabbat_city), if (he) city.he else city.en) { open = true }
+    if (open) CityPickerDialog(he, current, favs, onFav, onDismiss = { open = false }, onPick = { open = false; onPick(it) })
+}
+
+/** Search every Israeli locality (Hebrew or English), or take the nearest one from a single location fix. */
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun CityPickerDialog(he: Boolean, current: String, favs: List<String>, onFav: (String) -> Unit, onDismiss: () -> Unit, onPick: (String) -> Unit) {
+    var q by remember { mutableStateOf("") }
+    var locating by remember { mutableStateOf(false) }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val results = remember(q) { com.rimon.smartfamily.smart.Cities.search(q) }
+    fun locate() {
+        locating = true
+        scope.launch {
+            val loc = com.rimon.smartfamily.smart.OneShotLocation.get(ctx)
+            locating = false
+            if (loc != null) onPick(com.rimon.smartfamily.smart.Cities.nearest(loc.latitude, loc.longitude).key)
+            else android.widget.Toast.makeText(ctx, ctx.getString(R.string.chat_no_location), android.widget.Toast.LENGTH_LONG).show()
         }
     }
+    val perm = androidx.activity.compose.rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) locate() }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.shabbat_city)) },
+        text = {
+            androidx.compose.foundation.layout.Column {
+                OutlinedTextField(q, { q = it }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.city_search_hint)) },
+                    leadingIcon = { Icon(Icons.Outlined.Search, null) })
+                androidx.compose.material3.TextButton(enabled = !locating, onClick = {
+                    if (androidx.core.content.ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) locate()
+                    else perm.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                }) {
+                    Icon(Icons.Outlined.MyLocation, null); Spacer(Modifier.size(6.dp))
+                    Text(stringResource(if (locating) R.string.city_locating else R.string.city_use_location))
+                }
+                // favourites first: one tap to switch when travelling
+                if (favs.isNotEmpty()) {
+                    Text(stringResource(R.string.city_favs), style = MaterialTheme.typography.labelMedium)
+                    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp)) {
+                        favs.forEach { k ->
+                            val c = com.rimon.smartfamily.smart.Cities.byKey(k)
+                            androidx.compose.material3.FilterChip(selected = k == current, onClick = { onPick(k) }, label = { Text(if (he) c.he else c.en) },
+                                leadingIcon = { Icon(Icons.Outlined.Star, null, Modifier.size(16.dp)) })
+                        }
+                    }
+                }
+                Text(stringResource(R.string.city_count, results.size), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 380.dp)) {
+                    items(results.size, key = { results[it].key }) { i ->
+                        val c = results[i]
+                        Row(Modifier.fillMaxWidth().clickable { onPick(c.key) }, verticalAlignment = Alignment.CenterVertically) {
+                            androidx.compose.foundation.layout.Column(Modifier.weight(1f).padding(vertical = 10.dp, horizontal = 4.dp)) {
+                                Text((if (c.key == current) "✓ " else "") + (if (he) c.he else c.en), style = MaterialTheme.typography.bodyLarge)
+                                Text(if (he) c.en else c.he, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            IconButton(onClick = { onFav(c.key) }) {
+                                Icon(if (c.key in favs) Icons.Outlined.Star else Icons.Outlined.StarBorder, stringResource(R.string.city_fav_toggle),
+                                    tint = if (c.key in favs) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                    if (results.isEmpty()) item { Text(stringResource(R.string.city_none), modifier = Modifier.padding(8.dp)) }
+                }
+            }
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 @Composable

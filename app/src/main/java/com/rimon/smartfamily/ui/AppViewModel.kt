@@ -165,6 +165,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setLockMinutes(v: Int) = launchSafe { c.settings.setLockMinutes(v) }
     fun setSecureScreens(v: Boolean) = launchSafe { c.settings.setSecureScreens(v) }
     fun setKidMode(v: String) = launchSafe { c.settings.setKidMode(v) }
+    fun toggleFavCity(key: String) = viewModelScope.launch {
+        val cur = c.settings.current().favCities.split(',').filter { it.isNotBlank() }
+        c.settings.setFavCities((if (key in cur) cur - key else cur + key).joinToString(","))
+    }
+    fun setHomeCards(greeting: String? = null, shabbat: String? = null) = viewModelScope.launch { c.settings.setHomeCards(greeting, shabbat) }
     fun setUpdateChecks(v: Boolean) = launchSafe { c.settings.setUpdateChecks(v) }
     fun markVersionSeen() = launchSafe { c.settings.setLastSeenVersion(com.rimon.smartfamily.BuildConfig.VERSION_NAME) }
     val update = kotlinx.coroutines.flow.MutableStateFlow<com.rimon.smartfamily.smart.UpdateInfo?>(null)

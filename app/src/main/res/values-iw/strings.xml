@@ -1264,4 +1264,22 @@
     <string name="audit_add">הוסיף/ה</string>
     <string name="audit_edit">ערך/ה</string>
     <string name="audit_delete">מחק/ה</string>
+    <string name="city_search_hint">חיפוש עיר, יישוב, מושב או קיבוץ</string>
+    <string name="city_use_location">לפי המיקום שלי (חד-פעמי)</string>
+    <string name="city_locating">מאתר מיקום…</string>
+    <string name="city_count">%1$d יישובים</string>
+    <string name="city_none">לא נמצא. נסו כתיב אחר או “לפי המיקום שלי”.</string>
+    <string name="chat_locating">מאתר את המיקום שלך…</string>
+    <string name="card_size">גודל הכרטיס</string>
+    <string name="card_auto">אוטומטי (גדול רק ביום שישי)</string>
+    <string name="card_compact">שורה דקה</string>
+    <string name="card_full">כרטיס מלא</string>
+    <string name="card_hide">הסתרה</string>
+    <string name="home_cards">כרטיסים במסך הבית</string>
+    <string name="home_cards_sub">אפשר גם מה-⋮ שעל כל כרטיס</string>
+    <string name="home_card_greeting">ברכה</string>
+    <string name="home_card_shabbat">זמני שבת</string>
+    <string name="city_favs">מקומות מועדפים</string>
+    <string name="city_fav_toggle">מועדף</string>
+    <string name="city_change">מקום: %1$s · החלפה</string>
 </resources>

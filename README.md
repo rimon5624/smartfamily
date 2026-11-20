@@ -2,9 +2,18 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 2.0.0**
+**Current version: 2.0.1**
 
-## What is new in 2.0.0
+## What is new in 2.0.1
+
+- Cloud sync fixed end to end: the server now grants signed-in users access (row-level security still limits each family to its own data); rows the server refused for a configuration reason are no longer marked as sent; a one-time repair re-sends everything and moves leftover pre-sign-in ids to the account in every table.
+- Voice notes, photos and videos upload again (they failed because the family had never reached the cloud).
+- Every Israeli city, town, moshav and kibbutz (about 1,250) for zmanim, with search in Hebrew or English, "use my location" (a single fix) and favourite places for travelling.
+- Home screen: the greeting and the Shabbat card can be full, a slim line, or hidden; the Shabbat card is big only from Friday (automatic mode). Same for the Shabbat card in Chores.
+- Sending my location in chat takes a fresh one-time fix instead of an old cached one.
+- CI now runs unit tests (localities, Hebrew dates, zmanim, quick add, calendar files) and checks that Hebrew and English strings match.
+
+## What was new in 2.0.0
 
 - **Calendar rebuilt** (like Yoman Yehudi): continuous vertical scrolling, Hebrew or Gregorian month basis, week / day (with zmanim) / agenda / year views, a Shabbat row with parsha and times, Hebrew date search ("ט״ו בשבט תשפ״ז"), a converter, Hebrew-date entry for family dates and events, Hebrew monthly and yearly repeats, and .ics export / import with the phone calendar.
 - **Assistant layer**: quick add from text or voice (it guesses shopping / event / chore / note), search across everything, and a "now" card on the home screen.

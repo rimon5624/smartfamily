@@ -1,5 +1,7 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -98,13 +100,16 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item(span = { GridItemSpan(2) }) {
+            val gMode = settings?.homeGreeting ?: "COMPACT"
+            if (gMode != "HIDE") item(span = { GridItemSpan(2) }) {
                 HeaderCard(
                     greeting = greeting(name),
                     familyName = fam?.name,
                     membersCount = members.count { it.status == "ACTIVE" },
                     families = families.map { it.id to it.name },
                     onSwitch = { vm.setActiveFamily(it) },
+                    compact = gMode == "COMPACT",
+                    onMode = { vm.setHomeCards(greeting = it) },
                 )
             }
             item(span = { GridItemSpan(2) }) { extra() }
@@ -172,9 +177,40 @@ private fun HeaderCard(
     membersCount: Int,
     families: List<Pair<String, String>>,
     onSwitch: (String) -> Unit,
+    compact: Boolean = false,
+    onMode: (String) -> Unit = {},
 ) {
     var menu by remember { mutableStateOf(false) }
+    var sizeMenu by remember { mutableStateOf(false) }
     val cs = MaterialTheme.colorScheme
+    val sizeButton: @Composable () -> Unit = {
+        Box {
+            IconButton(onClick = { sizeMenu = true }, modifier = Modifier.size(32.dp)) { Icon(Icons.Outlined.MoreVert, stringResource(R.string.card_size), tint = cs.onPrimary, modifier = Modifier.size(18.dp)) }
+            DropdownMenu(sizeMenu, { sizeMenu = false }) {
+                listOf("FULL" to R.string.card_full, "COMPACT" to R.string.card_compact, "HIDE" to R.string.card_hide).forEach { (k, l) ->
+                    DropdownMenuItem(text = { Text(stringResource(l)) }, onClick = { sizeMenu = false; onMode(k) })
+                }
+            }
+        }
+    }
+    if (compact) {
+        // one slim line: greeting · family (tap to switch) · size menu
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Brush.linearGradient(listOf(cs.primary, cs.tertiary)))
+                .padding(start = 14.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(greeting, style = MaterialTheme.typography.titleSmall, color = cs.onPrimary, maxLines = 1, modifier = Modifier.weight(1f))
+            if (familyName != null) Box {
+                TextButton(onClick = { if (families.size > 1) menu = true }) { Text(familyName, color = cs.onPrimary, maxLines = 1) }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    families.forEach { (id, n) -> DropdownMenuItem(text = { Text(n) }, onClick = { menu = false; onSwitch(id) }) }
+                }
+            }
+            sizeButton()
+        }
+        return
+    }
     Box(
         Modifier
             .fillMaxWidth()
@@ -182,6 +218,7 @@ private fun HeaderCard(
             .background(Brush.linearGradient(listOf(cs.primary, cs.primary.copy(alpha = 0.78f), cs.tertiary)))
             .padding(20.dp)
     ) {
+        Box(Modifier.align(Alignment.TopEnd)) { sizeButton() }
         Column {
             Text(greeting, style = MaterialTheme.typography.headlineSmall, color = cs.onPrimary)
             if (familyName != null) {

@@ -164,6 +164,7 @@ class SyncEngine(
         val s = settings.current()
         if (!s.supabaseConfigured || !api.isSignedIn) return Result.success(Unit)
         val result = runCatching {
+            repairOnce(s.userId)
             tables.forEach { it.push(api) }
             val membershipChanged = pullAll(s.userId)
             // A membership that just became active makes older rows visible: pull everything again.
@@ -174,6 +175,19 @@ class SyncEngine(
         }
         settings.setSyncResult(System.currentTimeMillis(), result.exceptionOrNull()?.message ?: "")
         result
+    }
+
+    /**
+     * 2.0.1 one-time repair: before the server permissions were fixed, refused rows were marked as sent and
+     * never reached the cloud, and some tables kept the temporary pre-sign-in id. Fix the ids, then send everything again.
+     */
+    private suspend fun repairOnce(me: String) {
+        if (me.isBlank() || settings.current().repairedV201) return
+        val w = db.openHelper.writableDatabase
+        com.rimon.smartfamily.data.db.LocalRepair.findLeftoverId(w, me)?.let { com.rimon.smartfamily.data.db.LocalRepair.replaceUserId(w, it, me) }
+        com.rimon.smartfamily.data.db.LocalRepair.markAllDirty(w)
+        settings.resetPulls(tableNames)
+        settings.setRepairedV201()
     }
 
     /** Returns true when one of the user's own membership rows changed. */

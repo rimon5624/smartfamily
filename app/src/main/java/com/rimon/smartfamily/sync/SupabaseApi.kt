@@ -17,8 +17,14 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 class SupabaseException(val code: Int, message: String) : IOException(message) {
-    /** 4xx other than auth problems: the server refused this row (e.g. row-level security). */
-    val isRejection: Boolean get() = code in 400..499 && code != 401
+    /**
+     * The server refused this particular row for good (row-level security or bad data). Anything else —
+     * missing table, missing permission, foreign key not there yet, auth — is a sync error: the rows stay
+     * dirty and are sent again next time (2.0.1: before, those rows were wrongly marked as sent).
+     */
+    val isRejection: Boolean get() = code in 400..499 && code != 401 && message.orEmpty().let { m ->
+        m.contains("row-level security", true) || m.contains("check constraint", true) || m.contains("invalid input syntax", true)
+    } && !message.orEmpty().contains("permission denied", true)
 }
 
 @Serializable
