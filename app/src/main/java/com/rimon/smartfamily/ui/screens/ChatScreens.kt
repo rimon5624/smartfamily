@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import android.Manifest
 import android.content.ClipData
 import android.content.Intent
@@ -145,7 +146,7 @@ fun ChatListScreen(vm: ChatViewModel, viewer: Viewer, onBack: () -> Unit, onOpen
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(stringResource(R.string.chat_title)) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = { HelpButton(R.string.help_chat) },
@@ -258,6 +259,9 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
     var query by rememberSaveable { mutableStateOf("") }
     var info by remember { mutableStateOf(false) }
     var attach by remember { mutableStateOf(false) }
+    var newPoll by remember { mutableStateOf(false) }
+    val polls by remember(viewer.familyId) { vm.polls(viewer.familyId) }.collectAsState(initial = emptyList())
+    val votes by remember(viewer.familyId) { vm.votes(viewer.familyId) }.collectAsState(initial = emptyList())
     val listState = rememberLazyListState()
     val names = members.associate { it.userId to it.displayName }
     val c = chat ?: return
@@ -304,7 +308,7 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = {
                     if (searching) OutlinedTextField(query, { query = it }, placeholder = { Text(stringResource(R.string.chat_search)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     else Row(verticalAlignment = Alignment.CenterVertically) {
@@ -326,6 +330,7 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
                         DropdownMenu(more, { more = false }) {
                             DropdownMenuItem(text = { Text(stringResource(R.string.chat_summarize)) }, onClick = { more = false; vm.summarize(c, messages, myRead.coerceAtMost(System.currentTimeMillis() - 1), names) })
                             DropdownMenuItem(text = { Text(stringResource(R.string.chat_media)) }, onClick = { more = false; showMedia = true })
+                            DropdownMenuItem(text = { Text("📊 " + stringResource(R.string.chat_all_polls)) }, onClick = { more = false; onOpenRoute("polls") })
                             DropdownMenuItem(text = { Text(stringResource(R.string.chat_starred)) }, onClick = { more = false; showStarred = true })
                             DropdownMenuItem(text = { Text(stringResource(R.string.chat_scheduled_list, scheduledList.size)) }, onClick = { more = false; showScheduled = true })
                         }
@@ -361,6 +366,7 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
                         starred = m.entity.id in starred, pinned = pinned.any { it.entity.id == m.entity.id },
                         onStar = { vm.toggleStar(m.entity.id) }, onPin = { vm.togglePin(m.entity) }, onForward = { forwarding = m },
                         onOpenRoute = onOpenRoute, myName = names[viewer.userId].orEmpty(),
+                        pollSlot = { pp -> PollContent(vm, viewer, polls.firstOrNull { it.id == pp.cardId }, votes, names, pp.cardTitle, onOpenRoute) },
                     )
                 }
             }
@@ -395,6 +401,7 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
                             if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) vm.sendLocation(c)
                             else locPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                         })
+                        DropdownMenuItem(text = { Text("📊 " + stringResource(R.string.chat_poll)) }, onClick = { attach = false; newPoll = true })
                         DropdownMenuItem(text = { Text("🃏 " + stringResource(R.string.chat_card)) }, onClick = { attach = false; cardPicker = true })
                     }
                 }
@@ -494,6 +501,7 @@ fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> 
             }, confirmButton = { TextButton(onClick = { forwarding = null }) { Text(stringResource(R.string.cancel)) } })
     }
     if (cardPicker) CardPickerDialog(vm, c, viewer, onDismiss = { cardPicker = false })
+    if (newPoll) NewPollDialog(onDismiss = { newPoll = false }) { q, opts, multi, anon, closes -> vm.createPoll(c, q, opts, multi, anon, closes); newPoll = false }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -504,6 +512,8 @@ private fun MessageBubble(
     onReply: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit, onReact: (String) -> Unit,
     starred: Boolean = false, pinned: Boolean = false, onStar: () -> Unit = {}, onPin: () -> Unit = {}, onForward: () -> Unit = {},
     onOpenRoute: (String) -> Unit = {}, myName: String = "",
+
+    pollSlot: @Composable (MessagePayload) -> Unit = {},
 ) {
     val clipboard = LocalClipboardManager.current
     var menu by remember { mutableStateOf(false) }
@@ -534,6 +544,7 @@ private fun MessageBubble(
                     m.entity.kind == "voice" -> VoiceContent(vm, m, transcript)
                     m.entity.kind == "file" -> FileContent(vm, m)
                     m.entity.kind == "video" -> FileContent(vm, m)
+                    m.entity.kind == "card" && p.cardType == "poll" -> pollSlot(p)
                     m.entity.kind == "card" -> CardContent(p, onOpenRoute)
                     m.entity.kind == "location" -> LocationContent(p)
                     else -> Text(mentions(p.text, myName), style = MaterialTheme.typography.bodyLarge)
@@ -739,4 +750,37 @@ private fun CardPickerDialog(vm: ChatViewModel, chat: ChatEntity, viewer: Viewer
                 }
             }
         }, confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } })
+}
+
+
+/** A poll message: vote right in the chat; results update for everyone as votes sync. */
+@Composable
+private fun PollContent(
+    vm: ChatViewModel, viewer: Viewer, poll: com.rimon.smartfamily.data.db.PollEntity?, votes: List<com.rimon.smartfamily.data.db.PollVoteEntity>,
+    names: Map<String, String>, title: String, onOpenRoute: (String) -> Unit,
+) {
+    Column(Modifier.widthIn(min = 220.dp)) {
+        Text("📊 " + (poll?.question ?: title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        if (poll == null) { Text(stringResource(R.string.poll_loading), style = MaterialTheme.typography.bodySmall); return@Column }
+        val pv = votes.filter { it.pollId == poll.id && it.deletedAt == null && it.choices.isNotBlank() }
+        val closed = poll.closed || (poll.closesAt in 1 until System.currentTimeMillis())
+        val my = pv.firstOrNull { it.userId == viewer.userId }?.choices?.split(',')?.mapNotNull { it.toIntOrNull() }.orEmpty()
+        poll.options.split('\n').forEachIndexed { i, o ->
+            val who = pv.filter { i.toString() in it.choices.split(',') }
+            val frac = if (pv.isEmpty()) 0f else who.size / pv.size.toFloat()
+            Column(Modifier.fillMaxWidth().clickable(enabled = !closed) { vm.vote(poll, i) }.padding(vertical = 4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text((if (i in my) "● " else "○ ") + o, Modifier.weight(1f), fontWeight = if (i in my) FontWeight.Bold else null)
+                    Text("${who.size}")
+                }
+                LinearProgressIndicator(progress = { frac }, modifier = Modifier.fillMaxWidth())
+                if (!poll.anonymous && who.isNotEmpty()) Text(who.mapNotNull { names[it.userId] }.joinToString(", "), style = MaterialTheme.typography.labelSmall)
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(if (closed) R.string.poll_closed_label else R.string.poll_voted, pv.size), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
+            if (!closed && (poll.createdBy == viewer.userId || viewer.canManage)) TextButton(onClick = { vm.closePoll(poll) }) { Text(stringResource(R.string.poll_close)) }
+            TextButton(onClick = { onOpenRoute("polls") }) { Text(stringResource(R.string.poll_more)) }
+        }
+    }
 }

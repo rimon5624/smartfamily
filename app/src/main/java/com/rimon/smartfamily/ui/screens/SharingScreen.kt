@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import android.app.Application
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -103,7 +104,7 @@ fun SharingScreen(vm: ShareViewModel, familyId: String, isAdmin: Boolean, onBack
     val outgoing = shares.filter { it.familyId == familyId }
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(stringResource(R.string.share_title)) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = { HelpButton(R.string.help_sharing) },

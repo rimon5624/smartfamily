@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
@@ -96,7 +97,7 @@ private fun money(v: Double) = "₪" + String.format(Locale.US, "%,.0f", v)
 private fun ScreenScaffold(title: String, help: Int, onBack: () -> Unit, busy: Boolean, fab: (@Composable () -> Unit)? = null, actions: @Composable () -> Unit = {}, content: @Composable (PaddingValues) -> Unit) {
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(title) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = { actions(); HelpButton(help) },
@@ -505,7 +506,7 @@ fun HomeBookScreen(vm: ExtrasViewModel, viewer: Viewer, startTab: Int, onBack: (
     val shown = entries.filter { query.isBlank() || listOf(it.title, it.body, it.tags, it.phone).any { s -> s.contains(query, true) } }
     ScreenScaffold(stringResource(if (tab == 0) R.string.mod_homebook else R.string.mod_knowledge), R.string.help_homebook, onBack, busy,
         fab = { if (!viewer.isChild) ExtendedFloatingActionButton(onClick = { editing = vm.newHomeEntry(viewer.familyId, viewer.userId, section) }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text(stringResource(R.string.hb_add)) }) }) { pad ->
-        TabRow(tab) {
+        if (com.rimon.smartfamily.ui.components.LocalFixedTab.current == null) TabRow(tab) {
             Tab(tab == 0, { tab = 0 }, text = { Text(stringResource(R.string.mod_homebook)) })
             Tab(tab == 1, { tab = 1 }, text = { Text(stringResource(R.string.mod_knowledge)) })
         }
@@ -671,7 +672,7 @@ fun PollsScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit) {
 }
 
 @Composable
-private fun NewPollDialog(onDismiss: () -> Unit, onCreate: (String, List<String>, Boolean, Boolean, Long) -> Unit) {
+internal fun NewPollDialog(onDismiss: () -> Unit, onCreate: (String, List<String>, Boolean, Boolean, Long) -> Unit) {
     var q by rememberSaveable { mutableStateOf("") }
     var opts by rememberSaveable { mutableStateOf("\n") }
     var multi by rememberSaveable { mutableStateOf(false) }

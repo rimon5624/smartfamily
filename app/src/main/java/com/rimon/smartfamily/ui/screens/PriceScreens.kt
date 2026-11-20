@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
@@ -96,7 +97,7 @@ fun PricesScreen(vm: PriceViewModel, viewer: Viewer, onBack: () -> Unit) {
         )
     }
     Scaffold(topBar = {
-        TopAppBar(
+        SfTopAppBar(
             title = { Text(stringResource(R.string.mod_prices)) },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
             actions = {

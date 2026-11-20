@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -94,7 +95,7 @@ fun InventoryScreen(vm: ShoppingViewModel, viewer: Viewer, onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(stringResource(R.string.inv_title)) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = { HelpButton(R.string.help_inventory) },

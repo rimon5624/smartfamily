@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import androidx.compose.ui.res.stringArrayResource
 import android.content.Intent
 import android.provider.AlarmClock
@@ -120,7 +121,7 @@ fun KitchenScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(stringResource(R.string.kit_title)) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = { HelpButton(R.string.help_kitchen) },
@@ -128,7 +129,7 @@ fun KitchenScreen(
         },
     ) { inner ->
         Column(Modifier.padding(top = inner.calculateTopPadding())) {
-            TabRow(selectedTabIndex = tab) {
+            if (com.rimon.smartfamily.ui.components.LocalFixedTab.current == null) TabRow(selectedTabIndex = tab) {
                 Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.kit_recipes)) })
                 Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.kit_week)) })
                 Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text(stringResource(R.string.kit_packed)) })
@@ -295,7 +296,7 @@ fun RecipeDetailScreen(vm: KitchenViewModel, viewer: Viewer, recipeId: String, o
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(recipe.title) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = {
@@ -424,7 +425,7 @@ fun RecipeEditScreen(vm: KitchenViewModel, viewer: Viewer, recipeId: String, onD
     }
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(stringResource(if (recipeId == "new") R.string.rec_new else R.string.rec_edit)) },
                 navigationIcon = { IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = {
@@ -497,7 +498,7 @@ fun CookingScreen(vm: KitchenViewModel, recipeId: String, onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(recipe.title) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = {

@@ -19,7 +19,10 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -169,7 +172,7 @@ class MainActivity : AppCompatActivity() {
 }
 
 private enum class Tab(val route: String, val label: Int, val on: ImageVector, val off: ImageVector) {
-    HOME("home", R.string.nav_home, Icons.Filled.Home, Icons.Outlined.Home),
+    HOME("today", R.string.nav_home, Icons.Filled.Home, Icons.Outlined.Home),
     FAMILIES("families", R.string.nav_families, Icons.Filled.Groups, Icons.Outlined.Groups),
     SETTINGS("settings", R.string.nav_settings, Icons.Filled.Settings, Icons.Outlined.Settings),
 }
@@ -209,7 +212,54 @@ private fun MainNav(vm: AppViewModel) {
     val context = LocalContext.current
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
-    val showBar = Tab.entries.any { it.route == route }
+    val currentHub = if (route == "hub/{key}") entry?.arguments?.getString("key") else null
+
+    // ---- 2.1 navigation: areas in a bottom bar the user orders; the rest under "More" ----
+    val on = modules.filter { it.effective }.map { it.module }.toSet()
+    val chatOn = AppModule.CHAT in on
+    val chatTab = settings?.chatPlacement == "TAB" && chatOn
+    val navOrder = com.rimon.smartfamily.model.NavItems.ordered(settings?.navOrder.orEmpty())
+    val visibleNav = navOrder.filter { item ->
+        when (item) {
+            com.rimon.smartfamily.model.NavItems.TODAY -> true
+            com.rimon.smartfamily.model.NavItems.CHAT -> chatTab
+            else -> famId.isNotEmpty() && com.rimon.smartfamily.model.Hub.byKey(item)?.visibleSections(on)?.isNotEmpty() == true
+        }
+    }
+    val barItems = visibleNav.take(4)
+    val moreItems = visibleNav.drop(4)
+    var moreOpen by remember { mutableStateOf(false) }
+    val hubSection = remember { androidx.compose.runtime.mutableStateMapOf<String, String>() }
+    fun routeOf(item: String) = when (item) {
+        com.rimon.smartfamily.model.NavItems.TODAY -> "today"; com.rimon.smartfamily.model.NavItems.CHAT -> "chat"
+        "families" -> "families"; "settings" -> "settings"; else -> "hub/$item"
+    }
+    fun goItem(item: String) = nav.navigate(routeOf(item)) {
+        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+    /** Opens a screen; old module routes open inside their area and section. */
+    fun open(r: String) {
+        val area = com.rimon.smartfamily.model.NavItems.areaFor(r)
+        if (area != null && r.count { it == '/' } <= 1 && !r.startsWith("shopping/list") && !r.startsWith("kitchen/x")) {
+            hubSection[area.first] = area.second; goItem(area.first)
+        } else runCatching { nav.navigate(r) { launchSingleTop = true } }
+    }
+    val currentItem = when {
+        currentHub != null -> currentHub
+        route == "today" -> com.rimon.smartfamily.model.NavItems.TODAY
+        route == "chat" && chatTab -> com.rimon.smartfamily.model.NavItems.CHAT
+        route == "families" -> "families"; route == "settings" -> "settings"
+        else -> null
+    }
+    val showBar = currentItem != null
+    // unread chats for the chat icon / tab badge
+    val chatsMine by remember(uid) { chatVm.chats(uid) }.collectAsState(initial = emptyList())
+    val myReads by remember(famId, uid) { chatVm.myReads(famId, uid) }.collectAsState(initial = emptyList())
+    val unread = chatsMine.count { c -> c.familyId == famId && c.kind != "ALBUM" && c.lastMessageAt > 0 &&
+        c.lastMessageAt > (myReads.firstOrNull { it.chatId == c.id }?.lastReadAt ?: 0L) }
+    val chatEntry = com.rimon.smartfamily.ui.components.ChatEntry(show = chatOn && !chatTab && famId.isNotEmpty() && route?.startsWith("chat") != true, unread = unread, open = { nav.navigate("chat") })
 
     LaunchedEffect(Unit) {
         merge(vm.messages, shopVm.messages, lifeVm.messages, kitchenVm.messages, applianceVm.messages, chatVm.messages, extrasVm.messages, priceVm.messages, shareVm.messages, assistantVm.messages, recordsVm.messages).collect { msg ->
@@ -236,7 +286,7 @@ private fun MainNav(vm: AppViewModel) {
     LaunchedEffect(asked, settings?.onboardingDone) {
         val r = asked ?: return@LaunchedEffect
         MainActivity.pendingRoute.value = null
-        if (r == "quickadd") quickAdd = true else runCatching { nav.navigate(r) { launchSingleTop = true } }
+        if (r == "quickadd") quickAdd = true else open(r)
     }
 
     // UX-8 kid mode: everything bigger (buttons, text, touch targets) for children; SENIOR is bigger still.
@@ -265,41 +315,55 @@ private fun MainNav(vm: AppViewModel) {
             }
             if (showBar) {
                 NavigationBar {
-                    Tab.entries.forEach { tab ->
-                        val selected = route == tab.route
+                    barItems.forEach { item ->
+                        val selected = currentItem == item
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { go(tab) },
-                            icon = { Icon(if (selected) tab.on else tab.off, null) },
-                            label = { Text(stringResource(tab.label)) },
+                            onClick = { goItem(item) },
+                            icon = {
+                                if (item == com.rimon.smartfamily.model.NavItems.CHAT && unread > 0) androidx.compose.material3.BadgedBox(badge = { androidx.compose.material3.Badge { Text(unread.toString()) } }) { Icon(com.rimon.smartfamily.ui.screens.navIcon(item), null) }
+                                else Icon(com.rimon.smartfamily.ui.screens.navIcon(item), null)
+                            },
+                            label = { Text(stringResource(com.rimon.smartfamily.ui.screens.navLabel(item)), maxLines = 1) },
                         )
                     }
+                    NavigationBarItem(
+                        selected = currentItem != null && currentItem !in barItems,
+                        onClick = { moreOpen = true },
+                        icon = { Icon(Icons.Outlined.MoreHoriz, null) },
+                        label = { Text(stringResource(R.string.nav_more)) },
+                    )
                 }
             }
         },
     ) { inner ->
         val barPadding = PaddingValues(bottom = inner.calculateBottomPadding())
+        androidx.compose.runtime.CompositionLocalProvider(com.rimon.smartfamily.ui.components.LocalChatEntry provides chatEntry) {
         NavHost(nav, startDestination = Tab.HOME.route) {
             composable(Tab.HOME.route) {
                 HomeScreen(
                     vm, barPadding,
-                    onCreateFamily = { go(Tab.FAMILIES) },
+                    onCreateFamily = { goItem("families") },
                     onOpenModules = { nav.navigate("modules/$it") },
                     onOpenCloud = { nav.navigate("cloud") },
-                    extra = {
+                    extras = buildList {
                         val city = settings?.zmanimCity ?: "jerusalem"
-                        if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.NowPanel(viewer, city, lifeVm, kitchenVm, shopVm,
-                            onQuickAdd = { quickAdd = true }, onSearch = { nav.navigate("search") }, onOpen = { nav.navigate(it) })
-                        val shabbat by produceState<com.rimon.smartfamily.smart.ShabbatTimes?>(null, city) {
-                            value = runCatching { lifeVm.shabbat(city) }.getOrNull()
+                        if (famId.isNotEmpty()) add {
+                            com.rimon.smartfamily.ui.screens.NowPanel(viewer, city, lifeVm, kitchenVm, shopVm,
+                                onQuickAdd = { quickAdd = true }, onSearch = { nav.navigate("search") }, onOpen = { open(it) })
                         }
-                        var cityPick by remember { mutableStateOf(false) }
-                        val he = isHebrew()
-                        com.rimon.smartfamily.ui.screens.ShabbatCardAuto(settings?.homeShabbat ?: "AUTO", shabbat, System.currentTimeMillis(), emptyList(),
-                            onMode = { vm.setHomeCards(shabbat = it) },
-                            cityName = com.rimon.smartfamily.smart.Cities.byKey(city).let { if (he) it.he else it.en }, onCity = { cityPick = true })
-                        if (cityPick) com.rimon.smartfamily.ui.screens.CityPickerDialog(he, city, settings?.favCities.orEmpty().split(',').filter { it.isNotBlank() },
-                            onFav = { vm.toggleFavCity(it) }, onDismiss = { cityPick = false }, onPick = { vm.setZmanimCity(it); cityPick = false })
+                        add {
+                            val shabbat by produceState<com.rimon.smartfamily.smart.ShabbatTimes?>(null, city) {
+                                value = runCatching { lifeVm.shabbat(city) }.getOrNull()
+                            }
+                            var cityPick by remember { mutableStateOf(false) }
+                            val he = isHebrew()
+                            com.rimon.smartfamily.ui.screens.ShabbatCardAuto(settings?.homeShabbat ?: "AUTO", shabbat, System.currentTimeMillis(), emptyList(),
+                                onMode = { vm.setHomeCards(shabbat = it) },
+                                cityName = com.rimon.smartfamily.smart.Cities.byKey(city).let { if (he) it.he else it.en }, onCity = { cityPick = true })
+                            if (cityPick) com.rimon.smartfamily.ui.screens.CityPickerDialog(he, city, settings?.favCities.orEmpty().split(',').filter { it.isNotBlank() },
+                                onFav = { vm.toggleFavCity(it) }, onDismiss = { cityPick = false }, onPick = { vm.setZmanimCity(it); cityPick = false })
+                        }
                     },
                     onOpenModule = { m ->
                         when (m) {
@@ -324,6 +388,48 @@ private fun MainNav(vm: AppViewModel) {
                         }
                     },
                 )
+            }
+            composable("hub/{key}") { back ->
+                val hub = com.rimon.smartfamily.model.Hub.byKey(back.arguments?.getString("key").orEmpty()) ?: com.rimon.smartfamily.model.Hub.FOOD
+                val sections = hub.visibleSections(on)
+                val toToday = { goItem(com.rimon.smartfamily.model.NavItems.TODAY) }
+                fun select(area: String, sec: String) { hubSection[area] = sec; if (area != hub.key) goItem(area) }
+                com.rimon.smartfamily.ui.screens.HubScreen(
+                    hub, sections, hubSection[hub.key], barPadding,
+                    onSelect = { hubSection[hub.key] = it }, onSearch = { nav.navigate("search") }, onQuickAdd = { quickAdd = true },
+                    actions = {
+                        if (hub == com.rimon.smartfamily.model.Hub.FOOD && AppModule.PRICES in on) IconButton(onClick = { nav.navigate("prices") }) {
+                            Icon(Icons.Outlined.Sell, stringResource(R.string.prices_cheapest))
+                        }
+                    },
+                ) { sec ->
+                    if (famId.isEmpty()) return@HubScreen
+                    when (sec.key) {
+                        "lists" -> ShoppingListsScreen(shopVm, viewer, onBack = toToday, onOpen = { nav.navigate("shopping/list/$it") })
+                        "pantry" -> InventoryScreen(shopVm, viewer, onBack = toToday)
+                        "menu", "recipes", "school" -> KitchenScreen(kitchenVm, viewer, sec.tab ?: 0, onBack = toToday,
+                            onOpenRecipe = { nav.navigate("recipe/$it") }, onEditRecipe = { nav.navigate("recipe/edit/$it") })
+                        "calendar" -> {
+                            val trips by remember(famId) { extrasVm.trips(famId) }.collectAsState(initial = emptyList())
+                            CalendarScreen(lifeVm, viewer, settings, trips, onBack = toToday)
+                        }
+                        "shabbat" -> com.rimon.smartfamily.ui.screens.ShabbatScreen(recordsVm, lifeVm, kitchenVm, extrasVm, viewer, settings?.zmanimCity ?: "jerusalem", isHebrew(),
+                            onBack = toToday, onKitchen = { select("food", "menu") }, onPolls = { nav.navigate("polls") })
+                        "trips" -> com.rimon.smartfamily.ui.screens.TravelScreen(extrasVm, viewer, onBack = toToday, onOpen = { nav.navigate("trip/$it") })
+                        "chores" -> ChoresScreen(lifeVm, viewer, settings?.zmanimCity ?: "jerusalem", onBack = toToday,
+                            shabbatMode = settings?.homeShabbat ?: "AUTO", onShabbatMode = { vm.setHomeCards(shabbat = it) })
+                        "routines", "growth" -> com.rimon.smartfamily.ui.screens.KidsScreen(recordsVm, viewer, hebrew = isHebrew(), onBack = toToday, onPocket = { select("money", "pocket") })
+                        "budget" -> com.rimon.smartfamily.ui.screens.BudgetScreen(extrasVm, viewer, onBack = toToday,
+                            onMoney = { t -> select("money", when (t) { 1 -> "pocket"; 2 -> "goals"; 3 -> "shared"; else -> "bills" }) })
+                        "bills", "pocket", "goals", "shared" -> com.rimon.smartfamily.ui.screens.MoneyScreen(recordsVm, viewer, sec.tab ?: 0, onBack = toToday)
+                        "appliances" -> AppliancesScreen(applianceVm, viewer, onBack = toToday, onOpen = { nav.navigate("appliance/$it") })
+                        "documents", "knowledge" -> com.rimon.smartfamily.ui.screens.HomeBookScreen(extrasVm, viewer, sec.tab ?: 0, onBack = toToday,
+                            onExtras = { t -> select("home", when (t) { 1 -> "meters"; 2 -> "kits"; 3 -> "secrets"; else -> "repairs" }) })
+                        "repairs", "meters", "kits", "secrets" -> com.rimon.smartfamily.ui.screens.HomeExtrasScreen(recordsVm, extrasVm, viewer, isHebrew(), sec.tab ?: 0, onBack = toToday)
+                        "family" -> com.rimon.smartfamily.ui.screens.FamilyHubScreen(recordsVm, chatVm, extrasVm, viewer, onBack = toToday,
+                            onOpenAlbum = { nav.navigate("chat/$it") }, onGifts = { select("money", "shared") })
+                    }
+                }
             }
             composable(Tab.FAMILIES.route) {
                 FamiliesScreen(vm, barPadding, onOpen = { nav.navigate("family/$it") })
@@ -423,13 +529,13 @@ private fun MainNav(vm: AppViewModel) {
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatListScreen(chatVm, viewer, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("chat/$it") })
             }
             composable("chat/{id}") { back ->
-                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatScreen(chatVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }, onOpenRoute = { nav.navigate(it) })
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.ChatScreen(chatVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }, onOpenRoute = { open(it) })
             }
             composable("travel") {
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.TravelScreen(extrasVm, viewer, onBack = { nav.popBackStack() }, onOpen = { nav.navigate("trip/$it") })
             }
             composable("trip/{id}") { back ->
-                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.TripScreen(extrasVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }, onLeaveHome = { nav.navigate("homex/2") })
+                if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.TripScreen(extrasVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }, onLeaveHome = { open("homex/2") })
             }
             composable("budget") {
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.BudgetScreen(extrasVm, viewer, onBack = { nav.popBackStack() }, onMoney = { nav.navigate("money/$it") })
@@ -456,7 +562,7 @@ private fun MainNav(vm: AppViewModel) {
             }
             composable("search") {
                 if (famId.isNotEmpty()) com.rimon.smartfamily.ui.screens.SearchScreen(assistantVm, viewer, onBack = { nav.popBackStack() }) { h ->
-                    nav.navigate(when (h.kind) {
+                    open(when (h.kind) {
                         "item" -> "shopping/list/${h.id}"; "recipe" -> "recipe/${h.id}"; "home" -> if (h.sub == "KNOWLEDGE") "homebook/1" else "homebook/0"
                         "trip" -> "trip/${h.id}"; "poll" -> "polls"; "chore" -> "chores"; "pantry" -> "inventory"; "appliance" -> "appliance/${h.id}"
                         else -> "calendar"
@@ -474,6 +580,8 @@ private fun MainNav(vm: AppViewModel) {
             }
         }
     }
+    }
+    if (moreOpen) com.rimon.smartfamily.ui.screens.MoreSheet(moreItems, onPick = { moreOpen = false; goItem(it) }, onDismiss = { moreOpen = false })
     if (quickAdd) com.rimon.smartfamily.ui.screens.QuickAddDialog(assistantVm, viewer, onDismiss = { quickAdd = false })
     }
 }

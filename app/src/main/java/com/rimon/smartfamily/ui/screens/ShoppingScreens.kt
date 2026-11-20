@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -91,7 +92,7 @@ fun ShoppingListsScreen(vm: ShoppingViewModel, viewer: Viewer, onBack: () -> Uni
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(stringResource(R.string.shop_title)) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = { HelpButton(R.string.help_shopping) },
@@ -219,7 +220,7 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(l?.name.orEmpty()) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = {

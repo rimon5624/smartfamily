@@ -81,7 +81,7 @@
     <string name="kashrut_kosher">Kosher</string>
     <string name="kashrut_mehadrin">Kosher, mehadrin</string>
     <string name="kashrut_none">Not kosher</string>
-    <string name="family_modules">Modules for this family</string>
+    <string name="family_modules">Features for this family</string>
     <string name="family_needs_cloud">Invites and joining work once cloud sync is connected (Settings → Cloud sync).</string>
     <string name="join_title">Join a family</string>
     <string name="join_code_hint">Invite code</string>
@@ -96,7 +96,7 @@
     <string name="role_guest">Guest</string>
 
     <!-- Modules -->
-    <string name="modules_title">Modules</string>
+    <string name="modules_title">Features</string>
     <string name="modules_family_level">Family</string>
     <string name="modules_my_level">For me</string>
     <string name="modules_intro">The family switch is set by admins. Your own switch can only hide a module for you.</string>
@@ -1296,4 +1296,48 @@
     <string name="prices_err_network">No connection to the chain\'s server. Check the internet connection.</string>
     <string name="prices_check">Check price sources</string>
     <string name="prices_check_ok">Working (%1$d)</string>
+    <string name="chat_poll">Poll</string>
+    <string name="chat_all_polls">All polls</string>
+    <string name="poll_loading">Loading the poll…</string>
+    <string name="poll_more">Details</string>
+    <string name="hub_food">Food &amp; shopping</string>
+    <string name="hub_calendar">Calendar</string>
+    <string name="hub_tasks">Tasks</string>
+    <string name="hub_money">Money</string>
+    <string name="hub_home">Home</string>
+    <string name="hub_family">Family</string>
+    <string name="sec_lists">Lists</string>
+    <string name="sec_pantry">Pantry</string>
+    <string name="sec_menu">Menu</string>
+    <string name="sec_recipes">Recipes</string>
+    <string name="sec_school">School &amp; kindergarten</string>
+    <string name="sec_calendar">Calendar</string>
+    <string name="sec_shabbat">Shabbat &amp; holidays</string>
+    <string name="sec_trips">Trips</string>
+    <string name="sec_chores">Chores</string>
+    <string name="sec_routines">Kids\' routines</string>
+    <string name="sec_budget">Budget</string>
+    <string name="sec_bills">Bills &amp; subscriptions</string>
+    <string name="sec_pocket">Pocket money</string>
+    <string name="sec_goals">Goals</string>
+    <string name="sec_shared_costs">Shared costs</string>
+    <string name="sec_appliances">Appliances</string>
+    <string name="sec_documents">Documents &amp; warranties</string>
+    <string name="sec_repairs">Repairs</string>
+    <string name="sec_meters">Meters</string>
+    <string name="sec_kits">Kits</string>
+    <string name="sec_secrets">Secrets &amp; Wi-Fi</string>
+    <string name="sec_knowledge">Know-how</string>
+    <string name="sec_family">Family</string>
+    <string name="sec_growth">Growth</string>
+    <string name="nav_today">Today</string>
+    <string name="nav_more">More</string>
+    <string name="hub_empty">Everything here is switched off. Turn features on in Settings → Features.</string>
+    <string name="nav_settings_title">Bottom bar</string>
+    <string name="nav_settings_sub">The first four appear in the bar; the rest are under \"More\".</string>
+    <string name="chat_place">Family chat</string>
+    <string name="chat_place_icon">Icon on every screen</string>
+    <string name="chat_place_tab">Fixed in the bottom bar</string>
+    <string name="search">Search</string>
+    <string name="prices_cheapest">Where is it cheapest</string>
 </resources>

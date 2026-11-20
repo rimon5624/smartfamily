@@ -50,7 +50,8 @@ private val EVENING_EN = listOf("🛁" to "Shower", "🦷" to "Brush teeth", "�
 /** Kids hub (2.0): picture routine boards the child ticks, and a growth log. */
 @Composable
 fun KidsScreen(vm: RecordsViewModel, viewer: Viewer, hebrew: Boolean, onBack: () -> Unit, onPocket: () -> Unit) {
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    val fixed = com.rimon.smartfamily.ui.components.LocalFixedTab.current
+    var tab by rememberSaveable(fixed) { mutableIntStateOf(fixed ?: 0) }
     val members by remember(viewer.familyId) { vm.members(viewer.familyId) }.collectAsState(initial = emptyList())
     val steps by remember(viewer.familyId) { vm.routine(viewer.familyId) }.collectAsState(initial = emptyList())
     val checks by remember(viewer.familyId) { vm.checks(viewer.familyId) }.collectAsState(initial = emptyList())

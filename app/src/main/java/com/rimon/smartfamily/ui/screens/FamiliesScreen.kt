@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import androidx.compose.material.icons.outlined.History
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
@@ -84,7 +85,7 @@ fun FamiliesScreen(vm: AppViewModel, padding: PaddingValues, onOpen: (String) ->
     Scaffold(
         modifier = Modifier.padding(padding),
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(stringResource(R.string.families_title)) },
                 actions = { HelpButton(R.string.help_families) },
             )
@@ -194,7 +195,7 @@ fun FamilyDetailScreen(vm: AppViewModel, familyId: String, onBack: () -> Unit, o
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(f?.name.orEmpty()) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) }

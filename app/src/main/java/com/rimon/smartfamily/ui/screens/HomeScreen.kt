@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.foundation.background
@@ -70,7 +71,8 @@ fun HomeScreen(
     onOpenModules: (String) -> Unit,
     onOpenCloud: () -> Unit,
     onOpenModule: (AppModule) -> Unit,
-    extra: @Composable () -> Unit = {},
+    /** Each card of the Today feed gets its own row (2.1: they used to share one cell and overlapped). */
+    extras: List<@Composable () -> Unit> = emptyList(),
 ) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val family by vm.activeFamily.collectAsStateWithLifecycle()
@@ -88,7 +90,7 @@ fun HomeScreen(
     Scaffold(
         modifier = Modifier.padding(padding),
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = { HelpButton(R.string.help_home) },
             )
@@ -112,8 +114,10 @@ fun HomeScreen(
                     onMode = { vm.setHomeCards(greeting = it) },
                 )
             }
-            item(span = { GridItemSpan(2) }) { extra() }
-            item(span = { GridItemSpan(2) }) {
+            extras.forEachIndexed { i, card -> item(span = { GridItemSpan(2) }, key = "card-$i") { card() } }
+            val st = settings
+            // the sync card only when something needs attention (not connected, or the last sync failed)
+            if (st != null && (!(st.supabaseConfigured && vm.isSignedIn) || st.lastSyncError.isNotBlank())) item(span = { GridItemSpan(2) }) {
                 val s = settings
                 SyncCard(
                     configured = s?.supabaseConfigured == true && vm.isSignedIn,
@@ -130,29 +134,6 @@ fun HomeScreen(
                         Button(onClick = onCreateFamily) { Text(stringResource(R.string.home_create_family)) }
                     }
                 }
-            } else {
-                val order = AppModule.ordered(settings?.moduleOrder.orEmpty())
-                val on = modules.filter { it.effective }.sortedBy { order.indexOf(it.module) }
-                item(span = { GridItemSpan(2) }) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            stringResource(R.string.home_your_modules),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(onClick = { onOpenModules(fam.id) }) {
-                            Icon(Icons.Outlined.Tune, null, Modifier.size(18.dp))
-                            Spacer(Modifier.size(6.dp))
-                            Text(stringResource(R.string.home_manage_modules))
-                        }
-                    }
-                }
-                if (on.isEmpty()) {
-                    item(span = { GridItemSpan(2) }) {
-                        Text(stringResource(R.string.home_no_modules), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                items(on, key = { it.module.key }) { ModuleCard(it) { onOpenModule(it.module) } }
             }
         }
     }

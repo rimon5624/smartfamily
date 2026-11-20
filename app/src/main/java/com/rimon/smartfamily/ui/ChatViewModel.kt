@@ -219,6 +219,22 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- 2.0 ----------
 
     /** CHT-2: a recipe, list, event, poll… sent as a card that opens the item. */
+    // ---------- polls live inside the chat (a poll is a message; votes update in place) ----------
+    fun polls(familyId: String) = c.extras.polls(familyId)
+    fun votes(familyId: String) = c.extras.votes(familyId)
+    fun createPoll(chat: ChatEntity, question: String, options: List<String>, multi: Boolean, anonymous: Boolean, closesAt: Long) = launchSafe {
+        if (!repo.hasKey(chat)) return@launchSafe say(R.string.chat_waiting_key)
+        val poll = com.rimon.smartfamily.data.db.PollEntity(id = c.extras.newId(), familyId = chat.familyId, question = question.trim(),
+            options = options.map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n"), multi = multi, anonymous = anonymous, closesAt = closesAt, createdBy = uid())
+        c.extras.savePoll(poll)
+        repo.send(chat, uid(), MessagePayload(text = "📊 " + poll.question, cardType = "poll", cardId = poll.id, cardTitle = poll.question), "card")
+    }
+    fun vote(p: com.rimon.smartfamily.data.db.PollEntity, choice: Int) = launchSafe {
+        if (p.closed || (p.closesAt in 1 until System.currentTimeMillis())) return@launchSafe say(R.string.poll_closed)
+        c.extras.vote(p, uid(), choice)
+    }
+    fun closePoll(p: com.rimon.smartfamily.data.db.PollEntity) = launchSafe { c.extras.savePoll(p.copy(closed = true)) }
+
     fun sendCard(chat: ChatEntity, type: String, id: String, title: String) = launchSafe {
         if (!repo.hasKey(chat)) return@launchSafe say(R.string.chat_waiting_key)
         repo.send(chat, uid(), MessagePayload(text = title, cardType = type, cardId = id, cardTitle = title), "card")

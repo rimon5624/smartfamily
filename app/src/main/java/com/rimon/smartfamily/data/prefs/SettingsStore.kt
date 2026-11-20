@@ -54,6 +54,9 @@ data class AppSettings(
     /** Favourite places for zmanim (keys, comma separated) — quick switching when travelling. */
     val favCities: String = "",
     val repairedV201: Boolean = false,
+    /** Bottom bar order (csv of NavItems) and where the family chat lives: ICON on every screen or a bar TAB. */
+    val navOrder: String = "",
+    val chatPlacement: String = "ICON",
 ) {
     val supabaseConfigured: Boolean get() = supabaseUrl.isNotBlank() && supabaseAnonKey.isNotBlank()
 }
@@ -93,6 +96,8 @@ class SettingsStore(private val context: Context) {
         val homeShabbat = stringPreferencesKey("home_shabbat")
         val favCities = stringPreferencesKey("fav_cities")
         val repairedV201 = booleanPreferencesKey("repaired_v201")
+        val navOrder = stringPreferencesKey("nav_order")
+        val chatPlacement = stringPreferencesKey("chat_placement")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p -> p.toSettings() }
@@ -132,7 +137,13 @@ class SettingsStore(private val context: Context) {
         homeShabbat = this[K.homeShabbat] ?: "AUTO",
         favCities = this[K.favCities] ?: "",
         repairedV201 = this[K.repairedV201] ?: false,
+        navOrder = this[K.navOrder] ?: "",
+        chatPlacement = this[K.chatPlacement] ?: "ICON",
     )
+
+    suspend fun setNav(order: String? = null, chat: String? = null) = context.dataStore.edit {
+        order?.let { v -> it[K.navOrder] = v }; chat?.let { v -> it[K.chatPlacement] = v }
+    }
 
     suspend fun setRepairedV201() = context.dataStore.edit { it[K.repairedV201] = true }
 

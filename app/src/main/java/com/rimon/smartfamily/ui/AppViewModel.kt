@@ -170,6 +170,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val canSeeCloudDetails = combine(c.db.people().observeAllActive(), c.settings.settings) { m, st ->
         m.none { it.userId == st.userId } || m.any { it.userId == st.userId && (it.role == "OWNER" || it.role == "ADMIN") }
     }
+    fun setNav(order: String? = null, chat: String? = null) = viewModelScope.launch { c.settings.setNav(order, chat) }
     fun toggleFavCity(key: String) = viewModelScope.launch {
         val cur = c.settings.current().favCities.split(',').filter { it.isNotBlank() }
         c.settings.setFavCities((if (key in cur) cur - key else cur + key).joinToString(","))

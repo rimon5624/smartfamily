@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import android.app.Application
 import android.content.Intent
 import android.speech.RecognizerIntent
@@ -177,7 +178,7 @@ fun SearchScreen(vm: AssistantViewModel, viewer: Viewer, onBack: () -> Unit, onO
     val hits by vm.hits.collectAsState()
     LaunchedEffect(q) { delay(250); vm.search(viewer.familyId, q) }
     Scaffold(topBar = {
-        TopAppBar(
+        SfTopAppBar(
             title = {
                 OutlinedTextField(q, { q = it }, placeholder = { Text(stringResource(R.string.search_all)) }, leadingIcon = { Icon(Icons.Outlined.Search, null) },
                     singleLine = true, modifier = Modifier.fillMaxWidth().padding(end = 8.dp))

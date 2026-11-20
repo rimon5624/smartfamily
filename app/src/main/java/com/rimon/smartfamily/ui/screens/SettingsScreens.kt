@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.foundation.clickable
@@ -99,7 +100,7 @@ fun SettingsScreen(
     Scaffold(
         modifier = Modifier.padding(padding),
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.settings_title)) }, actions = { HelpButton(R.string.help_settings) })
+            SfTopAppBar(title = { Text(stringResource(R.string.settings_title)) }, actions = { HelpButton(R.string.help_settings) })
         },
     ) { inner ->
         Column(
@@ -209,6 +210,11 @@ fun SettingsScreen(
             ClickRow(Icons.Outlined.Sensors, stringResource(R.string.sh_title), stringResource(R.string.sh_hc) + " · " + stringResource(R.string.sh_st), onSmartHome)
             CityRow(settings.zmanimCity, settings.language, settings.favCities.split(',').filter { it.isNotBlank() }, { vm.toggleFavCity(it) }) { vm.setZmanimCity(it) }
             // Home screen cards: size of the greeting and the Shabbat card
+            // 2.1: order of the bottom bar and where the chat lives
+            androidx.compose.foundation.layout.Box(Modifier.padding(start = 40.dp, top = 8.dp, bottom = 8.dp)) {
+                NavSettings(com.rimon.smartfamily.model.NavItems.ordered(settings.navOrder), settings.chatPlacement,
+                    onOrder = { vm.setNav(order = it.joinToString(",")) }, onChat = { vm.setNav(chat = it) })
+            }
             InfoRow(title = stringResource(R.string.home_cards), subtitle = stringResource(R.string.home_cards_sub), leading = { Spacer(Modifier.size(24.dp)) })
             Text(stringResource(R.string.home_card_greeting), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 40.dp))
             androidx.compose.foundation.layout.FlowRow(Modifier.padding(start = 40.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -356,7 +362,7 @@ private fun ClickRow(icon: androidx.compose.ui.graphics.vector.ImageVector, titl
 private fun SubScreen(title: String, onBack: () -> Unit, busy: Boolean, content: @Composable () -> Unit) {
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(title) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
             )

@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import android.content.Intent
 import android.net.Uri
 import android.provider.AlarmClock
@@ -116,7 +117,7 @@ fun AppliancesScreen(vm: ApplianceViewModel, viewer: Viewer, onBack: () -> Unit,
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(stringResource(R.string.apl_title)) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = { HelpButton(R.string.help_appliances) },
@@ -218,7 +219,7 @@ fun ApplianceDetailScreen(vm: ApplianceViewModel, viewer: Viewer, id: String, on
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(a.name) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = {
@@ -593,7 +594,7 @@ fun SmartHomeScreen(vm: ApplianceViewModel, clientId: String, onBack: () -> Unit
     LaunchedEffect(code) { hcOn = vm.homeConnectConnected }
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(stringResource(R.string.sh_title)) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
             )

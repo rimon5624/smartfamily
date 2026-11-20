@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -65,7 +66,7 @@ fun ModuleScaffold(title: String, help: Int, onBack: () -> Unit, tabs: List<Stri
                    fabLabel: String? = null, onFab: () -> Unit = {}, content: LazyListScope.() -> Unit) {
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = { Text(title) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = { HelpButton(help) },
@@ -74,7 +75,7 @@ fun ModuleScaffold(title: String, help: Int, onBack: () -> Unit, tabs: List<Stri
         floatingActionButton = { if (fabLabel != null) ExtendedFloatingActionButton(onClick = onFab, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text(fabLabel) }) },
     ) { inner ->
         Column(Modifier.padding(inner).fillMaxSize()) {
-            if (tabs.size > 1) TabRow(tab) { tabs.forEachIndexed { i, t -> Tab(tab == i, { onTab(i) }, text = { Text(t, maxLines = 1) }) } }
+            if (tabs.size > 1 && com.rimon.smartfamily.ui.components.LocalFixedTab.current == null) TabRow(tab) { tabs.forEachIndexed { i, t -> Tab(tab == i, { onTab(i) }, text = { Text(t, maxLines = 1) }) } }
             LazyColumn(contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 96.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
         }
     }

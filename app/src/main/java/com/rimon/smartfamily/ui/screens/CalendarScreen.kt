@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import com.rimon.smartfamily.ui.components.SfTopAppBar
 import android.app.TimePickerDialog
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -271,7 +272,7 @@ fun CalendarScreen(vm: HomeLifeViewModel, viewer: Viewer, settings: AppSettings?
     }
     Scaffold(
         topBar = {
-            TopAppBar(
+            SfTopAppBar(
                 title = {
                     Column {
                         Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)

@@ -175,3 +175,49 @@ fun Celebration(trigger: Any?, modifier: Modifier = Modifier) {
         }
     }
 }
+
+// ---------------- 2.1 navigation building blocks ----------------
+
+/** True when a screen is shown inside an area (hub) that already has its own title bar and section tabs. */
+val LocalEmbedded = androidx.compose.runtime.compositionLocalOf { false }
+
+/** When an area shows one tab of a multi-tab screen as its own section, the screen hides its tab row. */
+val LocalFixedTab = androidx.compose.runtime.compositionLocalOf<Int?> { null }
+
+/** The family chat entry shown at the top of every screen (when the user chose "icon on every screen"). */
+data class ChatEntry(val show: Boolean = false, val unread: Int = 0, val open: () -> Unit = {})
+val LocalChatEntry = androidx.compose.runtime.compositionLocalOf { ChatEntry() }
+
+@Composable
+fun ChatTopIcon() {
+    val e = LocalChatEntry.current
+    if (!e.show) return
+    androidx.compose.material3.IconButton(onClick = e.open) {
+        androidx.compose.material3.BadgedBox(badge = { if (e.unread > 0) androidx.compose.material3.Badge { Text(if (e.unread > 99) "99+" else e.unread.toString()) } }) {
+            Icon(androidx.compose.material.icons.Icons.Outlined.ChatBubbleOutline, stringResource(R.string.mod_chat))
+        }
+    }
+}
+
+/**
+ * The app's top bar. On its own it is a normal bar with the chat icon added; inside an area it shrinks to just the
+ * screen's own action buttons (the area shows the title, back is not needed).
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun SfTopAppBar(
+    title: @Composable () -> Unit,
+    navigationIcon: @Composable () -> Unit = {},
+    actions: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {},
+) {
+    if (LocalEmbedded.current) {
+        androidx.compose.foundation.layout.Row(
+            Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            content = actions,
+        )
+    } else {
+        androidx.compose.material3.TopAppBar(title = title, navigationIcon = navigationIcon, actions = { actions(); ChatTopIcon() })
+    }
+}

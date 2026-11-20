@@ -77,7 +77,7 @@
     <string name="kashrut_kosher">כשר</string>
     <string name="kashrut_mehadrin">כשר למהדרין</string>
     <string name="kashrut_none">לא כשר</string>
-    <string name="family_modules">מודולים במשפחה הזו</string>
+    <string name="family_modules">תכונות במשפחה הזו</string>
     <string name="family_needs_cloud">הזמנות והצטרפות עובדות אחרי חיבור סנכרון ענן (הגדרות ← סנכרון ענן).</string>
     <string name="join_title">הצטרפות למשפחה</string>
     <string name="join_code_hint">קוד הזמנה</string>
@@ -92,7 +92,7 @@
     <string name="role_guest">אורח</string>
 
     <!-- Modules -->
-    <string name="modules_title">מודולים</string>
+    <string name="modules_title">תכונות</string>
     <string name="modules_family_level">משפחה</string>
     <string name="modules_my_level">בשבילי</string>
     <string name="modules_intro">את המתג המשפחתי קובעים המנהלים. המתג האישי שלך יכול רק להסתיר מודול עבורך.</string>
@@ -1292,4 +1292,48 @@
     <string name="prices_err_network">אין חיבור לשרת של הרשת. בדקו את החיבור לאינטרנט.</string>
     <string name="prices_check">בדיקת מקורות המחירים</string>
     <string name="prices_check_ok">עובד (%1$d)</string>
+    <string name="chat_poll">סקר</string>
+    <string name="chat_all_polls">כל הסקרים</string>
+    <string name="poll_loading">טוען את הסקר…</string>
+    <string name="poll_more">פרטים</string>
+    <string name="hub_food">אוכל וקניות</string>
+    <string name="hub_calendar">יומן</string>
+    <string name="hub_tasks">משימות</string>
+    <string name="hub_money">כסף</string>
+    <string name="hub_home">הבית</string>
+    <string name="hub_family">משפחה</string>
+    <string name="sec_lists">רשימות</string>
+    <string name="sec_pantry">מזווה</string>
+    <string name="sec_menu">תפריט</string>
+    <string name="sec_recipes">מתכונים</string>
+    <string name="sec_school">בית ספר וגן</string>
+    <string name="sec_calendar">יומן</string>
+    <string name="sec_shabbat">שבת וחגים</string>
+    <string name="sec_trips">טיולים</string>
+    <string name="sec_chores">מטלות</string>
+    <string name="sec_routines">שגרות ילדים</string>
+    <string name="sec_budget">תקציב</string>
+    <string name="sec_bills">חשבונות ומנויים</string>
+    <string name="sec_pocket">דמי כיס</string>
+    <string name="sec_goals">יעדים</string>
+    <string name="sec_shared_costs">הוצאות משותפות</string>
+    <string name="sec_appliances">מכשירים</string>
+    <string name="sec_documents">מסמכים ואחריות</string>
+    <string name="sec_repairs">תיקונים</string>
+    <string name="sec_meters">מונים</string>
+    <string name="sec_kits">ערכות</string>
+    <string name="sec_secrets">סודות ווויפי</string>
+    <string name="sec_knowledge">ידע</string>
+    <string name="sec_family">משפחה</string>
+    <string name="sec_growth">גדילה</string>
+    <string name="nav_today">היום</string>
+    <string name="nav_more">עוד</string>
+    <string name="hub_empty">כל מה שבאזור הזה כבוי. אפשר להפעיל בהגדרות ← תכונות.</string>
+    <string name="nav_settings_title">סרגל תחתון</string>
+    <string name="nav_settings_sub">ארבעת הראשונים מופיעים בסרגל; השאר תחת \"עוד\".</string>
+    <string name="chat_place">צ\'אט משפחתי</string>
+    <string name="chat_place_icon">אייקון בכל מסך</string>
+    <string name="chat_place_tab">קבוע בסרגל התחתון</string>
+    <string name="search">חיפוש</string>
+    <string name="prices_cheapest">איפה הכי זול</string>
 </resources>
