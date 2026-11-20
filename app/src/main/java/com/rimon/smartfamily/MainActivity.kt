@@ -1,5 +1,6 @@
 package com.rimon.smartfamily
 
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -316,6 +317,7 @@ private fun MainNav(vm: AppViewModel) {
                     barItems.forEach { item ->
                         val selected = currentItem == item
                         NavigationBarItem(
+                            modifier = Modifier.testTag("nav_$item"),
                             selected = selected,
                             onClick = { goItem(item) },
                             icon = {
@@ -326,6 +328,7 @@ private fun MainNav(vm: AppViewModel) {
                         )
                     }
                     NavigationBarItem(
+                        modifier = Modifier.testTag("nav_more"),
                         selected = currentItem != null && currentItem !in barItems,
                         onClick = { moreOpen = true },
                         icon = { Icon(Icons.Outlined.MoreHoriz, null) },

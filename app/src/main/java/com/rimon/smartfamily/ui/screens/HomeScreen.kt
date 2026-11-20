@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.ui.platform.testTag
 import com.rimon.smartfamily.ui.components.SfTopAppBar
 import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.outlined.MoreVert
@@ -91,7 +92,7 @@ fun HomeScreen(
         modifier = Modifier.padding(padding),
         topBar = {
             SfTopAppBar(
-                title = { Text(stringResource(R.string.nav_today)) },
+                title = { Text(stringResource(R.string.nav_today), Modifier.testTag("screen_today")) },
                 actions = { HelpButton(R.string.help_home) },
             )
         },

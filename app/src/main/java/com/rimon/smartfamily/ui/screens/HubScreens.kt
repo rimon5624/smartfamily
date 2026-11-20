@@ -47,6 +47,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -90,7 +91,7 @@ fun HubScreen(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text(stringResource(hub.title)) },
+                    title = { Text(stringResource(hub.title), Modifier.testTag("area_${hub.key}")) },
                     actions = {
                         actions()
                         IconButton(onClick = onSearch) { Icon(Icons.Outlined.Search, stringResource(R.string.search)) }
@@ -100,7 +101,7 @@ fun HubScreen(
                 )
                 if (sections.size > 1 && sel != null) {
                     ScrollableTabRow(selectedTabIndex = sections.indexOf(sel), edgePadding = 12.dp) {
-                        sections.forEach { s -> Tab(selected = s == sel, onClick = { onSelect(s.key) }, text = { Text(stringResource(s.title), maxLines = 1) }) }
+                        sections.forEach { s -> Tab(selected = s == sel, onClick = { onSelect(s.key) }, modifier = Modifier.testTag("sec_${s.key}"), text = { Text(stringResource(s.title), maxLines = 1) }) }
                     }
                 }
             }
@@ -123,7 +124,7 @@ fun MoreSheet(items: List<String>, onPick: (String) -> Unit, onDismiss: () -> Un
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             (items + listOf("families", "settings")).forEach { item ->
-                Row(Modifier.fillMaxWidth().clickable { onPick(item) }.padding(horizontal = 24.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().testTag("more_$item").clickable { onPick(item) }.padding(horizontal = 24.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(navIcon(item), null)
                     Spacer(Modifier.size(16.dp))
                     Text(stringResource(navLabel(item)), style = MaterialTheme.typography.titleMedium)

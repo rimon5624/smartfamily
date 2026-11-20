@@ -24,6 +24,7 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
         vectorDrawables { useSupportLibrary = true }
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // The family's Supabase project. The anon key is public by design: row-level security
         // on the server decides what each signed-in user can read or write.
         buildConfigField("String", "DEFAULT_SUPABASE_URL", "\"https://giqafbtcyimbifyjvpgo.supabase.co\"")
@@ -80,6 +81,14 @@ ksp {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    // on-emulator walkthrough of every screen (CI)
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.09.03"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test:core-ktx:1.6.1")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     val composeBom = platform("androidx.compose:compose-bom:2024.09.03")
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")
