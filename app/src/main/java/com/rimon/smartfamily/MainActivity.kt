@@ -1,5 +1,6 @@
 package com.rimon.smartfamily
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -365,9 +366,17 @@ private fun MainNav(vm: AppViewModel) {
         val barPadding = PaddingValues(bottom = inner.calculateBottomPadding())
         androidx.compose.runtime.CompositionLocalProvider(com.rimon.smartfamily.ui.components.LocalChatEntry provides chatEntry) {
         androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().imePadding()) {
-        // 2.2: the app opens on the first tab of the bar (by default "Home")
-        val startRoute = remember { com.rimon.smartfamily.model.NavItems.route(barItems.firstOrNull() ?: com.rimon.smartfamily.model.NavItems.TODAY) }
-        NavHost(nav, startDestination = startRoute) {
+        // 2.2: the app opens on the first tab of the bar (by default "Home") once the family is known
+        var openedFirstTab by rememberSaveable { mutableStateOf(false) }
+        LaunchedEffect(famId, barItems.firstOrNull()) {
+            val first = barItems.firstOrNull() ?: return@LaunchedEffect
+            if (openedFirstTab || famId.isEmpty()) return@LaunchedEffect
+            repeat(20) { if (runCatching { nav.currentDestination }.getOrNull() == null) kotlinx.coroutines.delay(100) }
+            openedFirstTab = true
+            if (first != com.rimon.smartfamily.model.NavItems.TODAY && nav.currentDestination?.route == Tab.HOME.route)
+                nav.navigate(com.rimon.smartfamily.model.NavItems.route(first)) { popUpTo(nav.graph.id) { inclusive = true }; launchSingleTop = true }
+        }
+        NavHost(nav, startDestination = Tab.HOME.route) {
             composable(Tab.HOME.route) {
                 HomeScreen(
                     vm, barPadding,
