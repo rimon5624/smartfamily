@@ -176,7 +176,8 @@ class SyncEngine(
                 pullAll(s.userId)
             }
             // chats follow the family; keys reach every member device (2.1.2)
-            runCatching { afterPull?.invoke(s.userId) }
+            try { afterPull?.invoke(s.userId) } catch (_: Exception) { }
+            Unit
         }
         settings.setSyncResult(System.currentTimeMillis(), result.exceptionOrNull()?.message ?: "")
         result
