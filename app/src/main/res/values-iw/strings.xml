@@ -902,7 +902,7 @@
     <string name="update_download">הורדה</string>
     <string name="update_later">אחר כך</string>
     <string name="whats_new_title">מה חדש בגרסה %1$s</string>
-    <string name="whats_new_body">• תוקן: כל האזורים נפתחים מהסרגל התחתון\n• כל האזורים תמיד מופיעים, עם הפעלה מתוך אזור כבוי\n• התכונות בהגדרות מסודרות לפי אזורים\n• שמות קצרים וממורכזים בסרגל; שורת לשוניות אחת בכל אזור\n• עזרה רק כשלוחצים על ?</string>
+    <string name="whats_new_body">• הצ\'אט עובד גם לבני משפחה שהצטרפו אחר כך\n• התראות מיידיות על הודעות בצ\'אט (התוכן נשאר מוצפן)\n• בהתקנה ראשונה: הצטרפות למשפחה קיימת עם קוד או QR\n• בחירת תכונות לפי אזורים</string>
     <string name="prices_comparable">בר השוואה: %1$s (%2$d מוצרים)</string>
     <string name="budget_over">הקטגוריה הגיעה ל-%1$s%% מהתקרה החודשית</string>
     <string name="budget_near">הקטגוריה הגיעה ל-%1$s%% מהתקרה החודשית</string>

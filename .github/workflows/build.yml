@@ -34,6 +34,12 @@ jobs:
       - name: Check Hebrew and English strings match
         run: python3 scripts/check_strings.py
 
+      - name: Firebase config (instant notifications)
+        env:
+          GS: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GS" ]; then printf '%s' "$GS" > app/google-services.json; python3 -c "import json;d=json.load(open('app/google-services.json'));print('Firebase project:', d['project_info']['project_id'], '· apps:', [c['client_info']['android_client_info']['package_name'] for c in d['client']])"; else echo "::warning::No GOOGLE_SERVICES_JSON secret: built without instant notifications"; fi
+
       - name: Read version
         id: ver
         run: echo "name=$(grep '^APP_VERSION_NAME=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
@@ -118,6 +124,12 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      - name: Firebase config (instant notifications)
+        env:
+          GS: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GS" ]; then printf '%s' "$GS" > app/google-services.json; python3 -c "import json;d=json.load(open('app/google-services.json'));print('Firebase project:', d['project_info']['project_id'], '· apps:', [c['client_info']['android_client_info']['package_name'] for c in d['client']])"; else echo "::warning::No GOOGLE_SERVICES_JSON secret: built without instant notifications"; fi
+
       - name: Build app and tests
         run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
       - name: Run the walkthrough on an emulator

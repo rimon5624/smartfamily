@@ -280,6 +280,17 @@ private fun MainNav(vm: AppViewModel) {
         restoreState = true
     }
 
+    // 2.1.2: ask once for notifications (Android 13+), so chat messages and reminders can be shown
+    val notifAsk = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
+    LaunchedEffect(Unit) {
+        val prefs = context.getSharedPreferences("sf_perm", android.content.Context.MODE_PRIVATE)
+        if (android.os.Build.VERSION.SDK_INT >= 33 && !prefs.getBoolean("notif_asked", false) &&
+            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            prefs.edit().putBoolean("notif_asked", true).apply()
+            notifAsk.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
     // Shortcuts, widgets and the quick-settings tile open a route here.
     val asked by MainActivity.pendingRoute.collectAsState()
     LaunchedEffect(asked, settings?.onboardingDone) {

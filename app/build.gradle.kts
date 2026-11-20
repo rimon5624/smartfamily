@@ -6,6 +6,10 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+// Firebase (instant chat notifications) is configured only when CI wrote google-services.json from the
+// GOOGLE_SERVICES_JSON secret; without it the app builds and works, just without instant notifications.
+if (file("google-services.json").exists()) apply(plugin = "com.google.gms.google-services")
+
 val appVersionName: String = providers.gradleProperty("APP_VERSION_NAME").get()
 val appVersionCode: Int = providers.gradleProperty("APP_VERSION_CODE").get().toInt()
 
@@ -81,6 +85,8 @@ ksp {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    implementation(platform("com.google.firebase:firebase-bom:33.6.0"))
+    implementation("com.google.firebase:firebase-messaging")
     // on-emulator walkthrough of every screen (CI)
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.09.03"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

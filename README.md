@@ -2,9 +2,16 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 2.1.1**
+**Current version: 2.1.2**
 
-## What is new in 2.1.1
+## What is new in 2.1.2
+
+- **Chat for members who join later** (the bug of 20/11): the family chat and the albums always include every active member — joiners are added, leavers are removed with a new key; any phone holding a chat key seals it to every member device that lacks it on each sync (no need to open the chat); a device key refused before approval is sent again. Covered by an on-device test that plays the second member's phone.
+- **Instant chat notifications** with Firebase Cloud Messaging (free): the server sends only "chat X has news" (no text); the phone syncs, decrypts and notifies — end-to-end encryption is kept. Edge Function `notify` + a trigger on new messages.
+- **First run**: "join my family" (account + invite code or QR, no extra family is created) or "create a new family"; features chosen by area with the app's names.
+- Families with the same name show whose each one is; the chat list refreshes every few seconds while open.
+
+## What was new in 2.1.1
 
 - Fixed: only Today and Calendar opened from the bottom bar (all areas shared one screen route; each area now has its own).
 - All six areas are always there; an area whose features are off shows its switches inside it.
