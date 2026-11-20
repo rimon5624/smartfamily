@@ -79,6 +79,14 @@ class ReminderWorker(context: Context, params: WorkerParameters) : CoroutineWork
             }
         }
 
+        // 2.2: a SmartThings personal token lives 24 hours — remind 3 hours before it stops
+        c.smartThings.tokenExpiresAt?.let { exp ->
+            if (now in (exp - 3 * 3_600_000L) until exp) {
+                val key = "st:$exp"
+                if (key !in seen) fresh += key to applicationContext.getString(R.string.rem_st_expiring)
+            }
+        }
+
         // PCK-4: the evening before, what to pack tomorrow.
         if (hour >= 20) {
             val tomorrow = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date(now + 86_400_000L))

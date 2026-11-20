@@ -217,23 +217,67 @@ class ApplianceViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setHomeConnectClientId(id: String) = launchSafe { c.settings.setHomeConnectClientId(id) }
 
-    /** Device flow: shows a code and a link, then waits for the user to approve on Home Connect's site. */
-    fun connectHomeConnect() = launchSafe {
-        val code = c.homeConnect.startLogin()
-        _hcCode.value = code
-        repeat(120) {
-            delay(code.interval * 1000L)
-            if (c.homeConnect.pollLogin(code)) {
-                _hcCode.value = null
-                say(R.string.sh_connected)
-                return@launchSafe
+    /** 2.2 status line of the Home Connect wizard (null = nothing to report). */
+    private val _hcStatus = MutableStateFlow<Int?>(null)
+    val hcStatus = _hcStatus.asStateFlow()
+    private var hcJob: kotlinx.coroutines.Job? = null
+    @Volatile private var pokeNow = false
+
+    /**
+     * Device flow: shows a code and a link, then waits for the user to approve on Home Connect's site.
+     * 2.2: a network hiccup (VPN, background limits) no longer ends the wait — it keeps trying until the code expires,
+     * and checks at once when the user comes back to the app ([pollNow]).
+     */
+    fun connectHomeConnect() {
+        hcJob?.cancel()
+        hcJob = viewModelScope.launch {
+            _hcStatus.value = null
+            val code = try { c.homeConnect.startLogin() } catch (e: java.io.IOException) {
+                _hcStatus.value = if (e is java.net.UnknownHostException || e is java.io.InterruptedIOException) R.string.hc_offline else R.string.hc_client_bad
+                return@launch
             }
+            _hcCode.value = code
+            var waited = 0L
+            while (System.currentTimeMillis() < code.expiresAt) {
+                val step = code.interval * 1000L
+                while (waited < step && !pokeNow) { delay(250); waited += 250 }
+                waited = 0; pokeNow = false
+                try {
+                    if (c.homeConnect.pollLogin(code)) {
+                        _hcCode.value = null; _hcStatus.value = R.string.sh_connected; say(R.string.sh_connected); return@launch
+                    }
+                    if (_hcStatus.value == R.string.hc_offline) _hcStatus.value = null
+                } catch (e: com.rimon.smartfamily.smart.HomeConnectClient.LoginFailed) {
+                    _hcCode.value = null
+                    _hcStatus.value = when (e.reason) { "denied" -> R.string.hc_denied; "expired" -> R.string.hc_expired; "user" -> R.string.hc_user; else -> R.string.hc_client_bad }
+                    return@launch
+                } catch (e: java.io.IOException) {
+                    _hcStatus.value = R.string.hc_offline // keep waiting
+                }
+            }
+            _hcCode.value = null; _hcStatus.value = R.string.hc_expired
         }
-        _hcCode.value = null
     }
+    fun pollNow() { pokeNow = true }
 
     fun disconnectHomeConnect() { c.homeConnect.disconnect() }
     fun setSmartThingsToken(t: String?) { c.smartThings.setToken(t); if (t != null) say(R.string.sh_connected) }
+    val smartThingsExpiresAt: Long? get() = c.smartThings.tokenExpiresAt
+    val smartThingsOAuth: Boolean get() = c.smartThings.usesOAuth
+    fun smartThingsAuthorizeUrl(clientId: String, state: String) = c.smartThings.authorizeUrl(clientId.trim(), com.rimon.smartfamily.smart.SmartThingsClient.REDIRECT, state)
+    fun finishSmartThingsOAuth(clientId: String, secret: String, pasted: String, onDone: () -> Unit) = launchSafe {
+        c.smartThings.finishOAuth(clientId.trim(), secret.trim(), com.rimon.smartfamily.smart.SmartThingsClient.REDIRECT, pasted)
+        say(R.string.sh_connected); onDone()
+    }
+    fun disconnectSmartThings() = c.smartThings.disconnect()
+    /** Checks the SmartThings connection by listing devices. */
+    private val _stCheck = MutableStateFlow<Int?>(null)
+    val stCheck = _stCheck.asStateFlow()
+    fun testSmartThings() = viewModelScope.launch {
+        _stCheck.value = runCatching { c.smartThings.devices(); R.string.st_check_ok }.getOrElse { e ->
+            when (e) { is com.rimon.smartfamily.smart.SmartThingsClient.Expired -> R.string.st_expired; is java.net.UnknownHostException -> R.string.hc_offline; else -> R.string.st_check_fail }
+        }
+    }
 
     fun loadDevices(ecosystem: String) = launchSafe {
         _devices.value = when (ecosystem) {

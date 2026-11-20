@@ -1,5 +1,8 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.material3.FilterChip
+import kotlinx.coroutines.delay
+import androidx.lifecycle.repeatOnLifecycle
 import com.rimon.smartfamily.ui.components.SfTopAppBar
 import android.content.Intent
 import android.net.Uri
@@ -585,13 +588,26 @@ private fun InfoTab(vm: ApplianceViewModel, viewer: Viewer, a: ApplianceEntity, 
 @Composable
 fun SmartHomeScreen(vm: ApplianceViewModel, clientId: String, onBack: () -> Unit) {
     val code by vm.hcCode.collectAsStateWithLifecycle()
+    val hcStatus by vm.hcStatus.collectAsStateWithLifecycle()
+    val stCheck by vm.stCheck.collectAsStateWithLifecycle()
     val busy by vm.busy.collectAsStateWithLifecycle()
     var id by remember(clientId) { mutableStateOf(clientId) }
     var token by remember { mutableStateOf("") }
     var hcOn by remember { mutableStateOf(vm.homeConnectConnected) }
     var stOn by remember { mutableStateOf(vm.smartThingsConnected) }
+    var stOAuth by remember { mutableStateOf(false) }
+    var stClient by remember { mutableStateOf("") }
+    var stSecret by remember { mutableStateOf("") }
+    var stPasted by remember { mutableStateOf("") }
+    val stState = remember { java.util.UUID.randomUUID().toString().take(12) }
     val context = LocalContext.current
-    LaunchedEffect(code) { hcOn = vm.homeConnectConnected }
+    LaunchedEffect(code, hcStatus) { hcOn = vm.homeConnectConnected }
+    // Back from the approval page: check at once instead of waiting for the next poll.
+    val life = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    LaunchedEffect(Unit) { life.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) { vm.pollNow() } }
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(code) { while (code != null) { now = System.currentTimeMillis(); delay(1000) } }
+
     Scaffold(
         topBar = {
             SfTopAppBar(
@@ -602,32 +618,100 @@ fun SmartHomeScreen(vm: ApplianceViewModel, clientId: String, onBack: () -> Unit
     ) { inner ->
         Column(Modifier.padding(top = inner.calculateTopPadding()).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            // ---------------- Home Connect ----------------
             Text(stringResource(R.string.sh_hc), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(if (hcOn) R.string.sh_sub_on else R.string.sh_sub_off), color = MaterialTheme.colorScheme.secondary)
-            Text(stringResource(R.string.sh_hc_intro), style = MaterialTheme.typography.bodyMedium)
-            OutlinedTextField(id, { id = it }, label = { Text(stringResource(R.string.sh_hc_client)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(enabled = id.isNotBlank() && code == null, onClick = { vm.setHomeConnectClientId(id); vm.connectHomeConnect() }) { Text(stringResource(R.string.sh_connect)) }
-                if (hcOn) OutlinedButton(onClick = { vm.disconnectHomeConnect(); hcOn = false }) { Text(stringResource(R.string.sh_disconnect)) }
+            Text(stringResource(if (hcOn) R.string.sh_sub_on else R.string.sh_sub_off), color = if (hcOn) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary)
+            Text(stringResource(R.string.hc_brands), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (!hcOn) {
+                com.rimon.smartfamily.ui.components.GuideStep(1, stringResource(R.string.hc_step1_title), stringResource(R.string.hc_step1_body)) {
+                    com.rimon.smartfamily.ui.components.OpenSiteButton(stringResource(R.string.hc_open_dev), "https://developer.home-connect.com/applications")
+                }
+                com.rimon.smartfamily.ui.components.GuideStep(2, stringResource(R.string.hc_step2_title), stringResource(R.string.hc_step2_body)) {
+                    com.rimon.smartfamily.ui.components.CopyValue("Application ID", "SmartFamily")
+                    com.rimon.smartfamily.ui.components.CopyValue("OAuth Flow", "Device Flow")
+                    Text(stringResource(R.string.hc_test_account), style = MaterialTheme.typography.bodySmall)
+                    com.rimon.smartfamily.ui.components.CopyValue("Success Redirect", "https://example.com")
+                    Text(stringResource(R.string.hc_redirect_note), style = MaterialTheme.typography.bodySmall)
+                }
+                com.rimon.smartfamily.ui.components.GuideStep(3, stringResource(R.string.hc_step3_title), stringResource(R.string.hc_step3_body), done = id.length > 20) {
+                    OutlinedTextField(id, { id = it.trim() }, label = { Text(stringResource(R.string.sh_hc_client)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                }
+                com.rimon.smartfamily.ui.components.GuideStep(4, stringResource(R.string.hc_step4_title), stringResource(R.string.hc_step4_body)) {
+                    Button(enabled = id.isNotBlank() && code == null, onClick = { vm.setHomeConnectClientId(id); vm.connectHomeConnect() }) {
+                        Text(stringResource(if (hcStatus == R.string.hc_expired) R.string.hc_new_code else R.string.sh_connect))
+                    }
+                    code?.let { c ->
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
+                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(R.string.sh_hc_code, c.userCode), style = MaterialTheme.typography.titleMedium)
+                                val left = ((c.expiresAt - now) / 1000).coerceAtLeast(0)
+                                Text(stringResource(R.string.hc_time_left, "%d:%02d".format(left / 60, left % 60)), style = MaterialTheme.typography.bodySmall)
+                                Button(onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(c.verificationUrl))) } }) { Text(stringResource(R.string.sh_open_link)) }
+                                Text(stringResource(R.string.hc_come_back), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                    hcStatus?.let { com.rimon.smartfamily.ui.components.TestResult(it == R.string.sh_connected, stringResource(it)) }
+                }
+            } else {
+                hcStatus?.let { com.rimon.smartfamily.ui.components.TestResult(it == R.string.sh_connected, stringResource(it)) }
+                OutlinedButton(onClick = { vm.disconnectHomeConnect(); hcOn = false }) { Text(stringResource(R.string.sh_disconnect)) }
             }
-            code?.let { c ->
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
-                    Column(Modifier.padding(14.dp)) {
-                        Text(stringResource(R.string.sh_hc_code, c.userCode), style = MaterialTheme.typography.titleMedium)
-                        TextButton(onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(c.verificationUrl))) } }) { Text(stringResource(R.string.sh_open_link)) }
+
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            // ---------------- SmartThings ----------------
+            Text(stringResource(R.string.sh_st), style = MaterialTheme.typography.titleMedium)
+            val exp = vm.smartThingsExpiresAt
+            val status = when {
+                !stOn -> stringResource(R.string.sh_sub_off)
+                vm.smartThingsOAuth -> stringResource(R.string.st_oauth_on)
+                exp != null && exp < System.currentTimeMillis() -> stringResource(R.string.st_expired)
+                exp != null -> stringResource(R.string.st_expires_in, ((exp - System.currentTimeMillis()) / 3_600_000).coerceAtLeast(0).toString())
+                else -> stringResource(R.string.sh_sub_on)
+            }
+            Text(status, color = if (stOn && (exp == null || exp > System.currentTimeMillis())) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error)
+            Text(stringResource(R.string.st_limit_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = !stOAuth, onClick = { stOAuth = false }, label = { Text(stringResource(R.string.st_mode_token)) })
+                FilterChip(selected = stOAuth, onClick = { stOAuth = true }, label = { Text(stringResource(R.string.st_mode_oauth)) })
+            }
+            if (!stOAuth) {
+                com.rimon.smartfamily.ui.components.GuideStep(1, stringResource(R.string.st_step1_title), stringResource(R.string.st_step1_body)) {
+                    com.rimon.smartfamily.ui.components.OpenSiteButton(stringResource(R.string.st_open_tokens), "https://account.smartthings.com/tokens")
+                    Text(stringResource(R.string.st_scopes), style = MaterialTheme.typography.bodySmall)
+                }
+                com.rimon.smartfamily.ui.components.GuideStep(2, stringResource(R.string.st_step2_title), null) {
+                    OutlinedTextField(token, { token = it.trim() }, label = { Text(stringResource(R.string.sh_st_token)) }, singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(enabled = token.isNotBlank(), onClick = { vm.setSmartThingsToken(token); token = ""; stOn = true; vm.testSmartThings() }) { Text(stringResource(R.string.save)) }
+                        if (stOn) OutlinedButton(onClick = { vm.testSmartThings() }) { Text(stringResource(R.string.ai_test)) }
                     }
                 }
+            } else {
+                Text(stringResource(R.string.st_oauth_note), style = MaterialTheme.typography.bodySmall)
+                com.rimon.smartfamily.ui.components.GuideStep(1, stringResource(R.string.st_o1_title), stringResource(R.string.st_o1_body)) {
+                    com.rimon.smartfamily.ui.components.OpenSiteButton(stringResource(R.string.st_open_console), "https://developer.smartthings.com/workspace")
+                    com.rimon.smartfamily.ui.components.CopyValue("Redirect URI", com.rimon.smartfamily.smart.SmartThingsClient.REDIRECT)
+                    com.rimon.smartfamily.ui.components.CopyValue("Scopes", "r:devices:* x:devices:*")
+                }
+                com.rimon.smartfamily.ui.components.GuideStep(2, stringResource(R.string.st_o2_title), null) {
+                    OutlinedTextField(stClient, { stClient = it.trim() }, label = { Text("Client ID") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(stSecret, { stSecret = it.trim() }, label = { Text("Client Secret") }, singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+                    Button(enabled = stClient.isNotBlank() && stSecret.isNotBlank(), onClick = {
+                        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(vm.smartThingsAuthorizeUrl(stClient, stState)))) }
+                    }) { Text(stringResource(R.string.st_o_approve)) }
+                }
+                com.rimon.smartfamily.ui.components.GuideStep(3, stringResource(R.string.st_o3_title), stringResource(R.string.st_o3_body)) {
+                    OutlinedTextField(stPasted, { stPasted = it.trim() }, label = { Text(stringResource(R.string.st_o_address)) }, modifier = Modifier.fillMaxWidth())
+                    Button(enabled = stPasted.contains("code=") || stPasted.length in 4..40, onClick = {
+                        vm.finishSmartThingsOAuth(stClient, stSecret, stPasted) { stOn = true; stSecret = ""; stPasted = ""; vm.testSmartThings() }
+                    }) { Text(stringResource(R.string.sh_connect)) }
+                }
             }
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
-            Text(stringResource(R.string.sh_st), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(if (stOn) R.string.sh_sub_on else R.string.sh_sub_off), color = MaterialTheme.colorScheme.secondary)
-            Text(stringResource(R.string.sh_st_intro), style = MaterialTheme.typography.bodyMedium)
-            OutlinedTextField(token, { token = it }, label = { Text(stringResource(R.string.sh_st_token)) }, singleLine = true,
-                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(enabled = token.isNotBlank(), onClick = { vm.setSmartThingsToken(token); token = ""; stOn = true }) { Text(stringResource(R.string.save)) }
-                if (stOn) OutlinedButton(onClick = { vm.setSmartThingsToken(null); stOn = false }) { Text(stringResource(R.string.sh_disconnect)) }
-            }
+            stCheck?.let { com.rimon.smartfamily.ui.components.TestResult(it == R.string.st_check_ok, stringResource(it)) }
+            if (stOn) OutlinedButton(onClick = { vm.disconnectSmartThings(); stOn = false }) { Text(stringResource(R.string.sh_disconnect)) }
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Text(stringResource(R.string.sh_tadiran), style = MaterialTheme.typography.bodySmall)
         }

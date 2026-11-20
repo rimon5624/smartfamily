@@ -65,6 +65,8 @@ object OpenFoodFacts {
 }
 
 class AiNotConfiguredException : IOException("AI is not set up: add a Gemini API key in Settings → AI services")
+/** 2.2: the selected Gemini model stopped working (retired, or not available for this key). */
+class ModelGoneException(val model: String) : IOException("The AI model $model is not available any more. Choose another one in Settings → AI services")
 
 /**
  * Gemini vision for photos of products, shelves and handwritten lists (SHP-5, INV-2).
@@ -72,11 +74,86 @@ class AiNotConfiguredException : IOException("AI is not set up: add a Gemini API
  * be used by Google to improve its products; the paid tier does not). The key stays encrypted on the
  * phone and is sent only to Google.
  */
-class GeminiClient(private val crypto: KeystoreCrypto, private val settings: suspend () -> Pair<String, Boolean>) {
+class GeminiClient(
+    private val crypto: KeystoreCrypto,
+    private val settings: suspend () -> Pair<String, Boolean>,
+    /** 2.2: a key a parent shared with the family (decrypted on this phone), used when this phone has none. */
+    private val familyKey: suspend () -> String? = { null },
+) {
 
     fun apiKey(): String? = crypto.get(KEY)
     fun setApiKey(key: String?) = crypto.put(KEY, key?.trim()?.ifEmpty { null })
-    val isConfigured: Boolean get() = !apiKey().isNullOrBlank()
+    @Volatile var sharedKeyCache: String? = null
+    val isConfigured: Boolean get() = !apiKey().isNullOrBlank() || !sharedKeyCache.isNullOrBlank()
+    val usesFamilyKey: Boolean get() = apiKey().isNullOrBlank() && !sharedKeyCache.isNullOrBlank()
+    /** Loads the family's shared key into memory (after each sync), so isConfigured is right without a call. */
+    suspend fun warm() { if (apiKey().isNullOrBlank()) sharedKeyCache = familyKey() }
+    private suspend fun effectiveKey(): String? = apiKey() ?: familyKey().also { sharedKeyCache = it }
+
+    data class ModelInfo(val id: String, val name: String, val description: String)
+    /** Result of a model test: ok (with ms), or the reason in plain words. */
+    sealed class Check {
+        data class Ok(val ms: Long) : Check()
+        object BadKey : Check()
+        object NotForKey : Check()
+        object NeedsBilling : Check()
+        object Quota : Check()
+        object Offline : Check()
+        data class Other(val message: String) : Check()
+    }
+
+    /** 2.2: the models this key can use right now (free call), newest first; only ones that read text + images. */
+    suspend fun listModels(key: String? = null): List<ModelInfo> = withContext(Dispatchers.IO) {
+        val k = key ?: effectiveKey() ?: throw AiNotConfiguredException()
+        val req = Request.Builder().url("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200").header("x-goog-api-key", k).build()
+        http.newCall(req).execute().use { resp ->
+            val raw = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) throw IOException(errorOf(raw) ?: "Gemini HTTP ${resp.code}")
+            val skip = listOf("embedding", "tts", "image", "live", "audio", "aqa", "learnlm", "robotics", "computer-use", "veo", "imagen", "gemma")
+            json.parseToJsonElement(raw).jsonObject["models"]?.jsonArray.orEmpty().mapNotNull { e ->
+                val o = e.jsonObject
+                val id = o["name"]?.jsonPrimitive?.contentOrNull?.removePrefix("models/") ?: return@mapNotNull null
+                val methods = o["supportedGenerationMethods"]?.jsonArray?.mapNotNull { it.jsonPrimitive.contentOrNull }.orEmpty()
+                if ("generateContent" !in methods || !id.startsWith("gemini") || skip.any { id.contains(it) }) return@mapNotNull null
+                ModelInfo(id, o["displayName"]?.jsonPrimitive?.contentOrNull ?: id, o["description"]?.jsonPrimitive?.contentOrNull.orEmpty())
+            }.sortedWith(compareByDescending<ModelInfo> { Regex("(\\d+(\\.\\d+)?)").find(it.id)?.value?.toDoubleOrNull() ?: 0.0 }
+                .thenBy { if (it.id.contains("flash")) 0 else 1 }.thenBy { it.id.length })
+        }
+    }
+
+    /** 2.2: a tiny real request (text + a small image) to see whether [model] works with [key]. */
+    suspend fun testModel(model: String, key: String? = null): Check = withContext(Dispatchers.IO) {
+        val k = key ?: effectiveKey() ?: return@withContext Check.BadKey
+        val bmp = android.graphics.Bitmap.createBitmap(16, 16, android.graphics.Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.RED) }
+        val jpeg = java.io.ByteArrayOutputStream().also { bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, it) }.toByteArray()
+        val body = buildJsonObject {
+            putJsonArray("contents") { addJsonObject { putJsonArray("parts") {
+                addJsonObject { put("text", "What colour is this image? Answer only JSON: {\"colour\":string}") }
+                addJsonObject { putJsonObject("inline_data") { put("mime_type", "image/jpeg"); put("data", Base64.encodeToString(jpeg, Base64.NO_WRAP)) } }
+            } } }
+            putJsonObject("generationConfig") { put("responseMimeType", "application/json"); put("maxOutputTokens", 40) }
+        }
+        val t0 = System.currentTimeMillis()
+        try {
+            val req = Request.Builder().url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent").header("x-goog-api-key", k)
+                .post(body.toString().toRequestBody("application/json".toMediaType())).build()
+            http.newCall(req).execute().use { resp ->
+                val raw = resp.body?.string().orEmpty()
+                when {
+                    resp.isSuccessful -> Check.Ok(System.currentTimeMillis() - t0)
+                    raw.contains("API_KEY_INVALID") || raw.contains("API key not valid") -> Check.BadKey
+                    resp.code == 429 && (raw.contains("limit: 0") || raw.contains("free_tier")) && raw.contains("limit: 0") -> Check.NeedsBilling
+                    resp.code == 429 -> Check.Quota
+                    resp.code == 404 || resp.code == 403 || raw.contains("not supported") -> Check.NotForKey
+                    else -> Check.Other(errorOf(raw) ?: "HTTP ${resp.code}")
+                }
+            }
+        } catch (e: java.net.UnknownHostException) { Check.Offline } catch (e: java.io.InterruptedIOException) { Check.Offline }
+    }
+
+    private fun errorOf(raw: String): String? = runCatching {
+        json.parseToJsonElement(raw).jsonObject["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+    }.getOrNull()
 
     /** Returns items seen in the photo; [mode] selects the prompt. */
     suspend fun itemsFromPhoto(context: Context, uri: Uri, mode: PhotoMode): List<ItemDraft> {
@@ -100,7 +177,7 @@ class GeminiClient(private val crypto: KeystoreCrypto, private val settings: sus
     suspend fun ask(prompt: String, attachments: List<Pair<String, ByteArray>> = emptyList()): String = withContext(Dispatchers.IO) {
         val (model, privacy) = settings()
         if (privacy) throw IOException("Privacy mode is on: AI features are off")
-        val key = apiKey() ?: throw AiNotConfiguredException()
+        val key = effectiveKey() ?: throw AiNotConfiguredException()
         val body = buildJsonObject {
             putJsonArray("contents") {
                 addJsonObject {
@@ -133,6 +210,8 @@ class GeminiClient(private val crypto: KeystoreCrypto, private val settings: sus
                 val msg = runCatching {
                     json.parseToJsonElement(raw).jsonObject["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
                 }.getOrNull()
+                // 2.2: the chosen model was retired or is not open to this key — say so, so the user can switch
+                if (resp.code == 404 || (msg ?: "").contains("not found", true) || (msg ?: "").contains("not supported", true)) throw ModelGoneException(model)
                 throw IOException(msg ?: "Gemini HTTP ${resp.code}")
             }
             json.parseToJsonElement(raw).jsonObject["candidates"]?.jsonArray?.firstOrNull()?.jsonObject

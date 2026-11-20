@@ -176,6 +176,42 @@ class ShoppingViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
     fun removeAiKey() = c.gemini.setApiKey(null)
+    fun saveModel(model: String) = viewModelScope.launch { c.settings.setGeminiModel(model) }
+
+    // ---- 2.2 AI connection wizard: live model list, model test, sharing the key with the family ----
+    private val _models = MutableStateFlow<List<com.rimon.smartfamily.smart.GeminiClient.ModelInfo>>(emptyList())
+    val models = _models.asStateFlow()
+    private val _modelsError = MutableStateFlow<String?>(null)
+    val modelsError = _modelsError.asStateFlow()
+    private val _checks = MutableStateFlow<Map<String, com.rimon.smartfamily.smart.GeminiClient.Check>>(emptyMap())
+    val checks = _checks.asStateFlow()
+    private val _testing = MutableStateFlow<String?>(null)
+    val testing = _testing.asStateFlow()
+    val usesFamilyKey: Boolean get() = c.gemini.usesFamilyKey
+
+    fun loadModels(key: String? = null) = viewModelScope.launch {
+        _modelsError.value = null
+        runCatching { c.gemini.listModels(key?.trim()?.ifBlank { null }) }
+            .onSuccess { _models.value = it }
+            .onFailure { e -> _modelsError.value = if (e is java.net.UnknownHostException) "offline" else (e.message ?: "error") }
+    }
+    fun testModel(model: String, key: String? = null) = viewModelScope.launch {
+        _testing.value = model
+        val r = runCatching { c.gemini.testModel(model, key?.trim()?.ifBlank { null }) }.getOrElse { com.rimon.smartfamily.smart.GeminiClient.Check.Other(it.message ?: "error") }
+        _checks.value = _checks.value + (model to r)
+        _testing.value = null
+    }
+    /** Shares this phone's key with the family, encrypted with the family key (like the chat); null turns sharing off. */
+    fun shareKeyWithFamily(familyId: String, on: Boolean) = launchSafe {
+        val existing = c.db.homeEntrys().byKind(familyId, "AI_KEY")
+        if (!on) { existing?.let { c.extras.deleteHomeEntry(it) }; say(R.string.ai_share_off); return@launchSafe }
+        val key = c.gemini.apiKey() ?: return@launchSafe say(R.string.ai_needed)
+        val enc = c.chat.encryptForFamily(familyId, key) ?: return@launchSafe say(R.string.secret_needs_chat)
+        c.extras.saveHomeEntry((existing ?: com.rimon.smartfamily.data.db.HomeEntryEntity(id = java.util.UUID.randomUUID().toString(), familyId = familyId,
+            section = "SYSTEM", kind = "AI_KEY", title = "Gemini", createdBy = uid())).copy(body = enc))
+        say(R.string.ai_share_on)
+    }
+    fun familySharesKey(familyId: String) = c.db.homeEntrys().observeSection(familyId, "SYSTEM")
     fun currentKeyOrEmpty(): String = c.gemini.apiKey().orEmpty()
     fun maskedKey(): String = c.gemini.apiKey()?.let { if (it.length > 8) it.take(4) + "…" + it.takeLast(4) else "…" } ?: ""
 }

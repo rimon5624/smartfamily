@@ -208,6 +208,9 @@ interface HomeEntryDao : HomeEntryDaoBase {
     @Query("SELECT * FROM home_entries WHERE familyId = :familyId AND section = :section AND deletedAt IS NULL ORDER BY pinned DESC, title")
     fun observeSection(familyId: String, section: String): Flow<List<HomeEntryEntity>>
 
+    @Query("SELECT * FROM home_entries WHERE familyId = :familyId AND kind = :kind AND deletedAt IS NULL ORDER BY updatedAt DESC LIMIT 1")
+    suspend fun byKind(familyId: String, kind: String): HomeEntryEntity?
+
     @Query("SELECT * FROM home_entries WHERE deletedAt IS NULL AND expiresAt IS NOT NULL AND expiresAt BETWEEN :from AND :to")
     suspend fun expiring(from: Long, to: Long): List<HomeEntryEntity>
 }

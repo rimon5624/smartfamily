@@ -269,9 +269,13 @@ private fun MainNav(vm: AppViewModel) {
                     val a = msg.arg
                     if (a == null) context.getString(msg.id) else context.getString(msg.id, a.toLongOrNull() ?: a)
                 }.getOrElse { msg.arg.orEmpty() }
-                is UiMessage.Text -> context.getString(R.string.error_generic, msg.text)
+                is UiMessage.Text -> if (msg.text.contains("is not available any more")) context.getString(R.string.ai_model_gone) else context.getString(R.string.error_generic, msg.text)
             }
-            snackbar.showSnackbar(text)
+            // 2.2: "AI not connected" / "model stopped working" open the AI wizard straight away
+            val toAi = (msg is UiMessage.Res && msg.id == R.string.ai_needed) || (msg is UiMessage.Text && msg.text.contains("is not available any more"))
+            if (toAi) {
+                if (snackbar.showSnackbar(text, actionLabel = context.getString(R.string.open), duration = androidx.compose.material3.SnackbarDuration.Long) == androidx.compose.material3.SnackbarResult.ActionPerformed) nav.navigate("ai")
+            } else snackbar.showSnackbar(text)
         }
     }
 
@@ -497,6 +501,7 @@ private fun MainNav(vm: AppViewModel) {
                     shopVm,
                     currentModel = settings?.geminiModel.orEmpty(),
                     privacyMode = settings?.privacyMode == true,
+                    viewer = viewer,
                     onBack = { nav.popBackStack() },
                 )
             }

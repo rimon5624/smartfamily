@@ -45,9 +45,11 @@ class AppContainer(context: Context) {
     val shares = com.rimon.smartfamily.data.repo.ShareRepository(db, api) { SyncScheduler.requestSoon(appContext) }
     val chatCrypto = ChatCrypto(crypto)
     val chat = ChatRepository(db, chatCrypto, api) { SyncScheduler.requestSoon(appContext) }
-    init { sync.afterPull = { me -> chat.maintain(me); runCatching { com.rimon.smartfamily.sync.Push.register(appContext) } } }
+    init { sync.afterPull = { me -> chat.maintain(me); runCatching { com.rimon.smartfamily.sync.Push.register(appContext) }; runCatching { gemini.warm() } } }
     val realtime = com.rimon.smartfamily.sync.Realtime(api)
-    val gemini = GeminiClient(crypto) { settings.current().let { it.geminiModel to it.privacyMode } }
+    val gemini = GeminiClient(crypto, { settings.current().let { it.geminiModel to it.privacyMode } }, familyKey = {
+        runCatching { db.homeEntrys().byKind(settings.current().activeFamilyId, "AI_KEY")?.body?.let { chat.decryptNote(it) } }.getOrNull()?.trim()?.ifBlank { null }
+    })
 }
 
 class SmartFamilyApp : Application() {

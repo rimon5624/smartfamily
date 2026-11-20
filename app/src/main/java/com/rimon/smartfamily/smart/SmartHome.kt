@@ -49,7 +49,9 @@ class HomeConnectClient(private val crypto: KeystoreCrypto, private val clientId
     private val base = "https://api.home-connect.com"
     private val accept = "application/vnd.bsh.sdk.v1+json"
 
-    data class DeviceCode(val deviceCode: String, val userCode: String, val verificationUrl: String, val interval: Int)
+    data class DeviceCode(val deviceCode: String, val userCode: String, val verificationUrl: String, val interval: Int, val expiresAt: Long = System.currentTimeMillis() + 300_000)
+    /** 2.2: why a login poll did not finish. */
+    class LoginFailed(val reason: String) : IOException(reason)
 
     val isConnected: Boolean get() = crypto.get(TOKENS) != null
 
@@ -61,6 +63,7 @@ class HomeConnectClient(private val crypto: KeystoreCrypto, private val clientId
             o.s("device_code"), o.s("user_code"),
             o["verification_uri_complete"]?.jsonPrimitive?.contentOrNull ?: o.s("verification_uri"),
             o["interval"]?.jsonPrimitive?.intOrNull ?: 5,
+            System.currentTimeMillis() + (o["expires_in"]?.jsonPrimitive?.longOrNull ?: 300L) * 1000,
         )
     }
 
@@ -76,6 +79,12 @@ class HomeConnectClient(private val crypto: KeystoreCrypto, private val clientId
             val text = it.body?.string().orEmpty()
             if (!it.isSuccessful) {
                 if (text.contains("authorization_pending") || text.contains("slow_down")) return@withContext false
+                when {
+                    text.contains("access_denied") -> throw LoginFailed("denied")
+                    text.contains("expired_token") -> throw LoginFailed("expired")
+                    text.contains("unauthorized_client") || text.contains("not assigned") -> throw LoginFailed("user")
+                    text.contains("invalid_client") -> throw LoginFailed("client")
+                }
                 throw IOException(errorOf(text) ?: "Home Connect HTTP ${it.code}")
             }
             saveTokens(json.parseToJsonElement(text).jsonObject)
@@ -170,12 +179,68 @@ class HomeConnectClient(private val crypto: KeystoreCrypto, private val clientId
     companion object { private const val TOKENS = "home_connect_tokens" }
 }
 
-/** Samsung SmartThings with a personal access token (kept encrypted on this phone). Status only. */
+/**
+ * Samsung SmartThings. Free: a personal access token (Samsung limits new ones to 24 hours, so the app tracks when it
+ * runs out and helps renew it). [PAID] OAuth app (Samsung Developer plan): renews itself. Both kept encrypted here.
+ */
 class SmartThingsClient(private val crypto: KeystoreCrypto) {
     private val base = "https://api.smartthings.com/v1"
+    class Expired : IOException("SmartThings token expired")
 
-    fun setToken(t: String?) = crypto.put(TOKEN, t?.trim()?.ifEmpty { null })
-    val isConnected: Boolean get() = crypto.get(TOKEN) != null
+    fun setToken(t: String?) {
+        crypto.put(TOKEN, t?.trim()?.ifEmpty { null })
+        crypto.put(TOKEN_AT, if (t.isNullOrBlank()) null else System.currentTimeMillis().toString())
+    }
+    val isConnected: Boolean get() = crypto.get(TOKEN) != null || crypto.get(OAUTH) != null
+    val usesOAuth: Boolean get() = crypto.get(OAUTH) != null
+    /** When the personal token stops working (24 h after it was added), or null with OAuth / no token. */
+    val tokenExpiresAt: Long? get() = if (usesOAuth) null else crypto.get(TOKEN_AT)?.toLongOrNull()?.plus(24 * 3_600_000L)
+
+    // ---- [PAID] OAuth ----
+    fun authorizeUrl(clientId: String, redirect: String, state: String): String =
+        "https://api.smartthings.com/v1/oauth/authorize?client_id=" + enc(clientId) + "&scope=" + enc("r:devices:* x:devices:*") +
+            "&response_type=code&redirect_uri=" + enc(redirect) + "&state=" + enc(state)
+
+    /** [pasted] is the address the browser ended on after approving (or just the code). */
+    suspend fun finishOAuth(clientId: String, secret: String, redirect: String, pasted: String) = withContext(Dispatchers.IO) {
+        val code = Regex("[?&]code=([^&#]+)").find(pasted)?.groupValues?.get(1)?.let { java.net.URLDecoder.decode(it, "UTF-8") } ?: pasted.trim()
+        val body = FormBody.Builder().add("grant_type", "authorization_code").add("code", code).add("client_id", clientId).add("redirect_uri", redirect).build()
+        val o = token(clientId, secret, body)
+        saveOAuth(clientId, secret, o)
+    }
+
+    private fun token(clientId: String, secret: String, body: FormBody): JsonObject {
+        val basic = android.util.Base64.encodeToString("$clientId:$secret".toByteArray(), android.util.Base64.NO_WRAP)
+        val req = Request.Builder().url("$base/oauth/token").header("Authorization", "Basic $basic").header("Accept", "application/json").post(body).build()
+        http.newCall(req).execute().use { r ->
+            val text = r.body?.string().orEmpty()
+            if (!r.isSuccessful) throw IOException("SmartThings sign-in failed (HTTP ${r.code})")
+            return json.parseToJsonElement(text).jsonObject
+        }
+    }
+
+    private fun saveOAuth(clientId: String, secret: String, o: JsonObject) {
+        val stored = buildJsonObject {
+            put("client", clientId); put("secret", secret)
+            put("access", o.s("access_token")); put("refresh", o.s("refresh_token"))
+            put("expires", System.currentTimeMillis() + (o["expires_in"]?.jsonPrimitive?.longOrNull ?: 86_000L) * 1000)
+        }
+        crypto.put(OAUTH, stored.toString())
+    }
+
+    private fun bearer(): String {
+        crypto.get(OAUTH)?.let { raw ->
+            val o = json.parseToJsonElement(raw).jsonObject
+            if (System.currentTimeMillis() < (o["expires"]?.jsonPrimitive?.longOrNull ?: 0) - 120_000) return o.s("access")
+            val body = FormBody.Builder().add("grant_type", "refresh_token").add("refresh_token", o.s("refresh")).add("client_id", o.s("client")).build()
+            val fresh = token(o.s("client"), o.s("secret"), body)
+            saveOAuth(o.s("client"), o.s("secret"), fresh)
+            return fresh.s("access_token")
+        }
+        return crypto.get(TOKEN) ?: throw IOException("SmartThings is not connected")
+    }
+
+    fun disconnect() { crypto.put(TOKEN, null); crypto.put(TOKEN_AT, null); crypto.put(OAUTH, null) }
 
     suspend fun devices(): List<SmartDevice> = withContext(Dispatchers.IO) {
         get("/devices")["items"]?.jsonArray?.map { e ->
@@ -196,16 +261,24 @@ class SmartThingsClient(private val crypto: KeystoreCrypto) {
     }
 
     private fun get(path: String): JsonObject {
-        val t = crypto.get(TOKEN) ?: throw IOException("SmartThings is not connected")
+        val t = bearer()
         val req = Request.Builder().url(base + path).header("Authorization", "Bearer $t").build()
         http.newCall(req).execute().use { r ->
             val text = r.body?.string().orEmpty()
+            if (r.code == 401) throw Expired()
             if (!r.isSuccessful) throw IOException("SmartThings HTTP ${r.code}")
             return json.parseToJsonElement(text).jsonObject
         }
     }
 
-    companion object { private const val TOKEN = "smartthings_token" }
+    private fun enc(v: String) = java.net.URLEncoder.encode(v, "UTF-8").replace("+", "%20")
+
+    companion object {
+        private const val TOKEN = "smartthings_token"
+        private const val TOKEN_AT = "smartthings_token_at"
+        private const val OAUTH = "smartthings_oauth"
+        const val REDIRECT = "https://example.com/smartfamily"
+    }
 }
 
 private fun JsonObject.s(key: String): String = this[key]?.jsonPrimitive?.contentOrNull.orEmpty()
