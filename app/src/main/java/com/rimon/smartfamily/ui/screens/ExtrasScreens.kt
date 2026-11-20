@@ -488,6 +488,7 @@ private val KNOW_KINDS = listOf("HOWTO" to R.string.hk_howto, "NOTE" to R.string
 
 @Composable
 fun HomeBookScreen(vm: ExtrasViewModel, viewer: Viewer, startTab: Int, onBack: () -> Unit, onExtras: (Int) -> Unit = {}) {
+    val embedded = com.rimon.smartfamily.ui.components.LocalEmbedded.current
     var tab by rememberSaveable { mutableIntStateOf(startTab) }
     val section = if (tab == 0) "HOME" else "KNOWLEDGE"
     val entries by remember(viewer.familyId, section) { vm.section(viewer.familyId, section) }.collectAsState(initial = emptyList())
@@ -504,7 +505,7 @@ fun HomeBookScreen(vm: ExtrasViewModel, viewer: Viewer, startTab: Int, onBack: (
             Tab(tab == 1, { tab = 1 }, text = { Text(stringResource(R.string.mod_knowledge)) })
         }
         LazyColumn(contentPadding = pad, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (!com.rimon.smartfamily.ui.components.LocalEmbedded.current) item {
+            if (!embedded) item {
                 androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     item { androidx.compose.material3.AssistChip(onClick = { onExtras(0) }, label = { Text("🔧 " + stringResource(R.string.hx_repairs)) }) }
                     item { androidx.compose.material3.AssistChip(onClick = { onExtras(1) }, label = { Text("📈 " + stringResource(R.string.hx_meters)) }) }
