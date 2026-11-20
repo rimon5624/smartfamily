@@ -906,7 +906,16 @@
     <string name="update_download">Download</string>
     <string name="update_later">Later</string>
     <string name="whats_new_title">What\'s new in %1$s</string>
-    <string name="whats_new_body">• Chat now works for family members who joined later\n• Instant chat notifications (the text stays encrypted)\n• First run: join an existing family with a code or QR\n• Features chosen by area</string>
+    <string name="whats_new_body">• Live chat: messages appear within a second; notifications also when you leave a chat open in the background
+• Voice messages: recording works with the keyboard open; offline transcription on the phone
+• The keyboard no longer hides the field you type in
+• Easy setup wizards: AI key with a live model list and a test, Home Connect, SmartThings, notification check, store branches, calendar import, cloud, backup, adding an appliance
+• Branches of Rami Levy, Osher Ad, Yohananof and other chains download again
+• \"What to run\" for dryers and washer-dryers
+• Hebrew dates everywhere, birthday reminders by both calendars, a real family tree with zoom
+• Brand and model suggestions; choose the Wi-Fi network or scan its QR
+• Security: secrets need your fingerprint and hide themselves, sensitive screens block screenshots, stronger passwords
+• The bar shows Home, Food, Money and Tasks by default</string>
     <string name="prices_comparable">Comparable: %1$s (%2$d items)</string>
     <string name="budget_over">This category is at %1$s%% of its monthly limit</string>
     <string name="budget_near">This category reached %1$s%% of its monthly limit</string>

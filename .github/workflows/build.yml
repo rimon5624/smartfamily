@@ -144,6 +144,7 @@ jobs:
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell settings put global hide_error_dialogs 1
+            adb shell settings put secure show_ime_with_hard_keyboard 1
             adb root || true; sleep 3
             adb shell setprop persist.sys.locale he-IL
             adb shell stop; sleep 2; adb shell start

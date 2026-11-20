@@ -77,7 +77,8 @@ class AppWalkthroughTest {
 
     @Test fun everyAreaAndSectionOpens() {
         ActivityScenario.launch(MainActivity::class.java).use {
-            compose.waitUntil(15_000) { has("screen_today") }
+            compose.waitUntil(15_000) { has("area_home") } // 2.2: the app opens on the first bar tab ("Home")
+            openItem("today"); compose.waitUntil(8_000) { has("screen_today") }
             shot("today")
             for (hub in Hub.entries) {
                 openItem(hub.key)
