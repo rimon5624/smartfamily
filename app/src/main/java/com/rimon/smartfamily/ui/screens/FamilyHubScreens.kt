@@ -51,7 +51,8 @@ import java.io.File
 /** Family hub (2.0): the family tree, shared encrypted photo albums, a phone book and shared gifts. */
 @Composable
 fun FamilyHubScreen(vm: RecordsViewModel, chat: ChatViewModel, extras: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit, onOpenAlbum: (String) -> Unit, onGifts: () -> Unit) {
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    val fixedTab = com.rimon.smartfamily.ui.components.LocalFixedTab.current
+    var tab by rememberSaveable(fixedTab) { mutableIntStateOf(fixedTab ?: 0) }
     val tree by remember(viewer.familyId) { vm.tree(viewer.familyId) }.collectAsState(initial = emptyList())
     val members by remember(viewer.familyId) { vm.members(viewer.familyId) }.collectAsState(initial = emptyList())
     val chats by remember(viewer.userId) { chat.chats(viewer.userId) }.collectAsState(initial = emptyList())

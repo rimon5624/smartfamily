@@ -122,12 +122,14 @@ fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 /** UX: every screen has a Help button in its top bar. */
 @Composable
 fun HelpButton(textRes: Int) {
-    // UX: the first time a module opens its help shows by itself (a short, skippable intro)
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val prefs = remember { context.getSharedPreferences("sf_tips", android.content.Context.MODE_PRIVATE) }
-    val key = remember(textRes) { runCatching { context.resources.getResourceEntryName(textRes) }.getOrDefault(textRes.toString()) }
-    var open by remember { mutableStateOf(!prefs.getBoolean(key, false) && !prefs.getBoolean("off", false)) }
-    androidx.compose.runtime.LaunchedEffect(open) { if (open) prefs.edit().putBoolean(key, true).apply() }
+    // Inside an area the help is shown once, in the area's own top bar (no extra row just for it).
+    val sink = LocalHelpSink.current
+    if (sink != null) {
+        androidx.compose.runtime.SideEffect { sink.value = textRes }
+        return
+    }
+    // 2.1.1: help opens only when asked (it used to pop up by itself on every new screen and tab)
+    var open by remember { mutableStateOf(false) }
     IconButton(onClick = { open = true }) {
         Icon(Icons.Outlined.HelpOutline, contentDescription = stringResource(R.string.help))
     }
@@ -135,7 +137,6 @@ fun HelpButton(textRes: Int) {
         AlertDialog(
             onDismissRequest = { open = false },
             confirmButton = { TextButton(onClick = { open = false }) { Text(stringResource(R.string.close)) } },
-            dismissButton = { TextButton(onClick = { prefs.edit().putBoolean("off", true).apply(); open = false }) { Text(stringResource(R.string.tips_off)) } },
             title = { Text(stringResource(R.string.help)) },
             text = { Text(stringResource(textRes)) },
         )
@@ -298,3 +299,7 @@ fun ChecklistHeader(done: Int, total: Int, onReset: (() -> Unit)?) {
         if (done == total) androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(120.dp)) { Celebration(total) }
     }
 }
+
+
+/** Lets a screen inside an area hand its help text to the area's top bar. */
+val LocalHelpSink = androidx.compose.runtime.compositionLocalOf<androidx.compose.runtime.MutableState<Int?>?> { null }

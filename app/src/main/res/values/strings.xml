@@ -100,7 +100,7 @@
     <string name="modules_family_level">Family</string>
     <string name="modules_my_level">For me</string>
     <string name="modules_intro">The family switch is set by admins. Your own switch can only hide a module for you.</string>
-    <string name="modules_admin_only">Only admins change family modules</string>
+    <string name="modules_admin_only">Only admins change family features</string>
 
     <string name="mod_shopping">Shopping list</string>
     <string name="mod_shopping_sub">Shared lists, voice, barcode and photo</string>
@@ -195,9 +195,9 @@
     <string name="backup_working">Working…</string>
 
     <!-- Help -->
-    <string name="help_home">Home shows the modules that are on for you in the active family. Tap the family name to switch between families.</string>
-    <string name="help_families">Here you manage every family you belong to: members, roles, invites and modules. Owners and admins can invite people and approve requests.</string>
-    <string name="help_modules">Every module can be turned off. Admins set what the family uses; each person can also hide a module just for themselves.</string>
+    <string name="help_home">Today shows what matters now: what to buy, today\'s events and tasks, and Shabbat times. Tap the family name to switch families; ⋮ on a card changes its size.</string>
+    <string name="help_families">Here you manage every family you belong to: members, roles, invites, sharing and features. Owners and admins can invite people and approve requests.</string>
+    <string name="help_modules">Every feature can be switched off. Admins decide what the family uses, and anyone can hide a feature just for themselves.</string>
     <string name="help_settings">Language, theme, privacy, cloud sync and backups. Privacy mode turns off every outside service at once.</string>
 
     <!-- Shopping (0.2) -->
@@ -854,7 +854,7 @@
 
     <!-- 0.9: sharing between families -->
     <string name="share_title">Share with other families</string>
-    <string name="help_sharing">Share a whole module (all recipes, the calendar…) or one item (a recipe, a trip, a shopping list, a chat) with another family, read-only or editable. Nothing is shown to them until one of their admins accepts. A shared chat is only visible to the people in it. The family that receives a share sees your family in its family list with only what you shared.</string>
+    <string name="help_sharing">Share a whole feature (all recipes, the calendar…) or one item (a recipe, a trip, a shopping list, a chat) with another family, read-only or editable. Nothing is shown to them until one of their admins accepts. A shared chat is only visible to the people in it. The family that receives a share sees your family in its family list with only what you shared.</string>
     <string name="share_new">Share</string>
     <string name="share_my_code">This family\'s link code</string>
     <string name="share_my_code_body">Send it to the other family\'s admin so they can share with you.</string>
@@ -1312,7 +1312,7 @@
     <string name="sec_recipes">Recipes</string>
     <string name="sec_school">School &amp; kindergarten</string>
     <string name="sec_calendar">Calendar</string>
-    <string name="sec_shabbat">Shabbat &amp; holidays</string>
+    <string name="sec_shabbat">Shabbat</string>
     <string name="sec_trips">Trips</string>
     <string name="sec_chores">Chores</string>
     <string name="sec_routines">Kids\' routines</string>
@@ -1352,4 +1352,9 @@
     <string name="area_off_body">Turn on what your family needs — for everyone (\"Family\") or just for you (\"For me\").</string>
     <string name="area_off_body_member">A family admin can turn these on for everyone. You can hide things just for yourself.</string>
     <string name="features_intro">Everything is grouped like the app. Turn a feature on or off for the whole family, or only for yourself.</string>
+    <string name="sec_holidays">Holidays</string>
+    <string name="sec_points">Points &amp; rewards</string>
+    <string name="sec_tree">Family tree</string>
+    <string name="sec_albums">Albums</string>
+    <string name="sec_phones">Phone book</string>
 </resources>

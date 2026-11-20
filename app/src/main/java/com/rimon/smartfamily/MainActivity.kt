@@ -417,10 +417,10 @@ private fun MainNav(vm: AppViewModel) {
                             val trips by remember(famId) { extrasVm.trips(famId) }.collectAsState(initial = emptyList())
                             CalendarScreen(lifeVm, viewer, settings, trips, onBack = toToday)
                         }
-                        "shabbat" -> com.rimon.smartfamily.ui.screens.ShabbatScreen(recordsVm, lifeVm, kitchenVm, extrasVm, viewer, settings?.zmanimCity ?: "jerusalem", isHebrew(),
+                        "shabbat", "holidays" -> com.rimon.smartfamily.ui.screens.ShabbatScreen(recordsVm, lifeVm, kitchenVm, extrasVm, viewer, settings?.zmanimCity ?: "jerusalem", isHebrew(),
                             onBack = toToday, onKitchen = { select("food", "menu") }, onPolls = { nav.navigate("polls") })
                         "trips" -> com.rimon.smartfamily.ui.screens.TravelScreen(extrasVm, viewer, onBack = toToday, onOpen = { nav.navigate("trip/$it") })
-                        "chores" -> ChoresScreen(lifeVm, viewer, settings?.zmanimCity ?: "jerusalem", onBack = toToday,
+                        "chores", "points" -> ChoresScreen(lifeVm, viewer, settings?.zmanimCity ?: "jerusalem", onBack = toToday,
                             shabbatMode = settings?.homeShabbat ?: "AUTO", onShabbatMode = { vm.setHomeCards(shabbat = it) })
                         "routines", "growth" -> com.rimon.smartfamily.ui.screens.KidsScreen(recordsVm, viewer, hebrew = isHebrew(), onBack = toToday, onPocket = { select("money", "pocket") })
                         "budget" -> com.rimon.smartfamily.ui.screens.BudgetScreen(extrasVm, viewer, onBack = toToday,
@@ -430,7 +430,7 @@ private fun MainNav(vm: AppViewModel) {
                         "documents", "knowledge" -> com.rimon.smartfamily.ui.screens.HomeBookScreen(extrasVm, viewer, sec.tab ?: 0, onBack = toToday,
                             onExtras = { t -> select("home", when (t) { 1 -> "meters"; 2 -> "kits"; 3 -> "secrets"; else -> "repairs" }) })
                         "repairs", "meters", "kits", "secrets" -> com.rimon.smartfamily.ui.screens.HomeExtrasScreen(recordsVm, extrasVm, viewer, isHebrew(), sec.tab ?: 0, onBack = toToday)
-                        "family" -> com.rimon.smartfamily.ui.screens.FamilyHubScreen(recordsVm, chatVm, extrasVm, viewer, onBack = toToday,
+                        "tree", "albums", "phones" -> com.rimon.smartfamily.ui.screens.FamilyHubScreen(recordsVm, chatVm, extrasVm, viewer, onBack = toToday,
                             onOpenAlbum = { nav.navigate("chat/$it") }, onGifts = { select("money", "shared") })
                     }
                 }

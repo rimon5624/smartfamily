@@ -327,7 +327,7 @@ fun BudgetScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit, onMone
         fab = { if (!viewer.isChild) ExtendedFloatingActionButton(onClick = { editing = vm.newEntry(viewer.familyId, viewer.userId, dayInMonth) }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text(stringResource(R.string.budget_add)) }) }) { pad ->
         LazyColumn(contentPadding = pad, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item {
-                androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (!com.rimon.smartfamily.ui.components.LocalEmbedded.current) androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     item { androidx.compose.material3.AssistChip(onClick = { onMoney(0) }, label = { Text("🧾 " + stringResource(R.string.money_bills)) }) }
                     item { androidx.compose.material3.AssistChip(onClick = { onMoney(1) }, label = { Text("🐷 " + stringResource(R.string.money_pocket)) }) }
                     item { androidx.compose.material3.AssistChip(onClick = { onMoney(2) }, label = { Text("🎯 " + stringResource(R.string.money_goals)) }) }
@@ -504,7 +504,7 @@ fun HomeBookScreen(vm: ExtrasViewModel, viewer: Viewer, startTab: Int, onBack: (
             Tab(tab == 1, { tab = 1 }, text = { Text(stringResource(R.string.mod_knowledge)) })
         }
         LazyColumn(contentPadding = pad, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            item {
+            if (!com.rimon.smartfamily.ui.components.LocalEmbedded.current) item {
                 androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     item { androidx.compose.material3.AssistChip(onClick = { onExtras(0) }, label = { Text("🔧 " + stringResource(R.string.hx_repairs)) }) }
                     item { androidx.compose.material3.AssistChip(onClick = { onExtras(1) }, label = { Text("📈 " + stringResource(R.string.hx_meters)) }) }

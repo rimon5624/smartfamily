@@ -96,7 +96,7 @@
     <string name="modules_family_level">משפחה</string>
     <string name="modules_my_level">בשבילי</string>
     <string name="modules_intro">את המתג המשפחתי קובעים המנהלים. המתג האישי שלך יכול רק להסתיר מודול עבורך.</string>
-    <string name="modules_admin_only">רק מנהלים משנים מודולים משפחתיים</string>
+    <string name="modules_admin_only">רק מנהלים משנים תכונות משפחתיות</string>
 
     <string name="mod_shopping">רשימת קניות</string>
     <string name="mod_shopping_sub">רשימות משותפות, קול, ברקוד ותמונה</string>
@@ -191,9 +191,9 @@
     <string name="backup_working">עובד…</string>
 
     <!-- Help -->
-    <string name="help_home">במסך הבית מופיעים המודולים הפעילים עבורך במשפחה הנוכחית. לחיצה על שם המשפחה מחליפה בין משפחות.</string>
-    <string name="help_families">כאן מנהלים את כל המשפחות שלך: חברים, תפקידים, הזמנות ומודולים. בעלים ומנהלים יכולים להזמין ולאשר בקשות.</string>
-    <string name="help_modules">אפשר לכבות כל מודול. המנהלים קובעים מה המשפחה משתמשת, וכל אחד יכול גם להסתיר מודול רק לעצמו.</string>
+    <string name="help_home">במסך היום מופיע מה שחשוב עכשיו: מה לקנות, אירועים ומשימות של היום וזמני שבת. לחיצה על שם המשפחה מחליפה משפחה; ⋮ על כרטיס משנה את הגודל שלו.</string>
+    <string name="help_families">כאן מנהלים את כל המשפחות שלך: חברים, תפקידים, הזמנות, שיתוף ותכונות. בעלים ומנהלים יכולים להזמין אנשים ולאשר בקשות.</string>
+    <string name="help_modules">אפשר לכבות כל תכונה. המנהלים קובעים במה המשפחה משתמשת, וכל אחד יכול להסתיר תכונה רק לעצמו.</string>
     <string name="help_settings">שפה, ערכת נושא, פרטיות, סנכרון ענן וגיבויים. מצב פרטיות מכבה בבת אחת כל שירות חיצוני.</string>
 
     <!-- Shopping (0.2) -->
@@ -850,7 +850,7 @@
 
     <!-- 0.9: sharing between families -->
     <string name="share_title">שיתוף עם משפחות אחרות</string>
-    <string name="help_sharing">משתפים מודול שלם (כל המתכונים, היומן…) או פריט אחד (מתכון, נסיעה, רשימת קניות, צ\'אט) עם משפחה אחרת, לצפייה בלבד או גם לעריכה. שום דבר לא מוצג להם עד שמנהל אצלם מאשר. צ\'אט משותף גלוי רק לאנשים שבו. המשפחה המקבלת רואה את המשפחה שלכם ברשימת המשפחות שלה, רק עם מה ששיתפתם.</string>
+    <string name="help_sharing">משתפים תכונה שלמה (כל המתכונים, היומן…) או פריט אחד (מתכון, נסיעה, רשימת קניות, צ\'אט) עם משפחה אחרת, לצפייה בלבד או גם לעריכה. שום דבר לא מוצג להם עד שמנהל אצלם מאשר. צ\'אט משותף גלוי רק לאנשים שבו. המשפחה המקבלת רואה את המשפחה שלכם ברשימת המשפחות שלה, רק עם מה ששיתפתם.</string>
     <string name="share_new">שיתוף</string>
     <string name="share_my_code">קוד הקישור של המשפחה</string>
     <string name="share_my_code_body">שלחו אותו למנהל במשפחה השנייה כדי שיוכלו לשתף אתכם.</string>
@@ -1308,7 +1308,7 @@
     <string name="sec_recipes">מתכונים</string>
     <string name="sec_school">בית ספר וגן</string>
     <string name="sec_calendar">יומן</string>
-    <string name="sec_shabbat">שבת וחגים</string>
+    <string name="sec_shabbat">שבת</string>
     <string name="sec_trips">טיולים</string>
     <string name="sec_chores">מטלות</string>
     <string name="sec_routines">שגרות ילדים</string>
@@ -1348,4 +1348,9 @@
     <string name="area_off_body">הפעילו את מה שהמשפחה צריכה — לכולם (\"משפחה\") או רק לכם (\"בשבילי\").</string>
     <string name="area_off_body_member">מנהל/ת המשפחה יכולים להפעיל את אלה לכולם. אתם יכולים להסתיר דברים רק לעצמכם.</string>
     <string name="features_intro">הכול מסודר כמו באפליקציה. אפשר להפעיל או לכבות כל תכונה לכל המשפחה, או רק לעצמכם.</string>
+    <string name="sec_holidays">חגים</string>
+    <string name="sec_points">נקודות ופרסים</string>
+    <string name="sec_tree">אילן יוחסין</string>
+    <string name="sec_albums">אלבומים</string>
+    <string name="sec_phones">ספר טלפונים</string>
 </resources>

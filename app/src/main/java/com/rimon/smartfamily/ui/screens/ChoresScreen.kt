@@ -92,7 +92,8 @@ fun ChoresScreen(vm: HomeLifeViewModel, viewer: Viewer, cityKey: String, onBack:
     val weekStart = remember { System.currentTimeMillis() - 7 * 86_400_000L }
     val recent by remember(viewer.familyId) { vm.completionsSince(viewer.familyId, weekStart) }.collectAsState(initial = emptyList())
     val shabbat by produceState<ShabbatTimes?>(null, cityKey) { value = runCatching { vm.shabbat(cityKey) }.getOrNull() }
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    val fixedTab = com.rimon.smartfamily.ui.components.LocalFixedTab.current
+    var tab by rememberSaveable(fixedTab) { mutableIntStateOf(fixedTab ?: 0) }
     var editing by remember { mutableStateOf<ChoreEntity?>(null) }
     var templates by remember { mutableStateOf(false) }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -119,7 +120,7 @@ fun ChoresScreen(vm: HomeLifeViewModel, viewer: Viewer, cityKey: String, onBack:
         },
     ) { inner ->
         Column(Modifier.padding(top = inner.calculateTopPadding())) {
-            TabRow(selectedTabIndex = tab) {
+            if (fixedTab == null) TabRow(selectedTabIndex = tab) {
                 Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.chores_title)) })
                 Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.chores_points_tab)) })
             }

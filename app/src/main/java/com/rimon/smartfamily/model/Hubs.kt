@@ -19,11 +19,13 @@ enum class Hub(val key: String, @StringRes val title: Int, @StringRes val short:
     ), extras = listOf(AppModule.PRICES)),
     CALENDAR("calendar", R.string.hub_calendar, R.string.nav_calendar, listOf(
         HubSection("calendar", R.string.sec_calendar, setOf(AppModule.CALENDAR)),
-        HubSection("shabbat", R.string.sec_shabbat, setOf(AppModule.SHABBAT)),
+        HubSection("shabbat", R.string.sec_shabbat, setOf(AppModule.SHABBAT), tab = 0),
+        HubSection("holidays", R.string.sec_holidays, setOf(AppModule.SHABBAT), tab = 1),
         HubSection("trips", R.string.sec_trips, setOf(AppModule.TRAVEL)),
     )),
     TASKS("tasks", R.string.hub_tasks, R.string.nav_tasks, listOf(
-        HubSection("chores", R.string.sec_chores, setOf(AppModule.CHORES)),
+        HubSection("chores", R.string.sec_chores, setOf(AppModule.CHORES), tab = 0),
+        HubSection("points", R.string.sec_points, setOf(AppModule.CHORES), tab = 1),
         HubSection("routines", R.string.sec_routines, setOf(AppModule.KIDS), tab = 0),
     )),
     MONEY("money", R.string.hub_money, R.string.nav_money, listOf(
@@ -43,7 +45,9 @@ enum class Hub(val key: String, @StringRes val title: Int, @StringRes val short:
         HubSection("knowledge", R.string.sec_knowledge, setOf(AppModule.KNOWLEDGE), tab = 1),
     )),
     FAMILY("family", R.string.hub_family, R.string.nav_family, listOf(
-        HubSection("family", R.string.sec_family, setOf(AppModule.FAMILY)),
+        HubSection("tree", R.string.sec_tree, setOf(AppModule.FAMILY), tab = 0),
+        HubSection("albums", R.string.sec_albums, setOf(AppModule.FAMILY), tab = 1),
+        HubSection("phones", R.string.sec_phones, setOf(AppModule.FAMILY), tab = 2),
         HubSection("growth", R.string.sec_growth, setOf(AppModule.KIDS), tab = 1),
     ), extras = listOf(AppModule.CHAT, AppModule.POLLS));
 
@@ -78,7 +82,7 @@ object NavItems {
         "budget" -> "money" to "budget"; "money" -> "money" to when (route.substringAfter('/', "0")) { "1" -> "pocket"; "2" -> "goals"; "3" -> "shared"; else -> "bills" }
         "appliances" -> "home" to "appliances"; "homebook" -> "home" to (if (route.endsWith("/1")) "knowledge" else "documents")
         "homex" -> "home" to when (route.substringAfter('/', "0")) { "1" -> "meters"; "2" -> "kits"; "3" -> "secrets"; else -> "repairs" }
-        "family" -> if (route == "family") "family" to "family" else null  // "family/{id}" is a family's settings page
+        "family" -> if (route == "family") "family" to "tree" else null  // "family/{id}" is a family's settings page
         else -> null
     }
 }

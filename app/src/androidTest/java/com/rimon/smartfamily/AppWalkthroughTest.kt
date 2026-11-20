@@ -56,7 +56,7 @@ class AppWalkthroughTest {
 
     private fun shot(name: String) {
         compose.waitForIdle()
-        Thread.sleep(400) // let animations settle
+        Thread.sleep(900) // let tab scrolling and transitions settle
         // the whole display (sheets and dialogs included), as the user sees it
         val bmp = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot() ?: return
         File(shots, "%02d_%s.png".format(n++, name)).outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 90, it) }

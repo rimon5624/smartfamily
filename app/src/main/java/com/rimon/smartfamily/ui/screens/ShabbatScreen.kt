@@ -53,7 +53,8 @@ private val SHABBAT = Color(0xFF6C4BB3)
 @Composable
 fun ShabbatScreen(vm: RecordsViewModel, life: HomeLifeViewModel, kitchen: KitchenViewModel, extras: ExtrasViewModel, viewer: Viewer, cityKey: String, hebrew: Boolean,
                   onBack: () -> Unit, onKitchen: () -> Unit, onPolls: () -> Unit) {
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    val fixedTab = com.rimon.smartfamily.ui.components.LocalFixedTab.current
+    var tab by rememberSaveable(fixedTab) { mutableIntStateOf(fixedTab ?: 0) }
     val city = Cities.byKey(cityKey)
     val times by produceState<ShabbatTimes?>(null, cityKey) { value = runCatching { life.shabbat(cityKey) }.getOrNull() }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }

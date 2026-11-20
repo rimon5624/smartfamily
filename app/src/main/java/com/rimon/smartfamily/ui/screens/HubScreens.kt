@@ -86,6 +86,7 @@ fun HubScreen(
     content: @Composable (HubSection) -> Unit,
 ) {
     val sel = sections.firstOrNull { it.key == selectedKey } ?: sections.firstOrNull()
+    val help = androidx.compose.runtime.remember(sel?.key) { androidx.compose.runtime.mutableStateOf<Int?>(null) }
     Scaffold(
         modifier = Modifier.padding(padding).consumeWindowInsets(padding),
         topBar = {
@@ -97,6 +98,7 @@ fun HubScreen(
                         IconButton(onClick = onSearch) { Icon(Icons.Outlined.Search, stringResource(R.string.search)) }
                         IconButton(onClick = onQuickAdd) { Icon(Icons.Outlined.Add, stringResource(R.string.sc_quickadd)) }
                         ChatTopIcon()
+                        help.value?.let { HelpButton(it) }
                     },
                 )
                 if (sections.size > 1 && sel != null) {
@@ -111,7 +113,8 @@ fun HubScreen(
             if (sel == null) {
                 androidx.compose.foundation.lazy.LazyColumn(contentPadding = PaddingValues(16.dp)) { item { empty() } }
             } else key(sel.key) {
-                CompositionLocalProvider(LocalEmbedded provides true, LocalFixedTab provides sel.tab) { content(sel) }
+                CompositionLocalProvider(LocalEmbedded provides true, LocalFixedTab provides sel.tab,
+                    com.rimon.smartfamily.ui.components.LocalHelpSink provides help) { content(sel) }
             }
         }
     }
