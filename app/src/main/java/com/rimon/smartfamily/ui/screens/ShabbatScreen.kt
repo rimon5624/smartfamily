@@ -120,10 +120,10 @@ fun ShabbatScreen(vm: RecordsViewModel, life: HomeLifeViewModel, kitchen: Kitche
                     else listOf("Hot plate", "Urn", "Light timer", "Pre-torn tissues", "Fridge light off", "Candles ready", "Clothes ready", "Table set"))
                 }) { Text(stringResource(R.string.kids_use_template)) }
             }
+            if (prep.isNotEmpty()) item { com.rimon.smartfamily.ui.components.ChecklistHeader(prep.count { it.checked }, prep.size) { vm.resetKit(viewer.familyId, "SHABBAT_PREP", prep) } }
             items(prep, key = { it.id }) { k ->
-                Row(Modifier.fillMaxWidth().clickable { vm.save(k.copy(checked = !k.checked)) }, verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(k.checked, { vm.save(k.copy(checked = it)) }); Text(k.title)
-                }
+                com.rimon.smartfamily.ui.components.ChecklistRow(k.title, k.checked, { vm.save(k.copy(checked = !k.checked)) },
+                    onDelete = if (!viewer.isChild) ({ vm.delete(k) }) else null)
             }
             item {
                 Text(stringResource(R.string.shabbat_guests), style = MaterialTheme.typography.titleMedium)

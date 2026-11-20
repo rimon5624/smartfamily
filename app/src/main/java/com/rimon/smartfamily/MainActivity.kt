@@ -480,7 +480,8 @@ private fun MainNav(vm: AppViewModel) {
                 }
             }
             composable("shopping/list/{id}") { back ->
-                ShoppingListScreen(shopVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() })
+                ShoppingListScreen(shopVm, viewer, back.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() },
+                    onPrices = if (AppModule.PRICES in on) ({ nav.navigate("prices") }) else null)
             }
             composable("chores") {
                 if (famId.isNotEmpty()) ChoresScreen(lifeVm, viewer, settings?.zmanimCity ?: "jerusalem", onBack = { nav.popBackStack() },

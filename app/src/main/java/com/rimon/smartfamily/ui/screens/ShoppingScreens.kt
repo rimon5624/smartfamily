@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.material.icons.outlined.Sell
 import com.rimon.smartfamily.ui.components.SfTopAppBar
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -162,7 +163,7 @@ fun ShoppingListsScreen(vm: ShoppingViewModel, viewer: Viewer, onBack: () -> Uni
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, onBack: () -> Unit) {
+fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, onBack: () -> Unit, onPrices: (() -> Unit)? = null) {
     val list by remember(listId) { vm.list(listId) }.collectAsState(initial = null)
     val items by remember(listId) { vm.items(listId) }.collectAsState(initial = emptyList())
     val frequent by remember(viewer.familyId) { vm.frequent(viewer.familyId) }.collectAsState(initial = emptyList())
@@ -224,6 +225,8 @@ fun ShoppingListScreen(vm: ShoppingViewModel, viewer: Viewer, listId: String, on
                 title = { Text(l?.name.orEmpty()) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back)) } },
                 actions = {
+                    // price comparison lives inside the list now (2.1), not as a separate module
+                    if (onPrices != null && !isTemplate) IconButton(onClick = onPrices) { Icon(Icons.Outlined.Sell, stringResource(R.string.prices_cheapest)) }
                     HelpButton(R.string.help_shopping)
                     if (!isTemplate) CopyToFamilyButton(viewer.familyId, viewer.userId) { fid, fname -> vm.copyListTo(listId, fid, fname) }
                     if (!viewer.isChild) {

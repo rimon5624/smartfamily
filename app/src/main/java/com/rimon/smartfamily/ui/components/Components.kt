@@ -1,6 +1,10 @@
 package com.rimon.smartfamily.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -219,5 +223,78 @@ fun SfTopAppBar(
         )
     } else {
         androidx.compose.material3.TopAppBar(title = title, navigationIcon = navigationIcon, actions = { actions(); ChatTopIcon() })
+    }
+}
+
+/**
+ * One checklist row for every kind of list (shopping, trip packing, kits, Shabbat preparation, holiday packs):
+ * tap or swipe right to tick, swipe left to delete with a few seconds to undo, the same look everywhere.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun ChecklistRow(
+    title: String, checked: Boolean, onToggle: () -> Unit,
+    subtitle: String? = null, subtitleIsWarning: Boolean = false,
+    onDelete: (() -> Unit)? = null, trailing: @Composable () -> Unit = {},
+) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    var pendingDelete by remember { mutableStateOf(false) }
+    if (pendingDelete && onDelete != null) {
+        androidx.compose.runtime.LaunchedEffect(Unit) { kotlinx.coroutines.delay(4000); onDelete() }
+        androidx.compose.foundation.layout.Row(
+            Modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 12.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            Text(stringResource(R.string.list_deleted, title), Modifier.weight(1f), style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+            androidx.compose.material3.TextButton(onClick = { pendingDelete = false }) { Text(stringResource(R.string.undo)) }
+        }
+        return
+    }
+    val toggle = { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); onToggle() }
+    val state = androidx.compose.material3.rememberSwipeToDismissBoxState(confirmValueChange = { v ->
+        when (v) {
+            androidx.compose.material3.SwipeToDismissBoxValue.StartToEnd -> { toggle(); false }
+            androidx.compose.material3.SwipeToDismissBoxValue.EndToStart -> { if (onDelete != null) pendingDelete = true; false }
+            else -> false
+        }
+    })
+    androidx.compose.material3.SwipeToDismissBox(
+        state, enableDismissFromEndToStart = onDelete != null,
+        backgroundContent = {
+            val del = state.dismissDirection == androidx.compose.material3.SwipeToDismissBoxValue.EndToStart
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxSize().background(if (del) androidx.compose.material3.MaterialTheme.colorScheme.errorContainer else androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 16.dp),
+                horizontalArrangement = if (del) androidx.compose.foundation.layout.Arrangement.End else androidx.compose.foundation.layout.Arrangement.Start,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) { Icon(if (del) androidx.compose.material.icons.Icons.Outlined.Delete else androidx.compose.material.icons.Icons.Outlined.CheckCircle, null) }
+        },
+    ) {
+        androidx.compose.foundation.layout.Row(
+            Modifier.fillMaxWidth().background(androidx.compose.material3.MaterialTheme.colorScheme.surface).clickable { toggle() }.padding(vertical = 2.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            androidx.compose.material3.Checkbox(checked, { toggle() })
+            androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+                Text(title, textDecoration = if (checked) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+                    color = if (checked) androidx.compose.material3.MaterialTheme.colorScheme.outline else Color.Unspecified)
+                if (!subtitle.isNullOrBlank()) Text(subtitle, style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                    color = if (subtitleIsWarning) androidx.compose.material3.MaterialTheme.colorScheme.error else androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            trailing()
+        }
+    }
+}
+
+/** The progress line every checklist shares: "5 of 8", a bar, and "start again". Confetti when everything is ticked. */
+@Composable
+fun ChecklistHeader(done: Int, total: Int, onReset: (() -> Unit)?) {
+    if (total == 0) return
+    androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth()) {
+        androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Text(stringResource(R.string.trip_progress, done, total), Modifier.weight(1f), style = androidx.compose.material3.MaterialTheme.typography.titleSmall)
+            if (onReset != null && done > 0) androidx.compose.material3.TextButton(onClick = onReset) { Text(stringResource(R.string.trip_unpack_all)) }
+        }
+        androidx.compose.material3.LinearProgressIndicator(progress = { done / total.toFloat() }, modifier = Modifier.fillMaxWidth())
+        if (done == total) androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(120.dp)) { Celebration(total) }
     }
 }

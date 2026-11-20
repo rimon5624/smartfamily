@@ -1336,4 +1336,5 @@
     <string name="chat_place_tab">קבוע בסרגל התחתון</string>
     <string name="search">חיפוש</string>
     <string name="prices_cheapest">איפה הכי זול</string>
+    <string name="list_deleted">%1$s נמחק</string>
 </resources>

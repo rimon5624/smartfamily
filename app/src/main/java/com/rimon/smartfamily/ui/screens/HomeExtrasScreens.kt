@@ -159,23 +159,14 @@ fun HomeExtrasScreen(vm: RecordsViewModel, extras: ExtrasViewModel, viewer: View
                 if (list.isEmpty() && canEdit) item {
                     FilledTonalButton(onClick = { vm.addKitTemplate(viewer.familyId, kit, (if (hebrew) KIT_TEMPLATES_HE else KIT_TEMPLATES_EN)[kit].orEmpty()) }) { Text(stringResource(R.string.kids_use_template)) }
                 }
-                if (list.isNotEmpty()) item {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.trip_progress, list.count { it.checked }, list.size), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                        TextButton(onClick = { vm.resetKit(viewer.familyId, kit, list) }) { Text(stringResource(R.string.trip_unpack_all)) }
-                    }
-                }
+                if (list.isNotEmpty()) item { com.rimon.smartfamily.ui.components.ChecklistHeader(list.count { it.checked }, list.size) { vm.resetKit(viewer.familyId, kit, list) } }
                 items(list, key = { it.id }) { k ->
                     val expired = runCatching { LocalDate.parse(k.expiresAt) }.getOrNull()?.isBefore(LocalDate.now().plusDays(30)) == true
-                    Row(Modifier.fillMaxWidth().clickable { vm.save(k.copy(checked = !k.checked)) }, verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(k.checked, { vm.save(k.copy(checked = it)) })
-                        Column(Modifier.weight(1f)) {
-                            Text(k.title + if (k.qty > 1) " ×${k.qty}" else "")
-                            if (k.expiresAt.isNotBlank()) Text(stringResource(R.string.hb_expires, k.expiresAt.split('-').reversed().joinToString("/")), style = MaterialTheme.typography.labelSmall,
-                                color = if (expired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        if (canEdit) TextButton(onClick = { editKit = k }) { Text(stringResource(R.string.chat_edit)) }
-                    }
+                    com.rimon.smartfamily.ui.components.ChecklistRow(
+                        k.title + if (k.qty > 1) " ×${k.qty}" else "", k.checked, { vm.save(k.copy(checked = !k.checked)) },
+                        subtitle = if (k.expiresAt.isNotBlank()) stringResource(R.string.hb_expires, k.expiresAt.split('-').reversed().joinToString("/")) else null,
+                        subtitleIsWarning = expired, onDelete = if (canEdit) ({ vm.delete(k) }) else null,
+                    ) { if (canEdit) TextButton(onClick = { editKit = k }) { Text(stringResource(R.string.chat_edit)) } }
                 }
             }
             else -> {

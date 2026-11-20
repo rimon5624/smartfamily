@@ -1,5 +1,6 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.material.icons.outlined.MoreVert
 import com.rimon.smartfamily.ui.components.SfTopAppBar
 import android.content.Intent
 import android.net.Uri
@@ -246,13 +247,11 @@ fun TripScreen(vm: ExtrasViewModel, viewer: Viewer, tripId: String, onBack: () -
                 if (t.destination.isNotBlank()) Text("📍 " + t.destination)
                 if (t.weather.isNotBlank()) Text("🌤 " + t.weather, style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(8.dp))
-                Text(stringResource(R.string.trip_progress, packed, shown.size), style = MaterialTheme.typography.titleMedium)
-                LinearProgressIndicator(progress = { if (shown.isEmpty()) 0f else packed / shown.size.toFloat() }, modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp))
-                TextButton(onClick = onLeaveHome) { Text("🏠 " + stringResource(R.string.kit_leave_home)) }
+                com.rimon.smartfamily.ui.components.ChecklistHeader(packed, shown.size) { vm.resetPacked(t) }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     FilterChip(mineOnly, { mineOnly = !mineOnly }, { Text(stringResource(R.string.trip_mine)) })
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { vm.resetPacked(t) }) { Text(stringResource(R.string.trip_unpack_all)) }
+                    TextButton(onClick = onLeaveHome) { Text("🏠 " + stringResource(R.string.kit_leave_home)) }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(text, { text = it }, label = { Text(stringResource(R.string.trip_add_item)) }, singleLine = true, modifier = Modifier.weight(1f))
@@ -262,20 +261,14 @@ fun TripScreen(vm: ExtrasViewModel, viewer: Viewer, tripId: String, onBack: () -
             shown.groupBy { it.category }.forEach { (cat, list) ->
                 item(key = "h$cat") { SectionTitle(stringResource(ITEM_CATS[cat] ?: R.string.pcat_general)) }
                 items(list, key = { it.id }) { i ->
-                    Row(Modifier.fillMaxWidth().clickable { vm.togglePacked(i) }, verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(i.packed, { vm.togglePacked(i) })
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                i.title + if (i.qty > 1) " ×${i.qty}" else "",
-                                textDecoration = if (i.packed) TextDecoration.LineThrough else null,
-                                color = if (i.packed) MaterialTheme.colorScheme.outline else Color.Unspecified,
-                            )
-                            val who = listOfNotNull(names[i.ownerId]?.let { "👤 $it" }, names[i.packedBy]?.takeIf { i.packed }?.let { "✓ $it" })
-                            if (who.isNotEmpty()) Text(who.joinToString(" · "), style = MaterialTheme.typography.labelSmall)
-                        }
+                    val who = listOfNotNull(names[i.ownerId]?.let { "👤 $it" }, names[i.packedBy]?.takeIf { i.packed }?.let { "✓ $it" })
+                    com.rimon.smartfamily.ui.components.ChecklistRow(
+                        i.title + if (i.qty > 1) " ×${i.qty}" else "", i.packed, { vm.togglePacked(i) },
+                        subtitle = who.joinToString(" · ").ifBlank { null }, onDelete = { vm.deleteItem(i) },
+                    ) {
                         var learnMenu by remember { mutableStateOf(false) }
                         Box {
-                            IconButton(onClick = { learnMenu = true }) { Icon(Icons.Outlined.Delete, stringResource(R.string.delete), tint = MaterialTheme.colorScheme.outline) }
+                            IconButton(onClick = { learnMenu = true }) { Icon(Icons.Outlined.MoreVert, null, tint = MaterialTheme.colorScheme.outline) }
                             androidx.compose.material3.DropdownMenu(learnMenu, { learnMenu = false }) {
                                 androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.delete)) }, onClick = { learnMenu = false; vm.deleteItem(i) })
                                 androidx.compose.material3.DropdownMenuItem(text = { Text(stringResource(R.string.trip_learn_skip)) }, onClick = { learnMenu = false; vm.learn(i, always = false) })
