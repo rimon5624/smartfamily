@@ -127,6 +127,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setDisplayName(name: String) = launchSafe { repo.setDisplayName(name) }
 
+    /** Onboarding for someone joining an existing family: no family of their own is created (2.1.2). */
+    fun joinFromOnboarding(name: String, code: String) = launchSafe {
+        if (name.isNotBlank()) repo.setDisplayName(name.trim())
+        c.sync.joinWithCode(code.trim(), name.ifBlank { displayName.value }).getOrThrow()
+        say(com.rimon.smartfamily.R.string.join_sent)
+        c.settings.setOnboardingDone(true)
+        SyncScheduler.requestSoon(getApplication())
+    }
+
     // ---- families ----
 
     fun createFamily(name: String) = launchSafe {
@@ -170,6 +179,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val canSeeCloudDetails = combine(c.db.people().observeAllActive(), c.settings.settings) { m, st ->
         m.none { it.userId == st.userId } || m.any { it.userId == st.userId && (it.role == "OWNER" || it.role == "ADMIN") }
     }
+    val allPeople = c.db.people().observeAllActive()
     fun setNav(order: String? = null, chat: String? = null) = viewModelScope.launch { c.settings.setNav(order, chat) }
     fun toggleFavCity(key: String) = viewModelScope.launch {
         val cur = c.settings.current().favCities.split(',').filter { it.isNotBlank() }

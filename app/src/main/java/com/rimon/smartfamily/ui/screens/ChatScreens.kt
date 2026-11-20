@@ -132,6 +132,7 @@ private fun chatTitle(chat: ChatEntity, members: List<MemberEntity>, me: String)
 fun ChatListScreen(vm: ChatViewModel, viewer: Viewer, onBack: () -> Unit, onOpen: (String) -> Unit, showBack: Boolean = true) {
     val members by remember(viewer.familyId) { vm.members(viewer.familyId) }.collectAsState(initial = emptyList())
     val people by vm.people.collectAsState(initial = emptyList())
+    LaunchedEffect(Unit) { if (vm.signedIn) vm.liveList() }
     val chats by remember(viewer.userId) { vm.chats(viewer.userId) }.collectAsState(initial = emptyList())
     val reads by remember(viewer.familyId, viewer.userId) { vm.myReads(viewer.familyId, viewer.userId) }.collectAsState(initial = emptyList())
     val busy by vm.busy.collectAsState()

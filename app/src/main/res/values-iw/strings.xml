@@ -1353,4 +1353,13 @@
     <string name="sec_tree">אילן יוחסין</string>
     <string name="sec_albums">אלבומים</string>
     <string name="sec_phones">ספר טלפונים</string>
+    <string name="onb_choice_title">איך מתחילים?</string>
+    <string name="onb_join_title">הצטרפות למשפחה שלי</string>
+    <string name="onb_join_body">מישהו במשפחה כבר משתמש במשפחה חכמה: מצטרפים עם קוד ההזמנה או ה-QR שלו.</string>
+    <string name="onb_new_title">יצירת משפחה חדשה</string>
+    <string name="onb_new_body">אתם הראשונים במשפחה; את השאר מזמינים אחר כך.</string>
+    <string name="onb_join_account">קודם מתחברים. לכל אחד חשבון משלו (מייל); המשפחה משותפת.</string>
+    <string name="onb_join_code">עכשיו קוד ההזמנה: בטלפון השני, משפחות ← המשפחה ← הזמנה (או ה-QR שלה).</string>
+    <string name="onb_join_after">אחרי שמנהל/ת המשפחה מאשרים אתכם, הכול מופיע כאן לבד.</string>
+    <string name="family_of">של %1$s</string>
 </resources>

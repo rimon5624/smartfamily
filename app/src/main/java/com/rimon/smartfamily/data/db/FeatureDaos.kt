@@ -129,7 +129,8 @@ interface ChatDao : ChatDaoBase {
     @Query("SELECT * FROM chats WHERE familyId = :familyId AND deletedAt IS NULL ORDER BY lastMessageAt DESC")
     fun observeSorted(familyId: String): Flow<List<ChatEntity>>
 
-    @Query("SELECT * FROM chats WHERE familyId = :familyId AND kind = 'FAMILY' AND deletedAt IS NULL LIMIT 1")
+    /** The family chat; if two phones ever created one each, everyone settles on the same (oldest id) one. */
+    @Query("SELECT * FROM chats WHERE familyId = :familyId AND kind = 'FAMILY' AND deletedAt IS NULL ORDER BY id LIMIT 1")
     suspend fun familyChat(familyId: String): ChatEntity?
 
     @Query("SELECT * FROM chats WHERE deletedAt IS NULL")

@@ -98,6 +98,7 @@ fun FamiliesScreen(vm: AppViewModel, padding: PaddingValues, onOpen: (String) ->
             )
         },
     ) { inner ->
+        val people by vm.allPeople.collectAsState(initial = emptyList())
         LazyColumn(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = inner.calculateTopPadding(), bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -110,7 +111,14 @@ fun FamiliesScreen(vm: AppViewModel, padding: PaddingValues, onOpen: (String) ->
                     Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Avatar(f.name, 48.dp)
                         Spacer(Modifier.size(14.dp))
-                        Text(f.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                        Column(Modifier.weight(1f)) {
+                            Text(f.name, style = MaterialTheme.typography.titleMedium)
+                            // two families with the same name: say whose each one is (2.1.2)
+                            if (families.count { it.name.trim() == f.name.trim() } > 1) {
+                                val owner = people.firstOrNull { it.userId == f.ownerId && it.familyId == f.id }?.displayName.orEmpty()
+                                Text(stringResource(R.string.family_of, owner.ifBlank { "?" }), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                         if (active?.id == f.id) {
                             AssistChip(onClick = {}, label = { Text(stringResource(R.string.families_active)) })
                         } else {

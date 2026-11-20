@@ -74,10 +74,59 @@ class ChatRepository(
         }
     }
 
-    /** The whole-family group chat, created on first use (CHT-1). */
-    suspend fun ensureFamilyChat(familyId: String, userId: String, memberIds: List<String>, title: String): ChatEntity {
+    /**
+     * The whole-family group chat, created on first use (CHT-1). A phone that has not pulled the chats yet
+     * ([chatsPulled] false) never creates one, so a newly joined member does not start a second family chat.
+     */
+    suspend fun ensureFamilyChat(familyId: String, userId: String, memberIds: List<String>, title: String, chatsPulled: Boolean = true): ChatEntity? {
         db.chats().familyChat(familyId)?.let { return it }
+        if (!chatsPulled) return null
         return createChat(familyId, userId, "FAMILY", title, memberIds)
+    }
+
+    /**
+     * 2.1.2, run after every sync. Fixes what a member who joins later used to miss:
+     * 1. my device key is published in every family I am an active member of (it is refused before approval);
+     * 2. the family chat and the albums always contain every active member: joiners are added, and
+     *    leavers are removed with a new key (only an owner/admin removes, so two phones never rotate at once);
+     * 3. any chat key I hold is sealed to every member device that lacks it — no need to open the chat first.
+     */
+    suspend fun maintain(me: String) {
+        if (me.isBlank()) return
+        val allMembers = db.members().all().filter { it.deletedAt == null && it.status == "ACTIVE" }
+        val myFamilies = allMembers.filter { it.userId == me }
+        myFamilies.forEach { mine ->
+            runCatching {
+                ensureMyKey(mine.familyId, me)
+                // a key sent before my membership was approved was refused by the server: send it again
+                val k = db.userKeys().get("${crypto.deviceId}|${mine.familyId}")
+                if (k != null && k.updatedAt < mine.updatedAt) { db.userKeys().upsert(k.copy(updatedAt = now(), dirty = true)); onLocalChange() }
+            }
+        }
+        var changed = false
+        for (chat in db.chats().allActive()) {
+            val mine = myFamilies.firstOrNull { it.familyId == chat.familyId }
+            val current = chat.members.split(',').filter { it.isNotBlank() }
+            var c = chat
+            if (mine != null && (chat.kind == "FAMILY" || chat.kind == "ALBUM")) {
+                val everyone = allMembers.filter { it.familyId == chat.familyId }.map { it.userId }.distinct()
+                val joiners = everyone - current.toSet()
+                val leavers = current - everyone.toSet()
+                val canRemove = mine.role == "OWNER" || mine.role == "ADMIN"
+                if ((joiners.isNotEmpty() || (leavers.isNotEmpty() && canRemove)) && keyFor(chat.id, chat.epoch) != null) {
+                    val target = if (canRemove) everyone else (current + joiners).distinct()
+                    updateMembers(chat, target)
+                    c = db.chats().get(chat.id) ?: chat
+                    changed = true
+                }
+            }
+            if (me !in c.members.split(',')) continue
+            val key = keyFor(c.id, c.epoch) ?: continue
+            val before = db.chatKeys().forEpoch(c.id, c.epoch).size
+            sealFor(c, c.epoch, key, c.members.split(',').filter { it.isNotBlank() })
+            if (db.chatKeys().forEpoch(c.id, c.epoch).size != before) changed = true
+        }
+        if (changed) onLocalChange()
     }
 
     suspend fun createChat(familyId: String, userId: String, kind: String, title: String, memberIds: List<String>): ChatEntity {

@@ -1357,4 +1357,13 @@
     <string name="sec_tree">Family tree</string>
     <string name="sec_albums">Albums</string>
     <string name="sec_phones">Phone book</string>
+    <string name="onb_choice_title">How do you start?</string>
+    <string name="onb_join_title">Join my family</string>
+    <string name="onb_join_body">Someone in the family already uses SmartFamily: join with their invite code or QR.</string>
+    <string name="onb_new_title">Create a new family</string>
+    <string name="onb_new_body">You are the first in the family; invite the others afterwards.</string>
+    <string name="onb_join_account">First sign in. Each person has their own account (email); the family is shared.</string>
+    <string name="onb_join_code">Now the invite code: in the other phone, Families → the family → Invite (or its QR).</string>
+    <string name="onb_join_after">After a family admin approves you, everything appears here by itself.</string>
+    <string name="family_of">%1$s\'s family</string>
 </resources>

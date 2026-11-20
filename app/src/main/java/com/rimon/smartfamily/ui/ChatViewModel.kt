@@ -94,7 +94,17 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
     fun prepare(familyId: String, memberIds: List<String>) = launchSafe {
         val me = uid()
         repo.ensureMyKey(familyId, me)
-        repo.ensureFamilyChat(familyId, me, memberIds, getApplication<Application>().getString(R.string.chat_family))
+        repo.ensureFamilyChat(familyId, me, memberIds, getApplication<Application>().getString(R.string.chat_family),
+            chatsPulled = c.settings.current().let { st -> !st.supabaseConfigured || st.lastSyncAt > 0 })
+    }
+
+    /** While the chat list is open: new chats and messages show within seconds, and keys are shared. */
+    suspend fun liveList() {
+        while (true) {
+            c.sync.syncTables(setOf("family_members", "user_keys", "chats", "chat_keys", "chat_messages", "chat_reads"))
+            runCatching { repo.maintain(uid()) }
+            delay(6_000)
+        }
     }
 
     /** While a chat is open: fast sync of the chat tables every 4 seconds, keys shared, read marker set. */

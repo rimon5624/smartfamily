@@ -93,6 +93,9 @@ class SyncEngine(
     private val api: SupabaseApi,
     private val settings: SettingsStore,
 ) {
+    /** Work to do after every full pull (set by the app container: chat membership and keys). */
+    var afterPull: (suspend (String) -> Unit)? = null
+
     private val mutex = Mutex()
 
     private val tables: List<TableSync<*>> = handwrittenTables() + generatedTableSyncs(db)
@@ -172,6 +175,8 @@ class SyncEngine(
                 settings.resetPulls(tableNames)
                 pullAll(s.userId)
             }
+            // chats follow the family; keys reach every member device (2.1.2)
+            runCatching { afterPull?.invoke(s.userId) }
         }
         settings.setSyncResult(System.currentTimeMillis(), result.exceptionOrNull()?.message ?: "")
         result
