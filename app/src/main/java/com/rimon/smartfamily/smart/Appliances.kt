@@ -155,3 +155,72 @@ object LaundryAdvisor {
         )
     }
 }
+
+/** 2.2: what is being dried. */
+data class DryLoad(val fabric: String, val dryness: String, val size: String, val tumbleAllowed: Boolean?)
+data class DryAdvice(val program: ApplianceProfile.Program?, val dryness: String, val heat: String, val extras: List<String>, val warning: String?, val reason: String)
+
+/**
+ * 2.2 dryer advice: a dry programme of THIS appliance by fabric, dryness level and heat; never recommends the dryer for
+ * items whose care label forbids tumble drying, and warns for wool / delicates without a dedicated programme.
+ */
+object DryAdvisor {
+    private val dryWords = listOf("dry", "ייבוש", "יבש", "dryer", "trocken", "séch")
+    fun isDryProgram(p: ApplianceProfile.Program) = dryWords.any { p.name.contains(it, ignoreCase = true) }
+
+    fun advise(profile: ApplianceProfile, load: DryLoad, he: Boolean, combo: Boolean): DryAdvice {
+        fun t(h: String, e: String) = if (he) h else e
+        val programs = if (combo) profile.programs.filter { isDryProgram(it) }.ifEmpty { profile.programs } else profile.programs
+        val wanted = when (load.fabric) {
+            "baby" -> listOf("baby", "cotton"); "sport" -> listOf("sport", "synthetics"); "shirts" -> listOf("shirts", "synthetics")
+            "bedding", "towels" -> listOf(load.fabric, "cotton"); "jeans" -> listOf("jeans", "cotton", "dark"); else -> listOf(load.fabric)
+        }
+        val names = mapOf("cotton" to listOf("cotton", "כותנה"), "synthetics" to listOf("synthetic", "סינט"), "wool" to listOf("wool", "צמר"),
+            "delicates" to listOf("delicate", "עדין"), "towels" to listOf("towel", "מגבות"), "bedding" to listOf("bedding", "מצעים"),
+            "shirts" to listOf("shirt", "חולצ"), "jeans" to listOf("jeans", "ג'ינס"), "mixed" to listOf("mixed", "מעורב"), "sport" to listOf("sport", "ספורט"), "baby" to listOf("baby", "תינוק"))
+        val program = programs.map { p -> p to wanted.withIndex().sumOf { (i, f) ->
+            if (f in p.fabrics || names[f].orEmpty().any { p.name.contains(it, true) }) 10 - i else 0 } }
+            .filter { it.second > 0 }.maxByOrNull { it.second }?.first
+            ?: programs.firstOrNull { "mixed" in it.fabrics || it.name.contains("mixed", true) || it.name.contains("מעורב") }
+        val gentle = load.fabric in setOf("wool", "delicates", "synthetics", "shirts", "sport")
+        val warning = when {
+            load.tumbleAllowed == false -> t("לפי התווית אסור לייבש במייבש: לייבש על מתקן או שטוח.", "The care label says no tumble drying: dry on a rack or flat.")
+            load.fabric == "wool" && program?.let { "wool" in it.fabrics || it.name.contains("wool", true) || it.name.contains("צמר") } != true ->
+                t("אין במייבש תוכנית צמר: עדיף לייבש שטוח באוויר.", "This dryer has no wool programme: better to dry flat in the air.")
+            load.fabric == "delicates" && program == null -> t("בגדים עדינים: עדיף ייבוש באוויר.", "Delicates: better to air-dry.")
+            else -> null
+        }
+        val dryness = when (load.dryness) {
+            "iron" -> t("לגיהוץ", "Iron dry"); "extra" -> t("יבש במיוחד", "Extra dry"); else -> t("לארון", "Cupboard dry")
+        }
+        val heat = if (gentle || load.fabric == "baby") t("נמוך", "Low") else t("רגיל", "Normal")
+        val extras = buildList {
+            if (load.fabric in setOf("shirts", "synthetics", "mixed") || load.dryness == "iron") add(t("נגד קמטים", "Anti-crease"))
+            if (load.size == "small") add(t("ייבוש לפי זמן קצר", "Short timed dry"))
+            if (load.fabric == "towels" || load.fabric == "bedding") add(t("לנער לפני הכנסה", "Shake out before loading"))
+            if (load.fabric == "jeans") add(t("להפוך על הצד ההפוך", "Turn inside out"))
+        }
+        val reason = listOfNotNull(program?.let { it.name + if (it.page > 0) " (p. ${it.page})" else "" }, dryness, heat).joinToString(" · ")
+        return DryAdvice(if (load.tumbleAllowed == false) null else program, dryness, heat, extras, warning, reason)
+    }
+
+    fun genericDryer(lang: String): ApplianceProfile {
+        val he = lang == "Hebrew"
+        fun n(h: String, e: String) = if (he) h else e
+        return ApplianceProfile(
+            programs = listOf(
+                ApplianceProfile.Program(n("כותנה", "Cotton"), durationMinutes = 150, maxLoadKg = 9.0, fabrics = listOf("cotton", "towels", "bedding")),
+                ApplianceProfile.Program(n("סינטטי", "Synthetics"), durationMinutes = 90, maxLoadKg = 4.0, fabrics = listOf("synthetics", "shirts", "sport")),
+                ApplianceProfile.Program(n("מעורב", "Mixed"), durationMinutes = 100, maxLoadKg = 4.0, fabrics = listOf("mixed")),
+                ApplianceProfile.Program(n("עדין", "Delicates"), durationMinutes = 60, maxLoadKg = 2.0, fabrics = listOf("delicates")),
+                ApplianceProfile.Program(n("מגבות", "Towels"), durationMinutes = 120, maxLoadKg = 6.0, fabrics = listOf("towels")),
+                ApplianceProfile.Program(n("מצעים", "Bedding"), durationMinutes = 120, maxLoadKg = 4.0, fabrics = listOf("bedding")),
+                ApplianceProfile.Program(n("מהיר 35'", "Quick 35'"), durationMinutes = 35, maxLoadKg = 1.0, fabrics = listOf("quick")),
+            ),
+            maintenance = listOf(
+                ApplianceProfile.Maintenance(n("ניקוי מסנן מוך (אחרי כל ייבוש)", "Clean the lint filter (after every load)"), 1),
+                ApplianceProfile.Maintenance(n("ריקון מיכל מים / ניקוי מסנן מחליף חום", "Empty the water tank / clean the heat-exchanger filter"), 30),
+            ),
+        )
+    }
+}

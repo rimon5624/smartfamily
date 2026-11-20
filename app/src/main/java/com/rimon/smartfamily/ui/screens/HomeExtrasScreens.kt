@@ -1,5 +1,7 @@
 package com.rimon.smartfamily.ui.screens
 
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.launch
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Canvas
@@ -18,6 +20,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -182,7 +185,7 @@ fun HomeExtrasScreen(vm: RecordsViewModel, extras: ExtrasViewModel, viewer: View
                             if (show && plain != null) {
                                 if (e.kind == "WIFI") {
                                     fun esc(s: String) = s.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:")
-                                    QrImage("WIFI:T:WPA;S:${esc(e.title)};P:${esc(plain!!)};;")
+                                    QrImage("WIFI:T:${e.tags.removePrefix("wifi:").ifBlank { "WPA" }};S:${esc(e.title)};P:${esc(plain!!)};;")
                                     Text(stringResource(R.string.hx_scan_wifi), style = MaterialTheme.typography.bodySmall)
                                 }
                                 Text(plain!!, style = MaterialTheme.typography.titleSmall)
@@ -235,14 +238,87 @@ fun HomeExtrasScreen(vm: RecordsViewModel, extras: ExtrasViewModel, viewer: View
     }
     editSecret?.let { e ->
         var kind by remember { mutableStateOf(e.kind) }; var title by remember { mutableStateOf(e.title) }; var secret by remember { mutableStateOf("") }
+        var security by remember { mutableStateOf(e.tags.removePrefix("wifi:").ifBlank { "WPA" }) }
         LaunchedEffect(e.id) { secret = extras.openSecret(e.body).orEmpty() }
         EditDialog(stringResource(R.string.hx_secrets), title.isNotBlank() && secret.isNotBlank(), { editSecret = null }, {
-            extras.saveSecret(e.copy(kind = kind, title = title.trim()), secret); editSecret = null
+            extras.saveSecret(e.copy(kind = kind, title = title.trim(), tags = if (kind == "WIFI") "wifi:$security" else e.tags), secret); editSecret = null
         }, if (e.title.isNotBlank()) ({ extras.deleteHomeEntry(e); editSecret = null }) else null) {
             ChoiceIn(null, listOf("WIFI" to stringResource(R.string.hx_wifi), "SECRET" to stringResource(R.string.hx_secret)), kind) { kind = it }
+            if (kind == "WIFI") WifiPicker(onPick = { ssid, sec -> title = ssid; security = sec }, onQr = { ssid, pass, sec -> title = ssid; secret = pass; security = sec })
             TextIn(stringResource(if (kind == "WIFI") R.string.hx_ssid else R.string.hb_title), title) { title = it }
             TextIn(stringResource(if (kind == "WIFI") R.string.hx_wifi_password else R.string.hx_secret_text), secret) { secret = it }
             Text(stringResource(R.string.hx_secret_note), style = MaterialTheme.typography.labelSmall)
         }
     }
+}
+
+
+/**
+ * 2.2: choose the network instead of typing it — the one this phone is on, networks around, or scan the QR that
+ * Android shows under Settings → Wi-Fi → the network → Share (that QR also carries the password). Typing stays possible.
+ */
+@Composable
+private fun WifiPicker(onPick: (String, String) -> Unit, onQr: (String, String, String) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var networks by remember { mutableStateOf<List<Pair<String, String>>?>(null) }
+    var current by remember { mutableStateOf<String?>(null) }
+    var denied by remember { mutableStateOf(false) }
+    fun load() {
+        val wm = context.applicationContext.getSystemService(android.content.Context.WIFI_SERVICE) as android.net.wifi.WifiManager
+        @Suppress("DEPRECATION")
+        current = runCatching { wm.connectionInfo?.ssid?.trim('"')?.takeIf { it.isNotBlank() && it != "<unknown ssid>" } }.getOrNull()
+        @Suppress("DEPRECATION") runCatching { wm.startScan() }
+        networks = runCatching {
+            wm.scanResults.sortedByDescending { it.level }.mapNotNull { r ->
+                @Suppress("DEPRECATION") val name = r.SSID?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                val caps = r.capabilities.orEmpty()
+                name to when { caps.contains("WEP") -> "WEP"; caps.contains("PSK") || caps.contains("SAE") || caps.contains("EAP") -> "WPA"; else -> "nopass" }
+            }.distinctBy { it.first }.take(15)
+        }.getOrDefault(emptyList())
+    }
+    val perm = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { ok ->
+        if (ok) load() else denied = true
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) load()
+            else perm.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        }) { Text(stringResource(R.string.wf_pick)) }
+        OutlinedButton(onClick = {
+            scope.launch {
+                val raw = runCatching { com.google.mlkit.vision.codescanner.GmsBarcodeScanning.getClient(context).startScan().await().rawValue }.getOrNull() ?: return@launch
+                parseWifiQr(raw)?.let { (ssid, pass, sec) -> onQr(ssid, pass, sec) }
+            }
+        }) { Text(stringResource(R.string.wf_scan)) }
+    }
+    if (denied) Text(stringResource(R.string.wf_denied), style = MaterialTheme.typography.bodySmall)
+    networks?.let { list ->
+        val ordered = (listOfNotNull(current?.let { c -> c to (list.firstOrNull { it.first == c }?.second ?: "WPA") }) + list).distinctBy { it.first }
+        if (ordered.isEmpty()) Text(stringResource(R.string.wf_none), style = MaterialTheme.typography.bodySmall)
+        ordered.forEach { (ssid, sec) ->
+            TextButton(onClick = { onPick(ssid, sec); networks = null }) {
+                Text("📶 " + ssid + (if (ssid == current) " · " + stringResource(R.string.wf_connected) else "") + if (sec == "nopass") " · " + stringResource(R.string.wf_open) else "")
+            }
+        }
+    }
+}
+
+/** WIFI:T:WPA;S:name;P:pass;H:false;; (backslash escapes) → (ssid, password, type). */
+internal fun parseWifiQr(raw: String): Triple<String, String, String>? {
+    if (!raw.startsWith("WIFI:", true)) return null
+    val fields = mutableMapOf<String, String>()
+    val body = raw.substring(5)
+    var key = StringBuilder(); var value = StringBuilder(); var inValue = false; var esc = false
+    for (ch in body) {
+        when {
+            esc -> { (if (inValue) value else key).append(ch); esc = false }
+            ch == '\\' -> esc = true
+            !inValue && ch == ':' -> inValue = true
+            inValue && ch == ';' -> { fields[key.toString().uppercase()] = value.toString(); key = StringBuilder(); value = StringBuilder(); inValue = false }
+            else -> (if (inValue) value else key).append(ch)
+        }
+    }
+    val ssid = fields["S"] ?: return null
+    return Triple(ssid, fields["P"].orEmpty(), fields["T"]?.uppercase()?.let { if (it == "NOPASS" || it.isBlank()) "nopass" else if (it == "WEP") "WEP" else "WPA" } ?: "WPA")
 }

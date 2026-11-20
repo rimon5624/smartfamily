@@ -124,6 +124,7 @@ fun AiSettingsScreen(vm: ShoppingViewModel, currentModel: String, privacyMode: B
 
             GuideStep(1, stringResource(R.string.ai_step1_title), stringResource(R.string.ai_step1_body), done = connected) {
                 OpenSiteButton(stringResource(R.string.ai_get_key), "https://aistudio.google.com/apikey")
+                if (connected) OpenSiteButton(stringResource(R.string.ai_usage), "https://aistudio.google.com/usage")
             }
             GuideStep(2, stringResource(R.string.ai_step2_title), stringResource(R.string.ai_step2_body), done = masked.isNotEmpty()) {
                 clipKey?.let { ck ->

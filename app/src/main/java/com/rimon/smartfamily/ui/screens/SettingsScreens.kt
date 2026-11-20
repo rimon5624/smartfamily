@@ -2,6 +2,7 @@ package com.rimon.smartfamily.ui.screens
 
 import com.rimon.smartfamily.ui.components.SfTopAppBar
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.heightIn

@@ -194,6 +194,18 @@ class ApplianceViewModel(app: Application) : AndroidViewModel(app) {
         _aiAdvice.value = runCatching { (json.parseToJsonElement(text) as JsonObject)["advice"]?.jsonPrimitive?.contentOrNull }.getOrNull() ?: text
     }
 
+    /** 2.2: AI dry advice using ONLY this dryer's programmes. */
+    fun adviseDryAi(profile: ApplianceProfile, fabric: String, dryness: String, size: String, tumbleAllowed: Boolean?) = launchSafe {
+        _aiAdvice.value = ""
+        val text = c.gemini.ask(
+            "In ${lang()}, recommend how to DRY this load in a tumble dryer, using ONLY these programmes of the user's dryer: ${ApplianceProfile.toJson(profile.copy(errors = emptyList(), symbols = emptyList()))}. " +
+                "Load: fabric=$fabric, wanted dryness=$dryness, load size=$size, care label allows tumble drying=${tumbleAllowed ?: "unknown"}. " +
+                "If the label forbids tumble drying, say so and suggest air drying. " +
+                "Answer only JSON: {\"advice\":string (programme, dryness level, heat, options such as anti-crease, one short reason, page numbers)}"
+        )
+        _aiAdvice.value = runCatching { (json.parseToJsonElement(text) as JsonObject)["advice"]?.jsonPrimitive?.contentOrNull }.getOrNull() ?: text
+    }
+
     fun savePreset(applianceId: String, familyId: String, name: String, program: String, temperature: String, spin: String, options: String) = launchSafe {
         repo.savePreset(LaundryPresetEntity(UUID.randomUUID().toString(), familyId, applianceId, name, program, temperature, spin, options))
     }

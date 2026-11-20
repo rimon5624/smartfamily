@@ -1,5 +1,7 @@
 package com.rimon.smartfamily.ui.screens
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.material3.FilterChip
 import kotlinx.coroutines.delay
@@ -279,7 +281,7 @@ fun ApplianceDetailScreen(vm: ApplianceViewModel, viewer: Viewer, id: String, on
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             when (tabs.getOrNull(tab)) {
                 R.string.apl_tab_guide -> if (profile == null) ProfileSources(vm, a) else GuideTab(profile, vm, a)
-                R.string.apl_tab_wash -> WashTab(vm, viewer, a, profile)
+                R.string.apl_tab_wash -> LaundryTab(vm, viewer, a, profile)
                 R.string.apl_tab_care -> CareTab(vm, viewer, a, profile)
                 else -> InfoTab(vm, viewer, a, onEdit = { editing = true }, onSmartHome = onSmartHome)
             }
@@ -462,6 +464,80 @@ private val fabrics = listOf(
 )
 private val colors = listOf("white" to R.string.cl_white, "light" to R.string.cl_light, "dark" to R.string.cl_dark, "new" to R.string.cl_new)
 private val soils = listOf("light" to R.string.sl_light, "normal" to R.string.sl_normal, "heavy" to R.string.sl_heavy)
+
+/** 2.2: "what to run" by appliance: washer → wash advice, dryer → dry advice, washer-dryer → choose wash / dry / both. */
+@Composable
+private fun LaundryTab(vm: ApplianceViewModel, viewer: Viewer, a: ApplianceEntity, profile: ApplianceProfile?) {
+    var mode by rememberSaveable(a.id) { mutableStateOf(if (a.type == "dryer") "dry" else "wash") }
+    Column(Modifier.fillMaxSize()) {
+        if (a.type == "washer_dryer") Row(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf("wash" to R.string.lm_wash, "dry" to R.string.lm_dry, "both" to R.string.lm_both).forEach { (k, l) ->
+                FilterChip(selected = mode == k, onClick = { mode = k }, label = { Text(stringResource(l)) })
+            }
+        }
+        if (mode == "both") Text(stringResource(R.string.lm_then_dry), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = 16.dp))
+        Box(Modifier.weight(1f)) {
+            if (mode == "dry") DryTab(vm, viewer, a, profile) else WashTab(vm, viewer, a, profile)
+        }
+    }
+}
+
+private val dryness = listOf("iron" to R.string.dr_iron, "cupboard" to R.string.dr_cupboard, "extra" to R.string.dr_extra)
+private val loadSizes = listOf("small" to R.string.dr_small, "full" to R.string.dr_full)
+
+@Composable
+private fun DryTab(vm: ApplianceViewModel, viewer: Viewer, a: ApplianceEntity, profile: ApplianceProfile?) {
+    val context = LocalContext.current
+    val label by vm.careLabel.collectAsStateWithLifecycle()
+    val ai by vm.aiAdvice.collectAsStateWithLifecycle()
+    var fabric by rememberSaveable { mutableStateOf("cotton") }
+    var dry by rememberSaveable { mutableStateOf("cupboard") }
+    var size by rememberSaveable { mutableStateOf("full") }
+    val labelPhoto = rememberPhotoPicker { vm.readCareLabel(it) }
+    val he = vm.lang() == "Hebrew"
+    val p = profile ?: com.rimon.smartfamily.smart.DryAdvisor.genericDryer(vm.lang())
+    val advice = com.rimon.smartfamily.smart.DryAdvisor.advise(p, com.rimon.smartfamily.smart.DryLoad(fabric, dry, size, label?.tumbleDry), he, combo = a.type == "washer_dryer")
+    LazyColumn(contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (profile == null) item { Text(stringResource(R.string.wash_need_profile), color = MaterialTheme.colorScheme.tertiary) }
+        item { Text(stringResource(R.string.wash_fabric), style = MaterialTheme.typography.labelLarge); ChipRow(fabrics, fabric) { fabric = it } }
+        item { Text(stringResource(R.string.dr_dryness), style = MaterialTheme.typography.labelLarge); ChipRow(dryness, dry) { dry = it } }
+        item { Text(stringResource(R.string.dr_size), style = MaterialTheme.typography.labelLarge); ChipRow(loadSizes, size) { size = it } }
+        item {
+            OutlinedButton(onClick = labelPhoto) { Icon(Icons.Outlined.CameraAlt, null); Spacer(Modifier.size(6.dp)); Text(stringResource(R.string.wash_label)) }
+            label?.let { l ->
+                Text(when (l.tumbleDry) { false -> stringResource(R.string.wash_no_tumble); true -> stringResource(R.string.wash_tumble_ok); null -> "" } +
+                    if (l.notes.isNotBlank()) " · " + l.notes else "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = if (advice.program == null) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer)) {
+                Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                    if (advice.program != null) {
+                        Text(stringResource(R.string.wash_result, advice.program.name), style = MaterialTheme.typography.titleLarge)
+                        Text(stringResource(R.string.dr_result, advice.dryness, advice.heat), style = MaterialTheme.typography.titleMedium)
+                        if (advice.extras.isNotEmpty()) Text(advice.extras.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
+                        Text(advice.reason, style = MaterialTheme.typography.bodySmall)
+                    }
+                    advice.warning?.let { Text("⚠️ $it", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 4.dp)) }
+                    val minutes = advice.program?.durationMinutes ?: 0
+                    if (minutes > 0) FilledTonalButton(modifier = Modifier.padding(top = 8.dp), onClick = {
+                        runCatching {
+                            context.startActivity(Intent(AlarmClock.ACTION_SET_TIMER).putExtra(AlarmClock.EXTRA_LENGTH, minutes * 60)
+                                .putExtra(AlarmClock.EXTRA_MESSAGE, context.getString(R.string.wash_timer_label, a.name))
+                                .putExtra(AlarmClock.EXTRA_SKIP_UI, true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }
+                    }) { Icon(Icons.Outlined.Timer, null); Spacer(Modifier.size(6.dp)); Text(stringResource(R.string.wash_start_timer, minutes)) }
+                }
+            }
+        }
+        if (profile != null) item {
+            OutlinedButton(onClick = { vm.adviseDryAi(profile, fabric, dry, size, label?.tumbleDry) }) {
+                Icon(Icons.Outlined.AutoAwesome, null); Spacer(Modifier.size(6.dp)); Text(stringResource(R.string.wash_ask_ai))
+            }
+            if (ai.isNotBlank()) Text(ai, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 8.dp))
+        }
+    }
+}
 
 @Composable
 private fun WashTab(vm: ApplianceViewModel, viewer: Viewer, a: ApplianceEntity, profile: ApplianceProfile?) {

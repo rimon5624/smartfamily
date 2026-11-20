@@ -1520,4 +1520,23 @@
     <string name="aw_more">פרטים נוספים ▾</string>
     <string name="aw_less">פחות פרטים ▴</string>
     <string name="aw_after">אחר כך: מוסיפים את חוברת ההפעלה, ומחברים לבית החכם אם יש למכשיר אפליקציה.</string>
+    <string name="wf_pick">בחירת רשת</string>
+    <string name="wf_scan">סריקת QR של רשת</string>
+    <string name="wf_denied">בלי הרשאת מיקום אנדרואיד לא מציג שמות רשתות. אפשר עדיין להקליד.</string>
+    <string name="wf_none">לא נמצאו רשתות. הדליקו Wi-Fi ומיקום, או הקלידו את השם.</string>
+    <string name="wf_connected">מחובר</string>
+    <string name="wf_open">פתוחה</string>
+    <string name="ai_usage">שימוש ומכסה</string>
+    <string name="lm_wash">כביסה</string>
+    <string name="lm_dry">ייבוש</string>
+    <string name="lm_both">כביסה + ייבוש</string>
+    <string name="lm_then_dry">אחר כך עוברים ל\"ייבוש\" לחלק של הייבוש.</string>
+    <string name="dr_iron">לגיהוץ</string>
+    <string name="dr_cupboard">לארון</string>
+    <string name="dr_extra">יבש במיוחד</string>
+    <string name="dr_small">מטען קטן</string>
+    <string name="dr_full">מטען מלא</string>
+    <string name="dr_dryness">רמת ייבוש</string>
+    <string name="dr_size">גודל המטען</string>
+    <string name="dr_result">%1$s · חום: %2$s</string>
 </resources>

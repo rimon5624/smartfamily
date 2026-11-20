@@ -1524,4 +1524,23 @@
     <string name="aw_more">More details ▾</string>
     <string name="aw_less">Fewer details ▴</string>
     <string name="aw_after">Next: add the manual, and link a smart appliance if it has an app.</string>
+    <string name="wf_pick">Choose a network</string>
+    <string name="wf_scan">Scan a Wi-Fi QR</string>
+    <string name="wf_denied">Without location permission Android does not show network names. You can still type it.</string>
+    <string name="wf_none">No networks found. Turn on Wi-Fi and location, or type the name.</string>
+    <string name="wf_connected">connected</string>
+    <string name="wf_open">open</string>
+    <string name="ai_usage">Usage and quota</string>
+    <string name="lm_wash">Wash</string>
+    <string name="lm_dry">Dry</string>
+    <string name="lm_both">Wash + dry</string>
+    <string name="lm_then_dry">Then switch to \"Dry\" for the drying part.</string>
+    <string name="dr_iron">Iron dry</string>
+    <string name="dr_cupboard">Cupboard dry</string>
+    <string name="dr_extra">Extra dry</string>
+    <string name="dr_small">Small load</string>
+    <string name="dr_full">Full load</string>
+    <string name="dr_dryness">How dry</string>
+    <string name="dr_size">Load size</string>
+    <string name="dr_result">%1$s · heat: %2$s</string>
 </resources>

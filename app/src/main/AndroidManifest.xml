@@ -11,6 +11,9 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Sending my location in the family chat (only when I tap it) -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- 2.2: pick the Wi-Fi network for a shared Wi-Fi card -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- Camera is used through the system camera app; the app itself never needs the permission. -->
