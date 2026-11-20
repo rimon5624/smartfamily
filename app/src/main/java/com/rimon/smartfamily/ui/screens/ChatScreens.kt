@@ -644,7 +644,7 @@ private fun VoiceContent(vm: ChatViewModel, m: ShownMessage, transcript: String?
             }) { Icon(if (player != null) Icons.Outlined.Stop else Icons.Outlined.PlayArrow, stringResource(R.string.chat_voice)) }
             Text("🎤 " + "%d:%02d".format((m.payload?.durationSec ?: 0) / 60, (m.payload?.durationSec ?: 0) % 60))
             Spacer(Modifier.weight(1f))
-            if (transcript == null && com.rimon.smartfamily.smart.WhisperModels.mode(context) != "off") TextButton(onClick = { vm.transcribe(m) }) { Text(stringResource(R.string.chat_transcribe)) }
+            if (transcript == null && com.rimon.smartfamily.smart.WhisperModels.mode(androidx.compose.ui.platform.LocalContext.current) != "off") TextButton(onClick = { vm.transcribe(m) }) { Text(stringResource(R.string.chat_transcribe)) }
         }
         if (transcript != null) Text(transcript, style = MaterialTheme.typography.bodyMedium)
     }
