@@ -97,6 +97,21 @@ class AppWalkthroughTest {
             compose.onNodeWithTag("more_settings").performClick(); shot("settings")
             openItem("today")
             compose.waitUntil(5_000) { has("screen_today") }
+
+            // Settings → Features (by area)
+            val c = (target.applicationContext as SmartFamilyApp).container
+            val fam = runBlocking { c.settings.current().activeFamilyId }
+            MainActivity.pendingRoute.value = "modules/$fam"
+            compose.waitForIdle(); shot("features")
+            MainActivity.pendingRoute.value = "today"
+            compose.waitForIdle()
+
+            // an area whose features are all off shows its switches inside it
+            runBlocking { listOf(AppModule.BUDGET, AppModule.KIDS).forEach { c.families.setModule(fam, it, false, null) } }
+            openItem("money")
+            compose.waitUntil(8_000) { has("area_money") }
+            shot("money_off")
+            runBlocking { listOf(AppModule.BUDGET, AppModule.KIDS).forEach { c.families.setModule(fam, it, true, null) } }
         }
     }
 }
