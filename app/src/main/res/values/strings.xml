@@ -906,7 +906,7 @@
     <string name="update_download">Download</string>
     <string name="update_later">Later</string>
     <string name="whats_new_title">What\'s new in %1$s</string>
-    <string name="whats_new_body">• A simpler app: six areas (Food, Calendar, Tasks, Money, Home, Family) and a bottom bar you can reorder\n• Family chat on every screen, and polls inside the chat\n• A Today screen instead of a grid of modules\n• The same checklist everywhere: swipe to tick or delete, with undo\n• Where is it cheapest — right inside the shopping list\n• Branch lists for every supermarket chain, with clear messages</string>
+    <string name="whats_new_body">• Fixed: every area opens from the bottom bar\n• All areas always shown, with switches inside an area that is off\n• Features in Settings arranged by area\n• Short, centered bar labels; one row of tabs per area\n• Help only when you tap ?</string>
     <string name="prices_comparable">Comparable: %1$s (%2$d items)</string>
     <string name="budget_over">This category is at %1$s%% of its monthly limit</string>
     <string name="budget_near">This category reached %1$s%% of its monthly limit</string>

@@ -902,7 +902,7 @@
     <string name="update_download">הורדה</string>
     <string name="update_later">אחר כך</string>
     <string name="whats_new_title">מה חדש בגרסה %1$s</string>
-    <string name="whats_new_body">• אפליקציה פשוטה יותר: שישה אזורים (אוכל, יומן, משימות, כסף, הבית, משפחה) וסרגל תחתון שאפשר לסדר\n• הצ\'אט המשפחתי בכל מסך, וסקרים בתוך הצ\'אט\n• מסך “היום” במקום רשת של מודולים\n• אותה רשימת סימון בכל מקום: החלקה לסימון או למחיקה, עם ביטול\n• איפה הכי זול — ישר מתוך רשימת הקניות\n• רשימות סניפים לכל רשתות הסופר, עם הודעות ברורות</string>
+    <string name="whats_new_body">• תוקן: כל האזורים נפתחים מהסרגל התחתון\n• כל האזורים תמיד מופיעים, עם הפעלה מתוך אזור כבוי\n• התכונות בהגדרות מסודרות לפי אזורים\n• שמות קצרים וממורכזים בסרגל; שורת לשוניות אחת בכל אזור\n• עזרה רק כשלוחצים על ?</string>
     <string name="prices_comparable">בר השוואה: %1$s (%2$d מוצרים)</string>
     <string name="budget_over">הקטגוריה הגיעה ל-%1$s%% מהתקרה החודשית</string>
     <string name="budget_near">הקטגוריה הגיעה ל-%1$s%% מהתקרה החודשית</string>
@@ -1322,7 +1322,7 @@
     <string name="sec_repairs">תיקונים</string>
     <string name="sec_meters">מונים</string>
     <string name="sec_kits">ערכות</string>
-    <string name="sec_secrets">סודות ווויפי</string>
+    <string name="sec_secrets">סודות ו-Wi-Fi</string>
     <string name="sec_knowledge">ידע</string>
     <string name="sec_family">משפחה</string>
     <string name="sec_growth">גדילה</string>

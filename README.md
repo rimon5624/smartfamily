@@ -2,9 +2,20 @@
 
 Family home-management Android app: shared shopping, chores, meals, appliances, family chat and dates, on one encrypted database shared by the family. Hebrew (RTL) and English.
 
-**Current version: 2.1.0**
+**Current version: 2.1.1**
 
-## What is new in 2.1.0
+## What is new in 2.1.1
+
+- Fixed: only Today and Calendar opened from the bottom bar (all areas shared one screen route; each area now has its own).
+- All six areas are always there; an area whose features are off shows its switches inside it.
+- Settings → Features rebuilt by area, with the same names as the area tabs, family and "for me" switches, and where a feature also appears.
+- Short bar labels (Food, Calendar, Tasks, Money, Home, Family), centered under their icons.
+- No more nested tab rows: Shabbat / Holidays, Chores / Points, Family tree / Albums / Phone book are area tabs now; duplicate shortcut chips removed inside areas.
+- Help sits in the area's top bar and opens only when tapped (no automatic popups on every screen); help texts updated.
+- Today screen titled "Today"; no back arrow on the chat when it is a bar tab.
+- Quality: every build now runs an on-emulator walkthrough in Hebrew that opens every bar item, every area and every section and saves a screenshot of each; the GitHub release is published only after it passes.
+
+## What was new in 2.1.0
 
 - **Simpler structure**: 17 modules became six areas built around what the family does — Food & shopping (lists, pantry, menu, recipes, school), Calendar (calendar, Shabbat & holidays, trips), Tasks (chores, kids' routines), Money (budget, bills, pocket money, goals, shared costs), Home (appliances, documents, repairs, meters, kits, secrets, know-how) and Family (tree, albums, phone book, growth). Every feature can still be switched off (Settings → Features).
 - **Bottom bar** with Today and the areas; the user sets the order in Settings, the first four show and the rest are under "More" (with families and settings).
