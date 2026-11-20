@@ -299,6 +299,8 @@ val BUDGET_CATS = listOf(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun BudgetScreen(vm: ExtrasViewModel, viewer: Viewer, onBack: () -> Unit, onMoney: (Int) -> Unit = {}) {
+    com.rimon.smartfamily.security.SensitiveScreen()
+
     val now = remember { Calendar.getInstance() }
     var year by rememberSaveable { mutableIntStateOf(now.get(Calendar.YEAR)) }
     var month by rememberSaveable { mutableIntStateOf(now.get(Calendar.MONTH)) }
@@ -488,6 +490,8 @@ private val KNOW_KINDS = listOf("HOWTO" to R.string.hk_howto, "NOTE" to R.string
 
 @Composable
 fun HomeBookScreen(vm: ExtrasViewModel, viewer: Viewer, startTab: Int, onBack: () -> Unit, onExtras: (Int) -> Unit = {}) {
+    com.rimon.smartfamily.security.SensitiveScreen()
+
     val embedded = com.rimon.smartfamily.ui.components.LocalEmbedded.current
     var tab by rememberSaveable { mutableIntStateOf(startTab) }
     val section = if (tab == 0) "HOME" else "KNOWLEDGE"

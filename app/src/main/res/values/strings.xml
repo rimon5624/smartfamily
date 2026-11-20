@@ -1116,7 +1116,7 @@
     <string name="money_title">Money</string>
     <string name="money_what">What</string>
     <string name="money_yearly">%1$s a year</string>
-    <string name="secret_needs_chat">Saved without encryption: open the family chat once (signed in) to create the family key, then save again.</string>
+    <string name="secret_needs_chat">Not saved: the family\'s encryption key is not on this phone yet. Open the family chat once (online) and try again.</string>
     <string name="shabbat_days_before">%1$d days before</string>
     <string name="shabbat_guests">Guests</string>
     <string name="shabbat_holiday_on">%1$s · in %2$d days</string>
@@ -1562,4 +1562,9 @@
     <string name="tr_dl_failed">The download failed. Try again (on Wi-Fi).</string>
     <string name="tr_offline_not_ready">Offline transcription: download a model in Settings → Voice message transcription.</string>
     <string name="tr_working">Transcribing on this phone…</string>
+    <string name="sec_kids">Children may see this</string>
+    <string name="sec_unlock_title">Show the secret</string>
+    <string name="sec_hides">Hides itself in 30 seconds</string>
+    <string name="sec_qr_only">QR only</string>
+    <string name="sec_copied">Copied — cleared from the clipboard in a minute</string>
 </resources>

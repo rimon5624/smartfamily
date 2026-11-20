@@ -76,6 +76,7 @@ private fun kitLabel(k: String) = stringResource(when (k) {
 /** Home extras (2.0): repairs log, meter readings, ready-made kits, guest Wi-Fi QR and secret notes. */
 @Composable
 fun HomeExtrasScreen(vm: RecordsViewModel, extras: ExtrasViewModel, viewer: Viewer, hebrew: Boolean, startTab: Int, onBack: () -> Unit) {
+    com.rimon.smartfamily.security.SensitiveScreen()
     var tab by rememberSaveable { mutableIntStateOf(startTab) }
     val repairs by remember(viewer.familyId) { vm.repairs(viewer.familyId) }.collectAsState(initial = emptyList())
     val meters by remember(viewer.familyId) { vm.meters(viewer.familyId) }.collectAsState(initial = emptyList())
@@ -173,30 +174,10 @@ fun HomeExtrasScreen(vm: RecordsViewModel, extras: ExtrasViewModel, viewer: View
                 }
             }
             else -> {
-                val secrets = notes.filter { it.kind == "WIFI" || it.kind == "SECRET" }
+                // 2.2: children see only the secrets a parent opened for them
+                val secrets = notes.filter { (it.kind == "WIFI" || it.kind == "SECRET") && (!viewer.isChild || it.tags.contains("kids:on")) }
                 if (secrets.isEmpty()) item { Text(stringResource(R.string.hx_secrets_empty)) }
-                items(secrets, key = { it.id }) { e ->
-                    val plain by produceState<String?>(null, e.body) { value = extras.openSecret(e.body) }
-                    var show by remember { mutableStateOf(false) }
-                    Card(Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text((if (e.kind == "WIFI") "📶 " else "🔒 ") + e.title, style = MaterialTheme.typography.titleMedium)
-                            if (e.body.startsWith("enc1:")) Text(stringResource(R.string.hx_encrypted), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                            if (show && plain != null) {
-                                if (e.kind == "WIFI") {
-                                    fun esc(s: String) = s.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:")
-                                    QrImage("WIFI:T:${e.tags.removePrefix("wifi:").ifBlank { "WPA" }};S:${esc(e.title)};P:${esc(plain!!)};;")
-                                    Text(stringResource(R.string.hx_scan_wifi), style = MaterialTheme.typography.bodySmall)
-                                }
-                                Text(plain!!, style = MaterialTheme.typography.titleSmall)
-                            } else if (plain == null && e.body.isNotBlank()) Text(stringResource(R.string.chat_encrypted))
-                            Row {
-                                TextButton(onClick = { show = !show }) { Text(stringResource(if (show) R.string.hx_hide else R.string.hx_show)) }
-                                if (canEdit) TextButton(onClick = { editSecret = e }) { Text(stringResource(R.string.chat_edit)) }
-                            }
-                        }
-                    }
-                }
+                items(secrets, key = { it.id }) { e -> SecretCard(extras, e, canEdit, viewer.isChild) { editSecret = e } }
             }
         }
     }
@@ -238,15 +219,20 @@ fun HomeExtrasScreen(vm: RecordsViewModel, extras: ExtrasViewModel, viewer: View
     }
     editSecret?.let { e ->
         var kind by remember { mutableStateOf(e.kind) }; var title by remember { mutableStateOf(e.title) }; var secret by remember { mutableStateOf("") }
-        var security by remember { mutableStateOf(e.tags.removePrefix("wifi:").ifBlank { "WPA" }) }
+        var security by remember { mutableStateOf(e.tags.split(' ').firstOrNull { it.startsWith("wifi:") }?.removePrefix("wifi:") ?: "WPA") }
+        var kidsOn by remember { mutableStateOf(e.tags.contains("kids:on")) }
         LaunchedEffect(e.id) { secret = extras.openSecret(e.body).orEmpty() }
         EditDialog(stringResource(R.string.hx_secrets), title.isNotBlank() && secret.isNotBlank(), { editSecret = null }, {
-            extras.saveSecret(e.copy(kind = kind, title = title.trim(), tags = if (kind == "WIFI") "wifi:$security" else e.tags), secret); editSecret = null
+            extras.saveSecret(e.copy(kind = kind, title = title.trim(), tags = listOfNotNull(if (kind == "WIFI") "wifi:$security" else null, if (kidsOn) "kids:on" else null).joinToString(" ")), secret); editSecret = null
         }, if (e.title.isNotBlank()) ({ extras.deleteHomeEntry(e); editSecret = null }) else null) {
             ChoiceIn(null, listOf("WIFI" to stringResource(R.string.hx_wifi), "SECRET" to stringResource(R.string.hx_secret)), kind) { kind = it }
             if (kind == "WIFI") WifiPicker(onPick = { ssid, sec -> title = ssid; security = sec }, onQr = { ssid, pass, sec -> title = ssid; secret = pass; security = sec })
             TextIn(stringResource(if (kind == "WIFI") R.string.hx_ssid else R.string.hb_title), title) { title = it }
             TextIn(stringResource(if (kind == "WIFI") R.string.hx_wifi_password else R.string.hx_secret_text), secret) { secret = it }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.sec_kids), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                androidx.compose.material3.Switch(checked = kidsOn, onCheckedChange = { kidsOn = it })
+            }
             Text(stringResource(R.string.hx_secret_note), style = MaterialTheme.typography.labelSmall)
         }
     }
@@ -321,4 +307,71 @@ internal fun parseWifiQr(raw: String): Triple<String, String, String>? {
     }
     val ssid = fields["S"] ?: return null
     return Triple(ssid, fields["P"].orEmpty(), fields["T"]?.uppercase()?.let { if (it == "NOPASS" || it.isBlank()) "nopass" else if (it == "WEP") "WEP" else "WPA" } ?: "WPA")
+}
+
+
+/**
+ * 2.2 a secret card: the value is shown only after fingerprint / screen lock, hides itself after 30 seconds,
+ * can be copied (marked sensitive, cleared from the clipboard after a minute) or shared as a Wi-Fi QR without text.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun SecretCard(extras: ExtrasViewModel, e: com.rimon.smartfamily.data.db.HomeEntryEntity, canEdit: Boolean, isChild: Boolean, onEdit: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var plain by remember { mutableStateOf<String?>(null) }
+    var show by remember { mutableStateOf(false) }
+    var qrOnly by remember { mutableStateOf(false) }
+    LaunchedEffect(show) { if (show) { kotlinx.coroutines.delay(30_000); show = false; qrOnly = false; plain = null } }
+    val wifiType = e.tags.split(' ').firstOrNull { it.startsWith("wifi:") }?.removePrefix("wifi:") ?: "WPA"
+    fun unlockThen(action: () -> Unit) {
+        val act = context as? androidx.fragment.app.FragmentActivity
+        if (act == null || !com.rimon.smartfamily.security.AppLock.canAuthenticate(act)) { action(); return }
+        com.rimon.smartfamily.security.AppLock.prompt(act, context.getString(R.string.sec_unlock_title)) { ok -> if (ok) action() }
+    }
+    var failed by remember { mutableStateOf(false) }
+    fun open(then: (String) -> Unit) = unlockThen { scope.launch { val v = extras.openSecret(e.body); failed = v == null; if (v != null) { plain = v; then(v) } } }
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text((if (e.kind == "WIFI") "📶 " else "🔒 ") + e.title, style = MaterialTheme.typography.titleMedium)
+            if (e.body.startsWith("enc1:")) Text(stringResource(R.string.hx_encrypted), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            val p = plain
+            if (show && p != null) {
+                if (e.kind == "WIFI") {
+                    fun esc(x: String) = x.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:")
+                    QrImage("WIFI:T:$wifiType;S:${esc(e.title)};P:${esc(p)};;")
+                    Text(stringResource(R.string.hx_scan_wifi), style = MaterialTheme.typography.bodySmall)
+                }
+                if (!qrOnly) Text(p, style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.sec_hides), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (failed) Text(stringResource(R.string.chat_encrypted), style = MaterialTheme.typography.bodySmall)
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (show) TextButton(onClick = { show = false; qrOnly = false; plain = null }) { Text(stringResource(R.string.hx_hide)) }
+                else {
+                    TextButton(onClick = { open { show = true; qrOnly = false } }) { Text(stringResource(R.string.hx_show)) }
+                    if (e.kind == "WIFI") TextButton(onClick = { open { show = true; qrOnly = true } }) { Text(stringResource(R.string.sec_qr_only)) }
+                }
+                TextButton(onClick = { open { value -> copySensitive(context, value); plain = null } }) { Text(stringResource(R.string.copy)) }
+                if (canEdit && !isChild) TextButton(onClick = { unlockThen(onEdit) }) { Text(stringResource(R.string.chat_edit)) }
+            }
+        }
+    }
+}
+
+/** Copies a secret: marked sensitive (keyboards don't keep it, Android 13 hides the preview) and cleared after a minute. */
+private fun copySensitive(context: android.content.Context, value: String) {
+    val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+    val clip = android.content.ClipData.newPlainText("secret", value)
+    clip.description.extras = android.os.PersistableBundle().apply {
+        putBoolean(if (android.os.Build.VERSION.SDK_INT >= 33) android.content.ClipDescription.EXTRA_IS_SENSITIVE else "android.content.extra.IS_SENSITIVE", true)
+    }
+    cm.setPrimaryClip(clip)
+    android.widget.Toast.makeText(context, context.getString(R.string.sec_copied), android.widget.Toast.LENGTH_SHORT).show()
+    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+        runCatching {
+            val now = cm.primaryClip?.getItemAt(0)?.text?.toString()
+            if (now == value) { if (android.os.Build.VERSION.SDK_INT >= 28) cm.clearPrimaryClip() else cm.setPrimaryClip(android.content.ClipData.newPlainText("", "")) }
+        }
+    }, 60_000)
 }

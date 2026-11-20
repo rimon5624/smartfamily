@@ -46,6 +46,7 @@ class AppWalkthroughTest {
         c.settings.setUpdateChecks(false)
         c.settings.setAppLock(false)
         c.settings.setSecureScreens(false) // screenshots are blocked when this is on
+        com.rimon.smartfamily.security.Sensitive.allowCaptureForTests = true
         if (c.db.families().all().none { it.deletedAt == null }) {
             val f = c.families.createFamily("משפחת בדיקה", AppModule.entries.toSet())
             c.settings.setActiveFamily(f.id)

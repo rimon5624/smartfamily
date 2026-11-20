@@ -166,9 +166,10 @@ class ExtrasViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Saves a secret note (Wi-Fi password, door code) encrypted for the family (KNW-2). */
     fun saveSecret(e: HomeEntryEntity, secret: String) = launchSafe {
+        // 2.2: never stored in plain text — without the family key nothing is saved
         val enc = c.chat.encryptForFamily(e.familyId, secret)
-        if (enc == null) _messages.tryEmit(UiMessage.Res(R.string.secret_needs_chat))
-        repo.saveHomeEntry(e.copy(body = enc ?: secret))
+        if (enc == null) { _messages.tryEmit(UiMessage.Res(R.string.secret_needs_chat)); return@launchSafe }
+        repo.saveHomeEntry(e.copy(body = enc))
     }
     suspend fun openSecret(body: String): String? = runCatching { c.chat.decryptNote(body) }.getOrNull()
 

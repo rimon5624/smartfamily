@@ -156,8 +156,10 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
                     // Screenshots and the recent-apps preview are blocked when the user asks for it.
-                    LaunchedEffect(s?.secureScreens) {
-                        if (s?.secureScreens == true) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+                    val sensitiveOpen = com.rimon.smartfamily.security.Sensitive.open.intValue
+                    LaunchedEffect(s?.secureScreens, sensitiveOpen) {
+                        val auto = sensitiveOpen > 0 && !com.rimon.smartfamily.security.Sensitive.allowCaptureForTests
+                        if (s?.secureScreens == true || auto) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
                         else window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
                     }
                     when {

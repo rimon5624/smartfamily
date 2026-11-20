@@ -1112,7 +1112,7 @@
     <string name="money_title">כסף</string>
     <string name="money_what">מה</string>
     <string name="money_yearly">%1$s בשנה</string>
-    <string name="secret_needs_chat">נשמר בלי הצפנה: צריך לפתוח פעם אחת את הצ\'אט המשפחתי (מחוברים לענן) כדי ליצור את מפתח המשפחה, ואז לשמור שוב.</string>
+    <string name="secret_needs_chat">לא נשמר: מפתח ההצפנה המשפחתי עוד לא הגיע לטלפון הזה. פתחו פעם אחת את צ\'אט המשפחה (עם אינטרנט) ונסו שוב.</string>
     <string name="shabbat_days_before">%1$d ימים לפני</string>
     <string name="shabbat_guests">אורחים</string>
     <string name="shabbat_holiday_on">%1$s · בעוד %2$d ימים</string>
@@ -1558,4 +1558,9 @@
     <string name="tr_dl_failed">ההורדה נכשלה. נסו שוב (ב-Wi-Fi).</string>
     <string name="tr_offline_not_ready">תמלול אופליין: הורידו מודל בהגדרות ← תמלול הודעות קוליות.</string>
     <string name="tr_working">מתמלל בטלפון…</string>
+    <string name="sec_kids">ילדים רשאים לראות</string>
+    <string name="sec_unlock_title">הצגת הסוד</string>
+    <string name="sec_hides">יוסתר לבד בעוד 30 שניות</string>
+    <string name="sec_qr_only">QR בלבד</string>
+    <string name="sec_copied">הועתק. יימחק מהלוח בעוד דקה</string>
 </resources>

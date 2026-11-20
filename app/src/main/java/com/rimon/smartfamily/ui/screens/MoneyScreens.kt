@@ -39,6 +39,7 @@ import java.time.LocalDate
 /** Money hub (2.0): bills & subscriptions, pocket money, savings goals, shared costs. */
 @Composable
 fun MoneyScreen(vm: RecordsViewModel, viewer: Viewer, startTab: Int, onBack: () -> Unit) {
+    com.rimon.smartfamily.security.SensitiveScreen()
     var tab by rememberSaveable { mutableIntStateOf(startTab) }
     val members by remember(viewer.familyId) { vm.members(viewer.familyId) }.collectAsState(initial = emptyList())
     val payments by remember(viewer.familyId) { vm.payments(viewer.familyId) }.collectAsState(initial = emptyList())

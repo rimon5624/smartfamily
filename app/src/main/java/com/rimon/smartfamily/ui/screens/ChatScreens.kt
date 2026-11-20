@@ -248,6 +248,7 @@ private fun timeLabel(ms: Long): String {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ChatScreen(vm: ChatViewModel, viewer: Viewer, chatId: String, onBack: () -> Unit, onOpenRoute: (String) -> Unit = {}) {
+    com.rimon.smartfamily.security.SensitiveScreen()
     val context = LocalContext.current
     val chat by remember(chatId) { vm.chat(chatId) }.collectAsState(initial = null)
     val members by vm.people.collectAsState(initial = emptyList())
@@ -643,7 +644,7 @@ private fun VoiceContent(vm: ChatViewModel, m: ShownMessage, transcript: String?
             }) { Icon(if (player != null) Icons.Outlined.Stop else Icons.Outlined.PlayArrow, stringResource(R.string.chat_voice)) }
             Text("🎤 " + "%d:%02d".format((m.payload?.durationSec ?: 0) / 60, (m.payload?.durationSec ?: 0) % 60))
             Spacer(Modifier.weight(1f))
-            if (transcript == null) TextButton(onClick = { vm.transcribe(m) }) { Text(stringResource(R.string.chat_transcribe)) }
+            if (transcript == null && com.rimon.smartfamily.smart.WhisperModels.mode(context) != "off") TextButton(onClick = { vm.transcribe(m) }) { Text(stringResource(R.string.chat_transcribe)) }
         }
         if (transcript != null) Text(transcript, style = MaterialTheme.typography.bodyMedium)
     }
