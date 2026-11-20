@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imePadding
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -318,7 +320,7 @@ private fun MainNav(vm: AppViewModel) {
     // 2.2: one keyboard rule for the whole app — content ends above the keyboard and the bar steps aside while typing,
     // so a field at the bottom of any screen stays visible (scrollable screens bring the focused field into view).
     @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-    val imeVisible = androidx.compose.foundation.layout.WindowInsets.isImeVisible
+    val imeVisible = WindowInsets.isImeVisible
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
